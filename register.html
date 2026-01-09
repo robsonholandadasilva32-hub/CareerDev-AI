@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  
+  <!-- =====================================================
+     FAVICON & APP ICONS — CONFIGURAÇÃO PROFISSIONAL
+     ===================================================== -->
+
+<!-- Fallback clássico (navegadores antigos) -->
+<link rel="icon"
+      href="/static/favicon/favicon.ico"
+      sizes="any">
+
+<!-- Favicon moderno (SVG — alta qualidade em qualquer escala) -->
+<link rel="icon"
+      href="/static/favicon/favicon.svg"
+      type="image/svg+xml">
+
+<!-- PNGs otimizados (fallback e compatibilidade ampla) -->
+<link rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon/favicon-32.png">
+
+<link rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon/favicon-16.png">
+
+<!-- iOS / iPadOS (Adicionar à Tela Inicial) -->
+<link rel="apple-touch-icon"
+      href="/static/favicon/apple-touch-icon.png">
+
+<!-- PWA / Android -->
+<link rel="manifest"
+      href="/static/favicon/manifest.json">
+
+<!-- Cor do tema (barra do navegador mobile) -->
+<meta name="theme-color" content="#0a0f1c">
+
+  <title>{{ t.page_title }}</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{{ t.page_description }}">
+
+  <style>
+    :root {
+      --bg-main: #0a0f1c;
+      --bg-card: #121a2f;
+      --accent-blue: #00b4ff;
+      --accent-green: #00ff9c;
+      --text-main: #e6e9ef;
+      --text-muted: #9aa4b2;
+      --border-soft: rgba(255,255,255,0.12);
+      --focus-ring: rgba(0,180,255,0.6);
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #10162a, var(--bg-main));
+      color: var(--text-main);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-soft);
+      background: linear-gradient(180deg, #0c1326, #090d18);
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.3rem;
+      color: var(--accent-blue);
+    }
+
+    .project-title {
+      margin-top: 0.5rem;
+      font-size: 1.1rem;
+      color: var(--accent-green);
+    }
+
+    .security-status {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    main {
+      max-width: 420px;
+      margin: 2.2rem auto;
+      padding: 0 1rem;
+    }
+
+    section {
+      background: linear-gradient(180deg, #121a2f, #0e1528);
+      border-radius: 12px;
+      padding: 1.6rem;
+      border: 1px solid var(--border-soft);
+    }
+
+    section h2 {
+      margin-top: 0;
+      margin-bottom: 1.2rem;
+      text-align: center;
+      color: var(--accent-blue);
+      font-size: 1.4rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    label {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    input {
+      padding: 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: #0a1020;
+      color: var(--text-main);
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 0.8rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+      color: #001018;
+      font-weight: 600;
+    }
+
+    .login-link {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .login-link a {
+      color: var(--accent-blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    footer {
+      margin: 2.4rem 0 1.2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">
+    <h1>CareerDev AI</h1>
+  </div>
+  <p class="project-title">{{ t.project_phrase }}</p>
+  <div class="security-status">🔒 {{ t.security_status }}</div>
+</header>
+
+<main>
+  <section aria-labelledby="register-title">
+    <h2 id="register-title">{{ t.register_title }}</h2>
+
+    <form method="post" action="/register">
+      <input type="hidden" name="lang" value="{{ lang }}">
+
+      <label for="name">{{ t.name_label }}</label>
+      <input id="name" name="name" type="text" required>
+
+      <label for="email">{{ t.email_label }}</label>
+      <input id="email" name="email" type="email" required>
+
+      <label for="password">{{ t.password_register_label }}</label>
+      <input id="password" name="password" type="password" minlength="8" required>
+
+      <button type="submit">{{ t.register_button }}</button>
+    </form>
+
+    <div class="login-link">
+      <p>{{ t.have_account_text }}</p>
+      <a href="/?lang={{ lang }}">{{ t.login_link_text }}</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  {{ t.footer_text }}
+</footer>
+
+</body>
+</html>
+
