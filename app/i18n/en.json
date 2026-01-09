@@ -43,6 +43,21 @@
 
   "error_user_not_found": "User not found",
   "error_invalid_password": "Invalid password",
-  "error_email_exists": "Email already registered"
-}
+  "error_email_exists": "Email already registered",
 
+  "dash_security_active": "Active Security",
+  "dash_security_detail": "Encrypted Session • Real-time Monitoring",
+  "dash_manage_security": "Manage Security",
+  "dash_welcome": "Welcome",
+  "dash_level": "Level",
+  "dash_area": "Area",
+  "dash_skills": "Top Skills",
+  "dash_trends_title": "🔮 Career Trends (Real AI)",
+  "dash_trend_rust_desc": "Memory safety and high performance. Ideal for critical systems.",
+  "dash_trend_rust_growth": "Growth: High 🔥",
+  "dash_trend_go_desc": "Scalability for cloud and microservices.",
+  "dash_trend_go_demand": "Demand: Very High 🚀",
+  "dash_trend_ethics_desc": "Responsible development and explainability (XAI).",
+  "dash_trend_ethics_strat": "Strategic Trend 👁️",
+  "dash_plan_title": "🛠️ Personalized Study Plan"
+}

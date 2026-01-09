@@ -43,6 +43,21 @@
 
   "error_user_not_found": "Usuario no encontrado",
   "error_invalid_password": "Contraseña incorrecta",
-  "error_email_exists": "El correo electrónico ya está registrado"
-}
+  "error_email_exists": "El correo electrónico ya está registrado",
 
+  "dash_security_active": "Seguridad Activa",
+  "dash_security_detail": "Sesión Cifrada • Monitoreo en Tiempo Real",
+  "dash_manage_security": "Gestionar Seguridad",
+  "dash_welcome": "Bienvenido",
+  "dash_level": "Nivel",
+  "dash_area": "Área",
+  "dash_skills": "Habilidades Principales",
+  "dash_trends_title": "🔮 Tendencias de Carrera (IA Real)",
+  "dash_trend_rust_desc": "Seguridad de memoria y alto rendimiento. Ideal para sistemas críticos.",
+  "dash_trend_rust_growth": "Crecimiento: Alto 🔥",
+  "dash_trend_go_desc": "Escalabilidad para nube y microservicios.",
+  "dash_trend_go_demand": "Demanda: Muy Alta 🚀",
+  "dash_trend_ethics_desc": "Desarrollo responsable y explicabilidad (XAI).",
+  "dash_trend_ethics_strat": "Tendencia Estratégica 👁️",
+  "dash_plan_title": "🛠️ Plan de Estudio Personalizado"
+}

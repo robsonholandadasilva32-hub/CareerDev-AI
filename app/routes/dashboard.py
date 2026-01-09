@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
+from app.i18n.loader import get_texts
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -28,7 +29,14 @@ def dashboard(request: Request):
     profile = career_engine.analyze_profile(user_id)
     plan = career_engine.generate_plan(user_id)
 
-    # 4️⃣ Renderiza o dashboard com dados seguros do token
+    # 4️⃣ Load Language
+    lang = request.query_params.get("lang")
+    if not lang:
+        lang = request.session.get("lang", "pt")
+
+    t = get_texts(lang)
+
+    # 5️⃣ Renderiza o dashboard com dados seguros do token
     return templates.TemplateResponse(
         "dashboard.html",
         {
@@ -36,7 +44,9 @@ def dashboard(request: Request):
             "user_id": user_id,
             "email": payload.get("email"),
             "profile": profile,
-            "plan": plan
+            "plan": plan,
+            "t": t,
+            "lang": lang
         }
     )
 
