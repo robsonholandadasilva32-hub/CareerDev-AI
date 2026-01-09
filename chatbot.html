@@ -1,0 +1,15 @@
+<aside id="chatbot" aria-label="{{ t.chatbot_title }}">
+  <p id="chatbot-message">{{ t.chatbot_welcome }}</p>
+
+  <input
+    id="chatbot-input"
+    aria-label="{{ t.chatbot_input_aria }}"
+    placeholder="{{ t.chatbot_placeholder }}"
+  >
+
+  <button onclick="chatSend()">{{ t.chatbot_send_button }}</button>
+  <button onclick="chatVoice()">{{ t.chatbot_voice_button }}</button>
+</aside>
+
+<script src="/static/js/chatbot.js"></script>
+

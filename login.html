@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  
+<!-- =====================================================
+     FAVICON & APP ICONS — CONFIGURAÇÃO PROFISSIONAL
+     ===================================================== -->
+
+<!-- Fallback clássico (navegadores antigos) -->
+<link rel="icon"
+      href="/static/favicon/favicon.ico"
+      sizes="any">
+
+<!-- Favicon moderno (SVG — alta qualidade em qualquer escala) -->
+<link rel="icon" href="/static/favicon/favicon.svg" type="image/svg+xml">
+
+<!-- PNGs otimizados (fallback e compatibilidade ampla) -->
+<link rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon/favicon-32.png">
+
+<link rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon/favicon-16.png">
+
+<!-- iOS / iPadOS (Adicionar à Tela Inicial) -->
+<link rel="apple-touch-icon"
+      href="/static/favicon/apple-touch-icon.png">
+
+<!-- PWA / Android -->
+<link rel="manifest"
+      href="/static/favicon/manifest.json">
+
+<!-- Cor do tema (barra do navegador mobile) -->
+<meta name="theme-color" content="#0a0f1c">
+
+
+  <title>{{ t.page_title }}</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{{ t.page_description }}">
+
+  <style>
+    :root {
+      --bg-main: #0a0f1c;
+      --bg-card: #121a2f;
+      --accent-blue: #00b4ff;
+      --accent-green: #00ff9c;
+      --text-main: #e6e9ef;
+      --text-muted: #9aa4b2;
+      --border-soft: rgba(255,255,255,0.12);
+      --focus-ring: rgba(0,180,255,0.6);
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #10162a, var(--bg-main));
+      color: var(--text-main);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      text-align: center;
+      padding: 2rem 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-soft);
+      background: linear-gradient(180deg, #0c1326, #090d18);
+    }
+
+    .logo {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .logo svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.3rem;
+      color: var(--accent-blue);
+    }
+
+    .project-title {
+      margin-top: 0.5rem;
+      font-size: 1.1rem;
+      color: var(--accent-green);
+    }
+
+    .security-status {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .language-selector {
+      margin-top: 1rem;
+    }
+
+    select {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-soft);
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    /* ===== MAIN ===== */
+    main {
+      max-width: 420px;
+      margin: 2.2rem auto;
+      padding: 0 1rem;
+    }
+
+    section {
+      background: linear-gradient(180deg, #121a2f, #0e1528);
+      border-radius: 12px;
+      padding: 1.6rem;
+      border: 1px solid var(--border-soft);
+    }
+
+    section h2 {
+      margin-top: 0;
+      margin-bottom: 1.2rem;
+      text-align: center;
+      color: var(--accent-blue);
+      font-size: 1.4rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    label {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    input {
+      padding: 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: #0a1020;
+      color: var(--text-main);
+      font-size: 1rem;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--focus-ring);
+    }
+
+    button {
+      margin-top: 0.8rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+      color: #001018;
+      font-weight: 600;
+    }
+
+    /* ===== LINK DE CADASTRO ===== */
+    .register-link {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .register-link a {
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .register-link a:hover,
+    .register-link a:focus {
+      text-decoration: underline;
+      outline: none;
+    }
+
+    /* ===== CHATBOT ===== */
+    #chatbot {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 320px;
+      max-width: 95vw;
+      background: linear-gradient(180deg, #121a2f, #0d1426);
+      border-radius: 14px;
+      border: 1px solid var(--border-soft);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      padding: 1rem;
+      font-size: 0.9rem;
+      z-index: 9999;
+    }
+
+    #chatbot h3 {
+      margin: 0 0 0.6rem 0;
+      color: var(--accent-green);
+    }
+
+    #chatbot-message {
+      margin-bottom: 0.6rem;
+      min-height: 2.5em;
+    }
+
+#chatbot-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: #080d1a;
+  color: var(--text-main);
+}
+
+    .chatbot-buttons {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.6rem;
+    }
+
+    .chatbot-buttons button {
+      flex: 1;
+      font-size: 0.8rem;
+      padding: 0.45rem;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      margin: 2.4rem 0 1.2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="44" stroke="#00b4ff" stroke-width="4" fill="none"/>
+        <path d="M30 50h40M50 30v40" stroke="#00ff9c" stroke-width="4"/>
+      </svg>
+      <h1>CareerDev AI</h1>
+    </div>
+
+    <p class="project-title">{{ t.project_phrase }}</p>
+    <div class="security-status">🔒 {{ t.security_status }}</div>
+
+    <form method="get" action="/" class="language-selector">
+      <label for="lang">{{ t.language_label }}</label>
+      <select id="lang" name="lang" onchange="this.form.submit()">
+        <option value="pt" {% if lang == "pt" %}selected{% endif %}>PT</option>
+        <option value="en" {% if lang == "en" %}selected{% endif %}>EN</option>
+        <option value="es" {% if lang == "es" %}selected{% endif %}>ES</option>
+      </select>
+    </form>
+  </header>
+
+  <!-- ===== MAIN / LOGIN ===== -->
+  <main>
+    <section aria-labelledby="login-title">
+      <h2 id="login-title">{{ t.login_title }}</h2>
+
+      <form method="post" action="/login">
+        <input type="hidden" name="lang" value="{{ lang }}">
+
+        <label for="email">{{ t.email_label }}</label>
+        <input id="email" name="email" type="email" required>
+
+        <label for="password">{{ t.password_label }}</label>
+        <input id="password" name="password" type="password" required>
+
+        <button type="submit">{{ t.login_button }}</button>
+      </form>
+
+      <!-- LINK DE CADASTRO -->
+      <div class="register-link">
+        <p>{{ t.no_account_text }}</p>
+        <a href="/register?lang={{ lang }}">{{ t.register_link_text }}</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== CHATBOT ===== -->
+  <aside id="chatbot" aria-label="{{ t.chatbot_title }}">
+    <h3>{{ t.chatbot_title }}</h3>
+    <p id="chatbot-message">{{ t.chatbot_welcome }}</p>
+
+    <input
+      id="chatbot-input"
+      type="text"
+      placeholder="{{ t.chatbot_placeholder }}"
+      aria-label="{{ t.chatbot_input_aria }}"
+    >
+
+    <div class="chatbot-buttons">
+      <button onclick="chatHelp()">{{ t.chatbot_help_button }}</button>
+      <button onclick="chatRepeat()">{{ t.chatbot_repeat_button }}</button>
+      <button onclick="chatSend()">{{ t.chatbot_send_button }}</button>
+      <button onclick="chatVoice()" aria-label="{{ t.chatbot_voice_aria }}">
+        {{ t.chatbot_voice_button }}
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    {{ t.footer_text }}
+  </footer>
+
+  <!-- ===== SCRIPT ===== -->
+  <script>
+    const msg = document.getElementById("chatbot-message");
+    const input = document.getElementById("chatbot-input");
+
+    function speak(text) {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = document.documentElement.lang;
+      speechSynthesis.speak(u);
+    }
+
+    const chatbotWelcome = {{ t.chatbot_welcome | tojson }};
+
+  function chatHelp() {
+    msg.textContent = chatbotWelcome;
+    speak(chatbotWelcome);
+    }
+
+    function chatRepeat() {
+      speak(msg.textContent);
+    }
+
+    function chatSend() {
+      if (!input.value) return;
+      msg.textContent = input.value;
+      speak(input.value);
+      input.value = "";
+    }
+
+    function chatVoice() {
+      if (!("webkitSpeechRecognition" in window)) return;
+      const rec = new webkitSpeechRecognition();
+      rec.lang = document.documentElement.lang;
+      rec.onresult = e => {
+        const text = e.results[0][0].transcript;
+        msg.textContent = text;
+        speak(text);
+      };
+      rec.start();
+    }
+  </script>
+
+</body>
+</html>
+

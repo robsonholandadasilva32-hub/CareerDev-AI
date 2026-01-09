@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <title>Verificação de Segurança</title>
+</head>
+<body>
+
+<main aria-live="polite">
+
+  <h1>Verificação de Segurança</h1>
+
+  <p>
+    Este é um passo extra para proteger sua conta.
+    Ele só aparece porque você escolheu ativar o 2FA.
+  </p>
+
+  <p>
+    Digite abaixo o código temporário enviado para você.
+  </p>
+
+  <form method="post" action="/verify-2fa">
+    <label for="code">
+      Código de verificação
+    </label>
+    <input
+      id="code"
+      name="code"
+      type="text"
+      inputmode="numeric"
+      aria-describedby="help"
+      required
+    >
+
+    <p id="help">
+      O código expira em poucos minutos.
+    </p>
+
+    <button type="submit">
+      Verificar
+    </button>
+  </form>
+
+  <section>
+    <p>
+      Assistente:
+      Se precisar de ajuda, diga “ajuda” ou “repetir”.
+    </p>
+  </section>
+
+</main>
+
+</body>
+</html>
+
