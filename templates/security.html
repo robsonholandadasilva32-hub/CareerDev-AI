@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <title>Segurança da Conta</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<main>
+
+{% if no_user %}
+    <section aria-live="polite">
+        <h1>Segurança da Conta</h1>
+        <p>
+            Nenhum usuário ativo foi identificado.
+            Faça login para gerenciar suas configurações de segurança.
+        </p>
+    </section>
+{% else %}
+    <section>
+        <h1>Segurança da Conta</h1>
+        <p>
+            Você controla como deseja se proteger.
+            Nenhuma configuração é obrigatória além da senha.
+        </p>
+
+
+        <form method="post" action="/security/update">
+            <label>
+                <input type="checkbox" name="two_factor"
+                {% if two_factor_enabled %}checked{% endif %}>
+                Ativar autenticação em dois fatores (2FA)
+            </label>
+
+            <fieldset>
+                <legend>Método</legend>
+
+                <label>
+                    <input type="radio" name="method" value="email"
+                    {% if two_factor_method == "email" %}checked{% endif %}>
+                    Código por e-mail
+                </label>
+
+                <label>
+                    <input type="radio" name="method" value="sms"
+                    {% if two_factor_method == "sms" %}checked{% endif %}>
+                    Código por SMS (simulado)
+                </label>
+            </fieldset>
+
+            <button type="submit">Salvar configurações</button>
+        </form>
+    </section>
+{% endif %}
+
+</main>
+
+</body>
+</html>
+

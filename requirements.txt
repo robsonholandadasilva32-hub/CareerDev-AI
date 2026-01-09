@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+fastapi
+uvicorn
+python-jose
+passlib[bcrypt]
+python-multipart
+jinja2
+sqlalchemy
+pydantic
+python-dotenv
+httpx
+itsdangerous
+
