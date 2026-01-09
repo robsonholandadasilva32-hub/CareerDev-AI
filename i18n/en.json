@@ -1,0 +1,48 @@
+{
+  "page_title": "CareerDev AI",
+  "page_description": "Intelligent career management for developers",
+
+  "project_phrase": "The machine does not replace humans. It amplifies their potential.",
+
+  "security_status": "Secure session · Encryption active",
+
+  "language_label": "Language",
+
+  "login_title": "Sign in",
+  "register_title": "Create account",
+
+  "email_label": "Email",
+  "password_label": "Password",
+  "password_register_label": "Password (min. 8 characters)",
+  "name_label": "Name",
+
+  "login_button": "Sign in securely",
+  "register_button": "Register",
+
+  "about_title": "About the application",
+  "about_text": "CareerDev AI helps developers evolve professionally with security, ethics, and responsible artificial intelligence.",
+
+  "quote_turing": "We can only see a short distance ahead, but we can see plenty there that needs to be done. — Alan Turing",
+  "quote_lanier": "Technology is not destiny. We shape our tools, and thereafter our tools shape us. — Jaron Lanier",
+
+  "footer_text": "CareerDev AI · Privacy by design · No data is sold",
+
+  "chatbot_title": "CareerDev AI Assistant",
+  "chatbot_welcome": "Hello! I'm here to help you sign in securely and understand the application.",
+  "chatbot_placeholder": "Type your question or command",
+  "chatbot_input_aria": "Input field to type messages to the assistant",
+
+  "chatbot_help_button": "Help",
+  "chatbot_repeat_button": "Repeat",
+  "chatbot_send_button": "Send",
+  "chatbot_voice_button": "Speak",
+  "chatbot_voice_aria": "Activate voice conversation",
+
+  "no_account_text": "Don't have an account yet?",
+  "register_link_text": "Create your account securely",
+
+  "error_user_not_found": "User not found",
+  "error_invalid_password": "Invalid password",
+  "error_email_exists": "Email already registered"
+}
+

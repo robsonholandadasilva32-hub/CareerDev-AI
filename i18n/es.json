@@ -1,0 +1,48 @@
+{
+  "page_title": "CareerDev AI",
+  "page_description": "Gestión inteligente de carrera para desarrolladores",
+
+  "project_phrase": "La máquina no sustituye al ser humano. Amplía su potencial.",
+
+  "security_status": "Sesión segura · Encriptación activa",
+
+  "language_label": "Idioma",
+
+  "login_title": "Iniciar sesión",
+  "register_title": "Crear cuenta",
+
+  "email_label": "Correo electrónico",
+  "password_label": "Contraseña",
+  "password_register_label": "Contraseña (mín. 8 caracteres)",
+  "name_label": "Nombre",
+
+  "login_button": "Iniciar sesión de forma segura",
+  "register_button": "Registrarse",
+
+  "about_title": "Sobre la aplicación",
+  "about_text": "CareerDev AI ayuda a los desarrolladores a evolucionar profesionalmente con seguridad, ética e inteligencia artificial responsable.",
+
+  "quote_turing": "Solo podemos ver un poco más adelante, pero ya vemos mucho que necesita hacerse. — Alan Turing",
+  "quote_lanier": "La tecnología no es el destino. Damos forma a nuestras herramientas y luego ellas nos dan forma. — Jaron Lanier",
+
+  "footer_text": "CareerDev AI · Privacidad por diseño · No se venden datos",
+
+  "chatbot_title": "CareerDev AI Assistant",
+  "chatbot_welcome": "¡Hola! Estoy aquí para ayudarte a iniciar sesión de forma segura y entender la aplicación.",
+  "chatbot_placeholder": "Escribe tu pregunta o comando",
+  "chatbot_input_aria": "Campo para escribir mensajes al asistente",
+
+  "chatbot_help_button": "Ayuda",
+  "chatbot_repeat_button": "Repetir",
+  "chatbot_send_button": "Enviar",
+  "chatbot_voice_button": "Hablar",
+  "chatbot_voice_aria": "Activar conversación por voz",
+
+  "no_account_text": "¿Aún no tienes una cuenta?",
+  "register_link_text": "Crea tu cuenta de forma segura",
+
+  "error_user_not_found": "Usuario no encontrado",
+  "error_invalid_password": "Contraseña incorrecta",
+  "error_email_exists": "El correo electrónico ya está registrado"
+}
+
