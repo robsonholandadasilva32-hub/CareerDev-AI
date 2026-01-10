@@ -1,11 +1,14 @@
 import random
 import string
 import asyncio
+import os
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.db.models.otp import OTP
 from app.core.config import settings
 from email.message import EmailMessage
+from email.utils import formataddr
+from jinja2 import Template
 import aiosmtplib
 from twilio.rest import Client
 
@@ -63,10 +66,28 @@ async def send_email(code: str, to_email: str):
         return
 
     message = EmailMessage()
-    message["From"] = settings.SMTP_FROM_EMAIL
+    message["From"] = formataddr(("CareerDev AI Security", settings.SMTP_FROM_EMAIL))
     message["To"] = to_email
-    message["Subject"] = "Seu código CareerDev AI"
-    message.set_content(f"Seu código de verificação é: {code}")
+    message["Subject"] = "Seu código de acesso | CareerDev AI"
+
+    # Render HTML Template
+    try:
+        template_path = os.path.join(os.getcwd(), "app/templates/email/otp.html")
+        with open(template_path, "r", encoding="utf-8") as f:
+            template_content = f.read()
+
+        # Simple Jinja2 rendering (or just replace if simple)
+        # Using Jinja2 strictly if we had environment, but simple replace works for single var
+        # To be robust, let's use Jinja2 Template class since we imported it
+        template = Template(template_content)
+        html_content = template.render(code=code)
+
+        message.set_content(f"Seu código é: {code}") # Fallback text
+        message.add_alternative(html_content, subtype='html')
+
+    except Exception as e:
+        print(f"[WARN] Failed to load email template: {e}. Sending plain text.")
+        message.set_content(f"Seu código de verificação é: {code}")
 
     try:
         await aiosmtplib.send(
