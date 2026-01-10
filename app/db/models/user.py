@@ -11,6 +11,8 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
 
+    phone_number = Column(String, nullable=True) # E.164 format ideally
+
     email_verified = Column(Boolean, default=False, nullable=False)
 
     preferred_language = Column(String, default="pt")
