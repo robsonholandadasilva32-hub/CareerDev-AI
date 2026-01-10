@@ -2,180 +2,280 @@
 <html lang="{{ lang }}">
 <head>
   <meta charset="UTF-8">
-  
-<!-- =====================================================
-     FAVICON & APP ICONS — CONFIGURAÇÃO PROFISSIONAL
-     ===================================================== -->
-
-<!-- Fallback clássico (navegadores antigos) -->
-<link rel="icon"
-      href="/static/favicon/favicon.ico"
-      sizes="any">
-
-<!-- Favicon moderno (SVG — alta qualidade em qualquer escala) -->
-<link rel="icon" href="/static/favicon/favicon.svg" type="image/svg+xml">
-
-<!-- PNGs otimizados (fallback e compatibilidade ampla) -->
-<link rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/static/favicon/favicon-32.png">
-
-<link rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/static/favicon/favicon-16.png">
-
-<!-- iOS / iPadOS (Adicionar à Tela Inicial) -->
-<link rel="apple-touch-icon"
-      href="/static/favicon/apple-touch-icon.png">
-
-<!-- PWA / Android -->
-<link rel="manifest"
-      href="/static/favicon/manifest.json">
-
-<!-- Cor do tema (barra do navegador mobile) -->
-<meta name="theme-color" content="#0a0f1c">
-
-
-  <title>{{ t.page_title }}</title>
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="{{ t.page_description }}">
 
+  <title>{{ t.page_title }}</title>
+
+  <!-- =====================================================
+       FAVICON & APP ICONS
+       ===================================================== -->
+  <link rel="icon" href="/static/favicon/favicon.ico" sizes="any">
+  <link rel="icon" href="/static/favicon/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16.png">
+  <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png">
+  <link rel="manifest" href="/static/favicon/manifest.json">
+  <meta name="theme-color" content="#0a0f1c">
+
+  <!-- =====================================================
+       FONTS & STYLES
+       ===================================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
+      /* Base Colors */
       --bg-main: #0a0f1c;
+      --bg-overlay: rgba(10, 15, 28, 0.95);
       --bg-card: #121a2f;
+      --bg-input: #0a1020;
+
+      /* Accents */
       --accent-blue: #00b4ff;
       --accent-green: #00ff9c;
+      --accent-purple: #bd00ff;
+
+      /* Text */
       --text-main: #e6e9ef;
       --text-muted: #9aa4b2;
-      --border-soft: rgba(255,255,255,0.12);
-      --focus-ring: rgba(0,180,255,0.6);
+      --text-highlight: #ffffff;
+
+      /* Borders & Effects */
+      --border-soft: rgba(255, 255, 255, 0.1);
+      --border-glow: rgba(0, 180, 255, 0.3);
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --glow-blue: 0 0 15px rgba(0, 180, 255, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top, #10162a, var(--bg-main));
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-main);
+      background-image:
+        radial-gradient(circle at 15% 50%, rgba(0, 180, 255, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(0, 255, 156, 0.05), transparent 25%);
       color: var(--text-main);
-      font-size: 17px;
-      line-height: 1.6;
+      font-size: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ===== HEADER ===== */
     header {
-      text-align: center;
-      padding: 2rem 1rem 1.5rem;
+      padding: 1.5rem 2rem;
       border-bottom: 1px solid var(--border-soft);
-      background: linear-gradient(180deg, #0c1326, #090d18);
-    }
-
-    .logo {
+      background: rgba(10, 15, 28, 0.8);
+      backdrop-filter: blur(10px);
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      gap: 0.6rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    .logo svg {
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-container {
       width: 40px;
       height: 40px;
+      position: relative;
     }
 
-    header h1 {
+    .brand-text h1 {
       margin: 0;
-      font-size: 2.3rem;
-      color: var(--accent-blue);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .project-title {
-      margin-top: 0.5rem;
-      font-size: 1.1rem;
-      color: var(--accent-green);
-    }
-
-    .security-status {
-      margin-top: 0.6rem;
-      font-size: 0.85rem;
+    .brand-text p {
+      margin: 0;
+      font-size: 0.75rem;
       color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-    .language-selector {
-      margin-top: 1rem;
+    .header-controls {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
     }
 
-    select {
-      background: var(--bg-card);
-      color: var(--text-main);
+    .security-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--accent-green);
+      background: rgba(0, 255, 156, 0.1);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 255, 156, 0.2);
+    }
+
+    /* Fixed Icon Style */
+    .icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .lang-select {
+      background: transparent;
+      color: var(--text-muted);
       border: 1px solid var(--border-soft);
-      padding: 0.4rem 0.6rem;
+      padding: 0.4rem;
       border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
     }
 
     /* ===== MAIN ===== */
     main {
-      max-width: 420px;
-      margin: 2.2rem auto;
-      padding: 0 1rem;
-    }
-
-    section {
-      background: linear-gradient(180deg, #121a2f, #0e1528);
-      border-radius: 12px;
-      padding: 1.6rem;
-      border: 1px solid var(--border-soft);
-    }
-
-    section h2 {
-      margin-top: 0;
-      margin-bottom: 1.2rem;
-      text-align: center;
-      color: var(--accent-blue);
-      font-size: 1.4rem;
-    }
-
-    form {
+      flex: 1;
       display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-header h2 {
+      font-size: 1.8rem;
+      margin: 0 0 0.5rem 0;
+      color: var(--text-highlight);
+    }
+
+    .login-header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+      position: relative;
     }
 
     label {
-      font-size: 0.95rem;
+      display: block;
+      font-size: 0.9rem;
       color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
     }
 
-    input {
-      padding: 0.7rem;
-      border-radius: 8px;
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      padding-right: 3rem; /* Space for eye icon */
+      background: var(--bg-input);
       border: 1px solid var(--border-soft);
-      background: #0a1020;
+      border-radius: 8px;
       color: var(--text-main);
       font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
     }
 
-    input:focus {
+    .input-wrapper input:focus {
       outline: none;
-      box-shadow: 0 0 0 2px var(--focus-ring);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(0, 180, 255, 0.2);
     }
 
-    button {
-      margin-top: 0.8rem;
-      padding: 0.75rem;
-      border-radius: 8px;
+    .toggle-password {
+      position: absolute;
+      right: 1rem;
+      background: none;
       border: none;
-      font-size: 1rem;
+      color: var(--text-muted);
       cursor: pointer;
-      background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-      color: #001018;
-      font-weight: 600;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* ===== LINK DE CADASTRO ===== */
+    .toggle-password:hover {
+      color: var(--text-main);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent-blue), #0090cc);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .login-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 180, 255, 0.3);
+    }
+
     .register-link {
-      margin-top: 1.2rem;
+      margin-top: 1.5rem;
       text-align: center;
       font-size: 0.9rem;
       color: var(--text-muted);
@@ -185,191 +285,149 @@
       color: var(--accent-blue);
       text-decoration: none;
       font-weight: 600;
+      margin-left: 0.4rem;
     }
 
-    .register-link a:hover,
-    .register-link a:focus {
+    .register-link a:hover {
       text-decoration: underline;
-      outline: none;
-    }
-
-    /* ===== CHATBOT ===== */
-    #chatbot {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      width: 320px;
-      max-width: 95vw;
-      background: linear-gradient(180deg, #121a2f, #0d1426);
-      border-radius: 14px;
-      border: 1px solid var(--border-soft);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-      padding: 1rem;
-      font-size: 0.9rem;
-      z-index: 9999;
-    }
-
-    #chatbot h3 {
-      margin: 0 0 0.6rem 0;
-      color: var(--accent-green);
-    }
-
-    #chatbot-message {
-      margin-bottom: 0.6rem;
-      min-height: 2.5em;
-    }
-
-#chatbot-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.55rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-soft);
-  background: #080d1a;
-  color: var(--text-main);
-}
-
-    .chatbot-buttons {
-      display: flex;
-      gap: 0.4rem;
-      margin-top: 0.6rem;
-    }
-
-    .chatbot-buttons button {
-      flex: 1;
-      font-size: 0.8rem;
-      padding: 0.45rem;
     }
 
     /* ===== FOOTER ===== */
     footer {
-      margin: 2.4rem 0 1.2rem;
       text-align: center;
-      font-size: 0.85rem;
+      padding: 2rem;
       color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-soft);
+      background: rgba(10, 15, 28, 0.5);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      .header-controls {
+        gap: 0.8rem;
+      }
+      .security-badge span {
+        display: none;
+      }
+      main {
+        padding: 1rem;
+      }
     }
   </style>
 </head>
-
 <body>
 
-  <!-- ===== HEADER ===== -->
+  <!-- HEADER -->
   <header>
-    <div class="logo">
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="44" stroke="#00b4ff" stroke-width="4" fill="none"/>
-        <path d="M30 50h40M50 30v40" stroke="#00ff9c" stroke-width="4"/>
-      </svg>
-      <h1>CareerDev AI</h1>
+    <div class="brand">
+      <div class="logo-container">
+        <!-- Using inline SVG for immediate render -->
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="44" stroke="#00b4ff" stroke-width="4"/>
+          <path d="M30 50h40M50 30v40" stroke="#00ff9c" stroke-width="4"/>
+          <circle cx="50" cy="50" r="8" fill="#00b4ff" class="pulse"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>CareerDev AI</h1>
+        <p>{{ t.project_phrase }}</p>
+      </div>
     </div>
 
-    <p class="project-title">{{ t.project_phrase }}</p>
-    <div class="security-status">🔒 {{ t.security_status }}</div>
+    <div class="header-controls">
+      <div class="security-badge" title="Security Status: Active">
+        <!-- SVG PADLOCK FIXED -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>{{ t.security_status }}</span>
+      </div>
 
-    <form method="get" action="/" class="language-selector">
-      <label for="lang">{{ t.language_label }}</label>
-      <select id="lang" name="lang" onchange="this.form.submit()">
-        <option value="pt" {% if lang == "pt" %}selected{% endif %}>PT</option>
-        <option value="en" {% if lang == "en" %}selected{% endif %}>EN</option>
-        <option value="es" {% if lang == "es" %}selected{% endif %}>ES</option>
-      </select>
-    </form>
+      <form method="get" action="/">
+        <select name="lang" class="lang-select" onchange="this.form.submit()" aria-label="{{ t.language_label }}">
+          <option value="pt" {% if lang == "pt" %}selected{% endif %}>PT</option>
+          <option value="en" {% if lang == "en" %}selected{% endif %}>EN</option>
+          <option value="es" {% if lang == "es" %}selected{% endif %}>ES</option>
+        </select>
+      </form>
+    </div>
   </header>
 
-  <!-- ===== MAIN / LOGIN ===== -->
+  <!-- LOGIN CONTENT -->
   <main>
-    <section aria-labelledby="login-title">
-      <h2 id="login-title">{{ t.login_title }}</h2>
+    <div class="login-container">
+      <div class="login-header">
+        <h2>{{ t.login_title }}</h2>
+        <p>{{ t.page_description }}</p>
+      </div>
 
       <form method="post" action="/login">
         <input type="hidden" name="lang" value="{{ lang }}">
 
-        <label for="email">{{ t.email_label }}</label>
-        <input id="email" name="email" type="email" required>
+        <div class="form-group">
+          <label for="email">{{ t.email_label }}</label>
+          <div class="input-wrapper">
+            <input id="email" name="email" type="email" required placeholder="name@example.com" autocomplete="email">
+          </div>
+        </div>
 
-        <label for="password">{{ t.password_label }}</label>
-        <input id="password" name="password" type="password" required>
+        <div class="form-group">
+          <label for="password">{{ t.password_label }}</label>
+          <div class="input-wrapper">
+            <input id="password" name="password" type="password" required placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+              <!-- Eye Icon -->
+              <svg id="eye-icon" class="icon" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <!-- Eye Off Icon (Hidden by default) -->
+              <svg id="eye-off-icon" class="icon" viewBox="0 0 24 24" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
 
-        <button type="submit">{{ t.login_button }}</button>
+        <button type="submit" class="login-btn">
+          {{ t.login_button }}
+        </button>
+
+        <div class="register-link">
+          {{ t.no_account_text }}
+          <a href="/register?lang={{ lang }}">{{ t.register_link_text }}</a>
+        </div>
       </form>
-
-      <!-- LINK DE CADASTRO -->
-      <div class="register-link">
-        <p>{{ t.no_account_text }}</p>
-        <a href="/register?lang={{ lang }}">{{ t.register_link_text }}</a>
-      </div>
-    </section>
+    </div>
   </main>
 
-  <!-- ===== CHATBOT ===== -->
-  <aside id="chatbot" aria-label="{{ t.chatbot_title }}">
-    <h3>{{ t.chatbot_title }}</h3>
-    <p id="chatbot-message">{{ t.chatbot_welcome }}</p>
+  <!-- CHATBOT INCLUDE -->
+  {% include 'partials/chatbot.html' %}
 
-    <input
-      id="chatbot-input"
-      type="text"
-      placeholder="{{ t.chatbot_placeholder }}"
-      aria-label="{{ t.chatbot_input_aria }}"
-    >
-
-    <div class="chatbot-buttons">
-      <button onclick="chatHelp()">{{ t.chatbot_help_button }}</button>
-      <button onclick="chatRepeat()">{{ t.chatbot_repeat_button }}</button>
-      <button onclick="chatSend()">{{ t.chatbot_send_button }}</button>
-      <button onclick="chatVoice()" aria-label="{{ t.chatbot_voice_aria }}">
-        {{ t.chatbot_voice_button }}
-      </button>
-    </div>
-  </aside>
-
-  <!-- ===== FOOTER ===== -->
+  <!-- FOOTER -->
   <footer>
-    {{ t.footer_text }}
+    <p>{{ t.footer_text }}</p>
   </footer>
 
-  <!-- ===== SCRIPT ===== -->
   <script>
-    const msg = document.getElementById("chatbot-message");
-    const input = document.getElementById("chatbot-input");
+    function togglePasswordVisibility() {
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.getElementById('eye-icon');
+      const eyeOffIcon = document.getElementById('eye-off-icon');
 
-    function speak(text) {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = document.documentElement.lang;
-      speechSynthesis.speak(u);
-    }
-
-    const chatbotWelcome = {{ t.chatbot_welcome | tojson }};
-
-  function chatHelp() {
-    msg.textContent = chatbotWelcome;
-    speak(chatbotWelcome);
-    }
-
-    function chatRepeat() {
-      speak(msg.textContent);
-    }
-
-    function chatSend() {
-      if (!input.value) return;
-      msg.textContent = input.value;
-      speak(input.value);
-      input.value = "";
-    }
-
-    function chatVoice() {
-      if (!("webkitSpeechRecognition" in window)) return;
-      const rec = new webkitSpeechRecognition();
-      rec.lang = document.documentElement.lang;
-      rec.onresult = e => {
-        const text = e.results[0][0].transcript;
-        msg.textContent = text;
-        speak(text);
-      };
-      rec.start();
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.style.display = 'none';
+        eyeOffIcon.style.display = 'block';
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon.style.display = 'block';
+        eyeOffIcon.style.display = 'none';
+      }
     }
   </script>
-
 </body>
 </html>
-
