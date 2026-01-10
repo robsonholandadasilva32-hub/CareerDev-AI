@@ -111,7 +111,7 @@ def send_sms(code: str, to_number: str):
     try:
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         message = client.messages.create(
-            body=f"CareerDev AI Code: {code}",
+            body=f"CareerDev AI: Seu codigo de seguranca e {code}. Valido por 10 minutos. Nao compartilhe.",
             from_=settings.TWILIO_FROM_NUMBER,
             to=to_number
         )
