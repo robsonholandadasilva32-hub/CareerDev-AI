@@ -26,23 +26,15 @@ def create_otp(db: Session, user_id: int, method: str):
     db.commit()
     db.refresh(otp)
 
-    # Retrieve user phone number if method is sms
-    phone_number = None
-    if method == "sms":
-        from app.db.crud.users import get_user_by_id
-        # Note: Ideally we pass the user object or phone to avoid circular imports or extra queries
-        # For now, we'll fetch it here or refactor.
-        # Simpler: We'll modify create_otp to accept phone/email optionally, or fetch it.
-        # Let's fetch it from DB for reliability.
-        user = db.query(OTP).filter(OTP.id == otp.id).first().user # Navigation property might work if defined
-        # Fallback to direct query
-        from app.db.models.user import User
-        user_obj = db.query(User).filter(User.id == user_id).first()
-        if user_obj:
-            phone_number = user_obj.phone_number
+    # Retrieve user info
+    from app.db.models.user import User
+    user_obj = db.query(User).filter(User.id == user_id).first()
+
+    phone_number = user_obj.phone_number if user_obj else None
+    email = user_obj.email if user_obj else None
 
     # Try to send real notification, fallback to mock if config missing
-    asyncio.create_task(send_notification(method, code, phone_number))
+    asyncio.create_task(send_notification(method, code, phone_number, email))
 
     # Mock Log (Always helpful for dev)
     print(f"========================================")
@@ -52,42 +44,43 @@ def create_otp(db: Session, user_id: int, method: str):
 
     return otp
 
-async def send_notification(method: str, code: str, phone_number: str = None):
+async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
     if method == "email":
-        await send_email(code)
+        await send_email(code, email)
     elif method == "sms":
         if phone_number:
             send_sms(code, phone_number)
         else:
             print("[WARN] No phone number found for user. Cannot send SMS.")
 
-async def send_email(code: str):
+async def send_email(code: str, to_email: str):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         print("[WARN] SMTP not configured. Skipping real email.")
         return
 
+    if not to_email:
+        print("[WARN] No target email provided. Skipping.")
+        return
+
     message = EmailMessage()
     message["From"] = settings.SMTP_FROM_EMAIL
+    message["To"] = to_email
     message["Subject"] = "Seu código CareerDev AI"
-    # Note: In a real app we'd need the user's email here.
-    # For now, we are just implementing the sender logic structure.
-    # To fix this, create_otp needs to accept the user email or fetch it.
+    message.set_content(f"Seu código de verificação é: {code}")
 
-    # Simulating sending to self/admin for demo purposes if we don't pass target email
-    # or print warning
-    print(f"[INFO] Would send email with code {code} via {settings.SMTP_SERVER}")
-
-    # Example actual implementation code (commented out until target email is available)
-    # message["To"] = target_email
-    # message.set_content(f"Seu código de verificação é: {code}")
-    # await aiosmtplib.send(
-    #     message,
-    #     hostname=settings.SMTP_SERVER,
-    #     port=settings.SMTP_PORT,
-    #     username=settings.SMTP_USERNAME,
-    #     password=settings.SMTP_PASSWORD,
-    #     use_tls=True
-    # )
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_SERVER,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME,
+            password=settings.SMTP_PASSWORD,
+            use_tls=False,
+            start_tls=True
+        )
+        print(f"[SUCCESS] Email sent to {to_email}")
+    except Exception as e:
+        print(f"[ERROR] Failed to send email: {e}")
 
 def send_sms(code: str, to_number: str):
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
