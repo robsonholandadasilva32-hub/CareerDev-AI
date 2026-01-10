@@ -395,3 +395,12 @@ INFO:     Application startup complete.
 INFO:     Started server process [22342]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/routes/billing.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22342]
+WARNING:  StatReload detected changes in 'app/routes/billing.py'. Reloading...
+INFO:     Started server process [32004]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
