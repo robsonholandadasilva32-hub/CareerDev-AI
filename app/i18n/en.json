@@ -59,5 +59,17 @@
   "dash_trend_go_demand": "Demand: Very High 🚀",
   "dash_trend_ethics_desc": "Responsible development and explainability (XAI).",
   "dash_trend_ethics_strat": "Strategic Trend 👁️",
-  "dash_plan_title": "🛠️ Personalized Study Plan"
+  "dash_plan_title": "🛠️ Personalized Study Plan",
+
+  "trial_banner": "First month free! Enjoy your trial period.",
+  "trial_register_notice": "Sign up and get 1 month free!",
+
+  "billing_title": "Subscription & Billing",
+  "billing_desc": "To continue evolving your career, activate your subscription.",
+  "billing_benefit_1": "Full Access to Dashboard",
+  "billing_benefit_2": "AI Career Analysis",
+  "billing_benefit_3": "Priority Support",
+  "billing_recurring_label": "Recurring Billing (Subscription)",
+  "billing_pay_button": "Pay $1.00",
+  "month": "month"
 }
