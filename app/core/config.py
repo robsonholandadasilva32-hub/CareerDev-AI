@@ -1,0 +1,33 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    # App
+    APP_NAME: str = "CareerDev AI"
+    SECRET_KEY: str = "super-secret-key-change-in-production"
+
+    # Database
+    DATABASE_URL: str = "sqlite:///./careerdev.db"
+
+    # 2FA / Notifications
+    SMTP_SERVER: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
+
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWILIO_FROM_NUMBER: Optional[str] = None
+
+    # AI
+    OPENAI_API_KEY: Optional[str] = None
+
+    # OAuth
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()

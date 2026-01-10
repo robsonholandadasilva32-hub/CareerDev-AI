@@ -12,3 +12,9 @@ python-dotenv
 httpx
 itsdangerous
 
+aiosmtplib==5.0.0
+httpx==0.28.1
+openai==2.15.0
+psycopg2-binary==2.9.11
+twilio==9.9.1
+pydantic-settings==2.12.0
