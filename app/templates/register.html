@@ -186,6 +186,10 @@
   <section aria-labelledby="register-title">
     <h2 id="register-title">{{ t.register_title }}</h2>
 
+    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #00ff88; border-radius: 5px; text-align: center; color: #00ff88;">
+        <p style="margin: 0; font-weight: bold;">🎉 {{ t.trial_register_notice | default('Cadastre-se e ganhe 1 mês grátis!') }}</p>
+    </div>
+
     <form method="post" action="/register">
       <input type="hidden" name="lang" value="{{ lang }}">
 

@@ -5,6 +5,9 @@ from fastapi.templating import Jinja2Templates
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.i18n.loader import get_texts
+from app.db.session import get_db
+from app.db.models.user import User
+from app.middleware.subscription import check_subscription_status
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -24,8 +27,25 @@ def dashboard(request: Request):
     if not payload:
         return RedirectResponse("/login")
 
-    # 3️⃣ Career Data
     user_id = int(payload.get("sub"))
+
+    # 2.5️⃣ Check Subscription Status
+    # We need to fetch the user object to check created_at and subscription fields
+    # Since we don't have dependency injection for DB here easily without refactoring the whole route signature,
+    # we will do a quick session.
+    from app.db.session import SessionLocal
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            is_allowed = check_subscription_status(user)
+            if not is_allowed:
+                 # Redirect to Billing if trial expired
+                 return RedirectResponse("/billing", status_code=302)
+    finally:
+        db.close()
+
+    # 3️⃣ Career Data
     profile = career_engine.analyze_profile(user_id)
     plan = career_engine.generate_plan(user_id)
 
