@@ -1,0 +1,28 @@
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from datetime import datetime
+from app.db.base import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+
+    phone_number = Column(String, nullable=True) # E.164 format ideally
+
+    email_verified = Column(Boolean, default=False, nullable=False)
+
+    preferred_language = Column(String, default="pt")
+
+    two_factor_enabled = Column(Boolean, default=False, nullable=False)
+    two_factor_method = Column(String, nullable=True) # 'email' or 'sms'
+
+    # Security Lockout
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)

@@ -1,0 +1,63 @@
+{
+  "page_title": "CareerDev AI",
+  "page_description": "Gerenciamento inteligente de carreira para desenvolvedores",
+
+  "project_phrase": "A máquina não substitui o humano. Ela amplia seu potencial.",
+
+  "security_status": "Sessão segura · Criptografia ativa",
+
+  "language_label": "Idioma",
+
+  "login_title": "Entrar",
+  "register_title": "Criar conta",
+
+  "email_label": "E-mail",
+  "password_label": "Senha",
+  "password_register_label": "Senha (mín. 8 caracteres)",
+  "name_label": "Nome",
+
+  "login_button": "Entrar com segurança",
+  "register_button": "Cadastrar",
+
+  "about_title": "Sobre o aplicativo",
+  "about_text": "O CareerDev AI ajuda desenvolvedores a evoluírem profissionalmente com segurança, ética e inteligência artificial responsável.",
+
+  "quote_turing": "Só conseguimos enxergar um pouco à frente, mas já vemos muita coisa que precisa ser feita. — Alan Turing",
+  "quote_lanier": "A tecnologia não é o destino. Nós moldamos nossas ferramentas e, depois disso, nossas ferramentas nos moldam. — Jaron Lanier",
+
+  "footer_text": "CareerDev AI · Privacidade por design · Nenhum dado é vendido",
+
+  "chatbot_title": "CareerDev AI Assistant",
+  "chatbot_welcome": "Olá! Estou aqui para ajudar você a entrar com segurança e entender o aplicativo.",
+  "chatbot_placeholder": "Digite sua dúvida ou comando",
+  "chatbot_input_aria": "Campo para digitar mensagens ao assistente",
+
+  "chatbot_help_button": "Ajuda",
+  "chatbot_repeat_button": "Repetir",
+  "chatbot_send_button": "Enviar",
+  "chatbot_voice_button": "Falar",
+  "chatbot_voice_aria": "Ativar conversa por voz",
+
+  "no_account_text": "Ainda não tem uma conta?",
+  "register_link_text": "Crie sua conta com segurança",
+
+  "error_user_not_found": "Usuário não encontrado",
+  "error_invalid_password": "Senha inválida",
+  "error_email_exists": "E-mail já cadastrado",
+
+  "dash_security_active": "Segurança Ativa",
+  "dash_security_detail": "Sessão Criptografada • Monitoramento em Tempo Real",
+  "dash_manage_security": "Gerenciar Segurança",
+  "dash_welcome": "Bem-vindo",
+  "dash_level": "Nível",
+  "dash_area": "Área",
+  "dash_skills": "Skills Principais",
+  "dash_trends_title": "🔮 Tendências de Carreira (IA Real)",
+  "dash_trend_rust_desc": "Segurança de memória e alta performance. Ideal para sistemas críticos.",
+  "dash_trend_rust_growth": "Crescimento: Alto 🔥",
+  "dash_trend_go_desc": "Escalabilidade para cloud e microsserviços.",
+  "dash_trend_go_demand": "Demanda: Muito Alta 🚀",
+  "dash_trend_ethics_desc": "Desenvolvimento responsável e explicabilidade (XAI).",
+  "dash_trend_ethics_strat": "Tendência Estratégica 👁️",
+  "dash_plan_title": "🛠️ Plano de Estudo Personalizado"
+}
