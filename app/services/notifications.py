@@ -26,8 +26,23 @@ def create_otp(db: Session, user_id: int, method: str):
     db.commit()
     db.refresh(otp)
 
+    # Retrieve user phone number if method is sms
+    phone_number = None
+    if method == "sms":
+        from app.db.crud.users import get_user_by_id
+        # Note: Ideally we pass the user object or phone to avoid circular imports or extra queries
+        # For now, we'll fetch it here or refactor.
+        # Simpler: We'll modify create_otp to accept phone/email optionally, or fetch it.
+        # Let's fetch it from DB for reliability.
+        user = db.query(OTP).filter(OTP.id == otp.id).first().user # Navigation property might work if defined
+        # Fallback to direct query
+        from app.db.models.user import User
+        user_obj = db.query(User).filter(User.id == user_id).first()
+        if user_obj:
+            phone_number = user_obj.phone_number
+
     # Try to send real notification, fallback to mock if config missing
-    asyncio.create_task(send_notification(method, code))
+    asyncio.create_task(send_notification(method, code, phone_number))
 
     # Mock Log (Always helpful for dev)
     print(f"========================================")
@@ -37,11 +52,14 @@ def create_otp(db: Session, user_id: int, method: str):
 
     return otp
 
-async def send_notification(method: str, code: str):
+async def send_notification(method: str, code: str, phone_number: str = None):
     if method == "email":
         await send_email(code)
     elif method == "sms":
-        send_sms(code)
+        if phone_number:
+            send_sms(code, phone_number)
+        else:
+            print("[WARN] No phone number found for user. Cannot send SMS.")
 
 async def send_email(code: str):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
@@ -71,19 +89,19 @@ async def send_email(code: str):
     #     use_tls=True
     # )
 
-def send_sms(code: str):
+def send_sms(code: str, to_number: str):
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
         print("[WARN] Twilio not configured. Skipping real SMS.")
         return
 
     try:
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        # client.messages.create(
-        #     body=f"CareerDev AI Code: {code}",
-        #     from_=settings.TWILIO_FROM_NUMBER,
-        #     to=user_phone_number # Need user phone number
-        # )
-        print(f"[INFO] Twilio Client initialized. Would send SMS: {code}")
+        message = client.messages.create(
+            body=f"CareerDev AI Code: {code}",
+            from_=settings.TWILIO_FROM_NUMBER,
+            to=to_number
+        )
+        print(f"[SUCCESS] SMS sent via Twilio! SID: {message.sid}")
     except Exception as e:
         print(f"[ERROR] Twilio error: {e}")
 

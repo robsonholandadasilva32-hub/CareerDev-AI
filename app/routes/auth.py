@@ -189,6 +189,7 @@ def register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    phone: str = Form(None), # Optional for now
     lang: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
@@ -214,6 +215,13 @@ def register(
         email=email,
         hashed_password=hashed_password
     )
+
+    # Update phone if provided
+    if phone:
+        user.phone_number = phone
+        user.two_factor_enabled = True # Auto-enable 2FA if phone provided for demo
+        user.two_factor_method = "sms"
+        db.commit()
 
     # =================================================
     # 📧 VERIFICAÇÃO DE E-MAIL (PREPARAÇÃO PROFISSIONAL)
