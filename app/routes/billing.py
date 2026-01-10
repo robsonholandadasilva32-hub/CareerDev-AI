@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from app.db.session import get_db
 from app.core.dependencies import get_current_user
 from app.db.models.user import User
+import os
 from app.services.payment import PaymentService
 from app.i18n.loader import i18n
 
@@ -22,11 +23,13 @@ async def view_billing(
     # Load translations
     t = i18n.get_text(current_user.preferred_language)
 
+    stripe_pk = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
+
     return templates.TemplateResponse("billing.html", {
         "request": request,
         "user": current_user,
         "t": t,
-        "stripe_pk": "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # In real app, from env
+        "stripe_pk": stripe_pk
     })
 
 @router.post("/billing/pay")
@@ -70,10 +73,11 @@ async def process_payment(
 
         return RedirectResponse(url="/dashboard?payment_success=true", status_code=status.HTTP_302_FOUND)
     else:
+        stripe_pk = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
         return templates.TemplateResponse("billing.html", {
             "request": request,
             "user": current_user,
             "t": t,
             "error": "Payment failed. Please try again.",
-            "stripe_pk": "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            "stripe_pk": stripe_pk
         })
