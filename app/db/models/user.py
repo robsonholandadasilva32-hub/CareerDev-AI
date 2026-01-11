@@ -26,3 +26,9 @@ class User(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
+
+    # Subscription
+    subscription_status = Column(String, default="free") # 'free', 'active', 'expired'
+    subscription_end_date = Column(DateTime, nullable=True)
+    is_recurring = Column(Boolean, default=False)
+    stripe_customer_id = Column(String, nullable=True)

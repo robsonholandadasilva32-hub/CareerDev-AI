@@ -59,5 +59,17 @@
   "dash_trend_go_demand": "Demanda: Muy Alta 🚀",
   "dash_trend_ethics_desc": "Desarrollo responsable y explicabilidad (XAI).",
   "dash_trend_ethics_strat": "Tendencia Estratégica 👁️",
-  "dash_plan_title": "🛠️ Plan de Estudio Personalizado"
+  "dash_plan_title": "🛠️ Plan de Estudio Personalizado",
+
+  "trial_banner": "¡Primer mes gratis! Disfruta de tu periodo de prueba.",
+  "trial_register_notice": "¡Regístrate y obtén 1 mes gratis! Desbloquea análisis de IA y acelera tu carrera hoy mismo.",
+
+  "billing_title": "Suscripción y Facturación",
+  "billing_desc": "Para continuar evolucionando tu carrera, activa tu suscripción.",
+  "billing_benefit_1": "Acceso total al Dashboard",
+  "billing_benefit_2": "Análisis de Carrera con IA",
+  "billing_benefit_3": "Soporte Prioritario",
+  "billing_recurring_label": "Facturación Recurrente (Suscripción)",
+  "billing_pay_button": "Pagar $1.00",
+  "month": "mes"
 }

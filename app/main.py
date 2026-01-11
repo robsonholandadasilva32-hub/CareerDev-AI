@@ -8,7 +8,7 @@ from pathlib import Path
 
 from app.db.base import Base
 from app.db.session import engine
-from app.routes import auth, dashboard, chatbot, security, email_verification, two_factor, logout, social
+from app.routes import auth, dashboard, chatbot, security, email_verification, two_factor, logout, social, billing
 
 app = FastAPI(title="CareerDev AI")
 
@@ -57,3 +57,4 @@ app.include_router(email_verification.router)
 app.include_router(two_factor.router)
 app.include_router(logout.router)
 app.include_router(social.router)
+app.include_router(billing.router)
