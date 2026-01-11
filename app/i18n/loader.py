@@ -12,3 +12,8 @@ def get_texts(lang: str):
     with open(file, encoding="utf-8") as f:
         return json.load(f)
 
+class I18nLoader:
+    def get_text(self, lang: str):
+        return get_texts(lang)
+
+i18n = I18nLoader()
