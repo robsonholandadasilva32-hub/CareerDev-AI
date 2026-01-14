@@ -45,11 +45,13 @@ class ChatbotService:
                     context_str = f"""
                     **User Context:**
                     - Name: {user.name}
+                    - Premium Status: {user.is_premium}
+                    - 2FA Method: {user.two_factor_method} (Enabled: {user.two_factor_enabled})
                     - Current Skills: {json.dumps(skills)}
                     - Active Learning Plan: {', '.join(active_plans)}
                     - Focus: {target_role}
 
-                    Use this context to give personalized advice. If they ask about their plan, refer to the active items.
+                    Use this context to give personalized advice. If Premium is False and they ask for advanced resume checks, suggest upgrading.
                     """
 
         if self.simulated:
@@ -92,7 +94,7 @@ class ChatbotService:
             lang_instruction = f"Reply in {lang}."
 
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.OPENAI_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt + "\n" + context},
                     {"role": "system", "content": lang_instruction},

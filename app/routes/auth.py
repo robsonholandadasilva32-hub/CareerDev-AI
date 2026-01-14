@@ -11,6 +11,7 @@ from app.db.crud.users import get_user_by_email, create_user
 from app.db.crud.email_verification import create_email_verification
 from app.db.session import get_db
 from app.services.notifications import create_otp
+from app.core.limiter import limiter
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -45,6 +46,7 @@ def login_page(request: Request):
 # LOGIN (POST)
 # =====================================================
 @router.post("/login", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 async def login(
     request: Request,
     email: str = Form(...),
@@ -173,13 +175,14 @@ def register_page(request: Request):
 # REGISTER (POST)
 # =====================================================
 @router.post("/register", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 def register(
     request: Request,
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
     phone: str = Form(None),
-    two_factor_pref: str = Form("email"), # 'email' or 'sms'
+    two_factor_pref: str = Form("email"), # 'email' or 'telegram'
     lang: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
@@ -196,15 +199,15 @@ def register(
             }
         )
 
-    # Validate SMS Requirement
-    if two_factor_pref == "sms" and not phone:
+    # Validate Telegram Requirement
+    if two_factor_pref == "telegram" and not phone:
         return templates.TemplateResponse(
             "register.html",
             {
                 "request": request,
                 "lang": lang,
                 "t": t,
-                "error": "Phone number is required for SMS authentication."
+                "error": "Telegram Chat ID is required for Telegram authentication."
             }
         )
 

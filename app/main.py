@@ -8,13 +8,26 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.core.limiter import limiter
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
 
 # 1. Carregar .env e Configurar Logs
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry (if DSN provided)
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
 
 # 2. CAMINHO ABSOLUTO (Correção importante para o PythonAnywhere)
 BASE_DIR = Path(__file__).resolve().parent
@@ -25,6 +38,7 @@ from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.core.config import settings
 from app.services.gamification import init_badges
+from app.services.worker import job_worker
 
 # Importando suas rotas
 from app.routes import (
@@ -48,15 +62,21 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
 
+        # Start Background Worker
+        job_worker.start()
+
     except Exception as e:
         logger.error(f"ERRO CRITICO NO BANCO: {e}")
         # Não queremos que o app inicie se o banco falhar
         raise e
     yield
     logger.info("Desligando...")
+    job_worker.stop()
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5.5 Exception Handlers
 templates = Jinja2Templates(directory="app/templates")
@@ -70,6 +90,7 @@ async def custom_500_handler(request: Request, exc):
     return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
 
 # 6. Middlewares
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
@@ -111,4 +132,4 @@ app.include_router(logout.router)
 app.include_router(social.router)
 app.include_router(billing.router)
 app.include_router(career.router, prefix="/career")
-app.include_router(legal.router)
+app.include_router(legal.router, prefix="/legal")

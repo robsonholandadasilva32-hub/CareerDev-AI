@@ -86,5 +86,28 @@
   "int_linkedin_title": "Real-Time Market Alignment",
   "int_linkedin_text": "Connect LinkedIn to monitor job trends and receive strategic networking suggestions, focusing on valuable niches like Ethical AI and Edge Computing.",
 
-  "int_impact_text": "Transform your experience into authority. CareerDev AI fills the gap between what you know and what the market needs."
+  "int_impact_text": "Transform your experience into authority. CareerDev AI fills the gap between what you know and what the market needs.",
+
+  "a11y_title": "Inclusion in Source Code",
+  "a11y_subtitle": "Adaptive technology for all profiles. Enable in the control panel.",
+  "a11y_card_cognitive_title": "Cognitive Focus",
+  "a11y_card_cognitive_text": "Dyslexia-friendly fonts and visual noise reduction modes.",
+  "a11y_card_vision_title": "Adaptive Vision",
+  "a11y_card_vision_text": "High contrast and intelligent color blindness filters.",
+  "a11y_card_hearing_title": "Visual Signaling",
+  "a11y_card_hearing_text": "Graphic alerts and simplified AI communication.",
+  "a11y_card_motor_title": "Expanded Control",
+  "a11y_card_motor_text": "Enlarged click areas and voice navigation (Beta).",
+  "a11y_spotlight_title": "Did you know? CareerDev AI adapts to you.",
+  "a11y_spotlight_text": "Dyslexia, Color Blindness, Focus, and more. Customize your experience in the Universal Panel.",
+  "a11y_spotlight_btn": "Configure Accessibility",
+
+  "security_promise_title": "Security & Privacy Promise",
+  "security_promise_subtitle": "Your trust is the foundation of our architecture. Non-negotiable guarantees:",
+  "sec_card_selling_title": "Zero Data Selling",
+  "sec_card_selling_text": "You are not the product. We never sell your information to third parties.",
+  "sec_card_encrypt_title": "Military-Grade Encryption",
+  "sec_card_encrypt_text": "Data protected at rest and in transit. Bank-level security for your career.",
+  "sec_card_ai_title": "Private AI",
+  "sec_card_ai_text": "Your data does not train public AI. Your interactions are isolated and confidential."
 }

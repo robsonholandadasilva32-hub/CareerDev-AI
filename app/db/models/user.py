@@ -33,6 +33,7 @@ class User(Base):
     subscription_end_date = Column(DateTime, nullable=True)
     is_recurring = Column(Boolean, default=False)
     stripe_customer_id = Column(String, nullable=True)
+    is_premium = Column(Boolean, default=False)
 
     # Social Auth
     github_id = Column(String, nullable=True, unique=True)
