@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 40px; color: #cbd5e1;">
+    <h1 style="color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 20px;">Política de Privacidade</h1>
+
+    <p>Sua privacidade é nossa prioridade. Esta política explica como tratamos seus dados (LGPD/GDPR).</p>
+
+    <h3>1. Dados Coletados</h3>
+    <ul>
+        <li><strong>Identificação:</strong> Nome, E-mail, Telefone (para 2FA).</li>
+        <li><strong>Profissional:</strong> Perfil do LinkedIn, GitHub, Skills e Planos de Carreira.</li>
+        <li><strong>Técnico:</strong> Logs de acesso, preferências de acessibilidade.</li>
+    </ul>
+
+    <h3>2. Finalidade</h3>
+    <p>Usamos seus dados para:</p>
+    <ul>
+        <li>Fornecer planos de estudo personalizados via IA.</li>
+        <li>Garantir a segurança da sua conta (Autenticação de Dois Fatores).</li>
+        <li>Processar pagamentos (via Stripe).</li>
+    </ul>
+
+    <h3>3. Compartilhamento</h3>
+    <p>Não vendemos seus dados. Compartilhamos apenas com processadores essenciais (OpenAI para o Chatbot, Stripe para pagamentos) sob estritos acordos de confidencialidade.</p>
+
+    <h3>4. Seus Direitos</h3>
+    <p>Você pode solicitar a exclusão de sua conta a qualquer momento através do painel de Segurança ("Deletar Conta").</p>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" class="btn">Voltar para o Início</a>
+    </div>
+</div>
+{% endblock %}

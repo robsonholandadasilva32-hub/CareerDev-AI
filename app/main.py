@@ -1,9 +1,10 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -28,7 +29,7 @@ from app.services.gamification import init_badges
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    email_verification, two_factor, logout, social, billing, career
+    email_verification, two_factor, logout, social, billing, career, legal
 )
 
 # 4. Lifespan (Conexão com Banco)
@@ -56,6 +57,17 @@ async def lifespan(app: FastAPI):
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
+
+# 5.5 Exception Handlers
+templates = Jinja2Templates(directory="app/templates")
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc):
+    return templates.TemplateResponse("404.html", {"request": request, "t": {}, "lang": "pt"}, status_code=404)
+
+@app.exception_handler(500)
+async def custom_500_handler(request: Request, exc):
+    return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
 
 # 6. Middlewares
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
@@ -99,3 +111,4 @@ app.include_router(logout.router)
 app.include_router(social.router)
 app.include_router(billing.router)
 app.include_router(career.router, prefix="/career")
+app.include_router(legal.router)
