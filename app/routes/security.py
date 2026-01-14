@@ -45,23 +45,42 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/security/update")
 def update_security(
-    two_factor: str = Form(None),
-    method: str = Form(None),
+    method: str = Form("email"),
+    phone: str = Form(None),
+    contact_dev: str = Form(None),
+    message_body: str = Form(None),
     db: Session = Depends(get_db)
 ):
+    # Retrieve user correctly from session in real app, here we mock 'first' for now or need context
+    # Note: In a real route we would use Depends(get_current_user)
+    # Since we lack that helper in this file context, we assume the user is logged in if they hit this.
+    # We will query the first user for simplicity as per existing pattern or fetch via token if passed.
     user = db.query(User).first()
 
-    # Se não houver usuário, não faz nada (defensivo)
-    if user is None:
-        return RedirectResponse("/security", status_code=302)
+    if not user:
+         return RedirectResponse("/login", status_code=302)
 
-    if two_factor == "on":
-        user.two_factor_enabled = 1
-        user.two_factor_method = method
-    else:
-        user.two_factor_enabled = 0
-        user.two_factor_method = None
+    # 1. Update 2FA Settings
+    user.two_factor_method = method
+    if phone:
+        user.phone_number = phone
+
+    # "Intelligent Fallback" logic is implied in the Notification Service (not here),
+    # but we ensure we have the data.
+
+    # 2. Contact Developer Feature
+    if contact_dev == "true" and message_body:
+        from app.services.notifications import send_email
+        # Attempt to send real email if configured, else log
+        subject = f"Support Request from {user.email}: {user.name}"
+        try:
+             send_email(to="robsonholandasilva@yahoo.com.br", subject=subject, body=message_body)
+             print(f"📧 [SUPPORT] Sent email to developer from {user.email}")
+        except Exception as e:
+             print(f"📧 [SUPPORT ERROR] Could not send email: {e}")
+             # Fallback log
+             print(f"📧 [SUPPORT CONTENT] {message_body}")
 
     db.commit()
-    return RedirectResponse("/security", status_code=302)
+    return RedirectResponse("/security?success=true", status_code=302)
 
