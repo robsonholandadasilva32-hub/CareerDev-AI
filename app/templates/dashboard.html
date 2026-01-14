@@ -15,6 +15,52 @@
         </div>
     </div>
 
+    <!-- QUICK ACTIONS -->
+    <div class="card actions" style="margin-top: 20px;">
+        <h3>⚡ Ações Rápidas</h3>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+            <a href="/security" class="btn-action">
+                <span>🔄</span> Atualizar senha
+            </a>
+            <a href="/security" class="btn-action">
+                <span>🔐</span> Gerenciar segurança da conta
+            </a>
+            <a href="#" class="btn-action">
+                <span>📈</span> Ver progresso detalhado
+            </a>
+            <a href="/logout" class="btn-action danger">
+                <span>🚪</span> Sair com segurança
+            </a>
+        </div>
+    </div>
+
+    <style>
+        .btn-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn-action:hover {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        .btn-action.danger:hover {
+            background: rgba(255, 0, 85, 0.1);
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+    </style>
+
     <!-- USER IDENTITY -->
     <div class="card user-identity" style="margin-top: 20px;">
         <h2>{{ t.dash_welcome }}, {{ email }}</h2>
