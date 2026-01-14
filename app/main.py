@@ -55,7 +55,8 @@ app.add_middleware(
     secret_key=settings.SESSION_SECRET_KEY,
     session_cookie="careerdev_session",
     same_site="lax",
-    https_only=False
+    https_only=False, # Set to True in production with env var check
+    max_age=1800 # 30 minutes session invalidation
 )
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)

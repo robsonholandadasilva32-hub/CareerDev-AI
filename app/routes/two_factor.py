@@ -50,7 +50,7 @@ def verify_2fa(
             "sub": str(user_id),
             "email": email,
             "2fa": True
-        })
+        }, expires_minutes=30) # Short session validity
 
         response = RedirectResponse("/dashboard", status_code=302)
         response.delete_cookie("temp_token")
@@ -58,7 +58,7 @@ def verify_2fa(
             key="access_token",
             value=token,
             httponly=True,
-            secure=False,
+            secure=request.url.scheme == "https", # Auto-detect HTTPS
             samesite="lax"
         )
         return response
