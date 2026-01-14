@@ -45,7 +45,7 @@ def login_page(request: Request):
 # LOGIN (POST)
 # =====================================================
 @router.post("/login", response_class=HTMLResponse)
-def login(
+async def login(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),

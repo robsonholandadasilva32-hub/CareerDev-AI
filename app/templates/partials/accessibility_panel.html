@@ -1,0 +1,129 @@
+<!-- Accessibility & Inclusion Panel -->
+<div class="setting-group" style="border-bottom: 1px solid var(--accent-color); padding-bottom: 20px; margin-bottom: 20px;">
+    <h3>🧠 Acessibilidade Cognitiva & Inclusão</h3>
+    <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 15px;">Ferramentas para adaptar a interface às suas necessidades.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+
+        <!-- Dyslexia Font -->
+        <div class="a11y-toggle">
+            <label class="switch-label">
+                <span>Fonte Amigável (Dislexia)</span>
+                <input type="checkbox" id="a11y-font" onchange="toggleA11y('dyslexic-font')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- High Contrast -->
+        <div class="a11y-toggle">
+            <label class="switch-label">
+                <span>Alto Contraste</span>
+                <input type="checkbox" id="a11y-contrast" onchange="toggleA11y('high-contrast')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Stop Animations -->
+        <div class="a11y-toggle">
+            <label class="switch-label">
+                <span>Parar Animações</span>
+                <input type="checkbox" id="a11y-motion" onchange="toggleA11y('reduced-motion')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Reading Guide -->
+        <div class="a11y-toggle">
+            <label class="switch-label">
+                <span>Guia de Leitura</span>
+                <input type="checkbox" id="a11y-guide" onchange="toggleReadingGuide()">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Font Size -->
+    <div style="margin-top: 15px;">
+        <label for="font-size-range" style="display: block; margin-bottom: 5px;">Tamanho do Texto</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <small>A</small>
+            <input type="range" id="font-size-range" min="100" max="150" step="10" value="100" oninput="updateFontSize(this.value)" style="flex: 1;">
+            <big>A</big>
+        </div>
+    </div>
+</div>
+
+<!-- Reading Guide Element -->
+<div id="reading-guide-bar" style="display: none; position: fixed; height: 30px; width: 100%; background: rgba(255, 255, 0, 0.2); pointer-events: none; z-index: 9999; border-top: 2px solid yellow; border-bottom: 2px solid yellow; top: 0; left: 0;"></div>
+
+<style>
+    .switch-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .switch-label input { display: none; }
+    .slider {
+        width: 40px; height: 20px; background: #374151; border-radius: 20px; position: relative; transition: 0.3s;
+    }
+    .slider::before {
+        content: ""; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s;
+    }
+    input:checked + .slider { background: var(--primary-color); }
+    input:checked + .slider::before { transform: translateX(20px); }
+</style>
+
+<script>
+    // Load Preferences
+    document.addEventListener("DOMContentLoaded", () => {
+        if (localStorage.getItem('dyslexic-font') === 'true') {
+            document.documentElement.classList.add('dyslexic-font');
+            document.getElementById('a11y-font').checked = true;
+        }
+        if (localStorage.getItem('high-contrast') === 'true') {
+            document.documentElement.classList.add('high-contrast');
+            document.getElementById('a11y-contrast').checked = true;
+        }
+        if (localStorage.getItem('reduced-motion') === 'true') {
+            document.documentElement.classList.add('reduced-motion');
+            document.getElementById('a11y-motion').checked = true;
+        }
+
+        const savedSize = localStorage.getItem('font-size') || 100;
+        document.documentElement.style.fontSize = savedSize + '%';
+        document.getElementById('font-size-range').value = savedSize;
+    });
+
+    function toggleA11y(className) {
+        document.documentElement.classList.toggle(className);
+        localStorage.setItem(className, document.documentElement.classList.contains(className));
+    }
+
+    function updateFontSize(val) {
+        document.documentElement.style.fontSize = val + '%';
+        localStorage.setItem('font-size', val);
+    }
+
+    // Reading Guide Logic
+    let guideActive = false;
+    function toggleReadingGuide() {
+        guideActive = !guideActive;
+        const bar = document.getElementById('reading-guide-bar');
+        bar.style.display = guideActive ? 'block' : 'none';
+
+        if (guideActive) {
+            document.addEventListener('mousemove', moveGuide);
+        } else {
+            document.removeEventListener('mousemove', moveGuide);
+        }
+    }
+
+    function moveGuide(e) {
+        const bar = document.getElementById('reading-guide-bar');
+        bar.style.top = (e.clientY - 15) + 'px';
+    }
+</script>

@@ -10,6 +10,9 @@
     </div>
     {% endif %}
 
+    <!-- INCLUDE ACCESSIBILITY PANEL -->
+    {% include 'partials/accessibility_panel.html' %}
+
     <form method="post" action="/security/update" style="display: flex; flex-direction: column; gap: 20px;">
 
         <!-- 2FA Method -->
@@ -32,7 +35,7 @@
         <!-- Phone Update -->
         <div class="setting-group">
             <label for="phone">Número de Celular (Para SMS)</label>
-            <input type="tel" name="phone" id="phone" placeholder="+55 11 99999-9999" style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;" value="{{ user_phone }}">
+            <input type="tel" name="phone" id="phone" placeholder="+55 11 99999-9999" style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;" value="{{ user_phone or '' }}">
         </div>
 
         <!-- Password Change -->
