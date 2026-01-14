@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from jinja2 import Template
 import aiosmtplib
-from twilio.rest import Client
+from telegram import Bot
 
 def generate_otp_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
@@ -18,6 +18,9 @@ def generate_otp_code(length=6):
 def create_otp(db: Session, user_id: int, method: str):
     code = generate_otp_code()
     expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    # Force method normalization just in case
+    if method == "sms": method = "telegram"
 
     otp = OTP(
         user_id=user_id,
@@ -33,7 +36,7 @@ def create_otp(db: Session, user_id: int, method: str):
     from app.db.models.user import User
     user_obj = db.query(User).filter(User.id == user_id).first()
 
-    phone_number = user_obj.phone_number if user_obj else None
+    phone_number = user_obj.phone_number if user_obj else None # Used as Chat ID
     email = user_obj.email if user_obj else None
 
     # Try to send real notification, fallback to mock if config missing
@@ -50,11 +53,11 @@ def create_otp(db: Session, user_id: int, method: str):
 async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
     if method == "email":
         await send_email(code, email)
-    elif method == "sms":
+    elif method == "telegram" or method == "sms": # Handle 'sms' legacy as telegram
         if phone_number:
-            send_sms(code, phone_number)
+            await send_telegram(code, phone_number)
         else:
-            print("[WARN] No phone number found for user. Cannot send SMS.")
+            print("[WARN] No Telegram Chat ID found for user.")
 
 async def send_email(code: str, to_email: str):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
@@ -70,19 +73,15 @@ async def send_email(code: str, to_email: str):
     message["To"] = to_email
     message["Subject"] = "Seu código de acesso | CareerDev AI"
 
-    # Render HTML Template
     try:
         template_path = os.path.join(os.getcwd(), "app/templates/email/otp.html")
         with open(template_path, "r", encoding="utf-8") as f:
             template_content = f.read()
 
-        # Simple Jinja2 rendering (or just replace if simple)
-        # Using Jinja2 strictly if we had environment, but simple replace works for single var
-        # To be robust, let's use Jinja2 Template class since we imported it
         template = Template(template_content)
         html_content = template.render(code=code)
 
-        message.set_content(f"Seu código é: {code}") # Fallback text
+        message.set_content(f"Seu código é: {code}")
         message.add_alternative(html_content, subtype='html')
 
     except Exception as e:
@@ -103,21 +102,18 @@ async def send_email(code: str, to_email: str):
     except Exception as e:
         print(f"[ERROR] Failed to send email: {e}")
 
-def send_sms(code: str, to_number: str):
-    if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
-        print("[WARN] Twilio not configured. Skipping real SMS.")
+async def send_telegram(code: str, chat_id: str):
+    if not settings.TELEGRAM_BOT_TOKEN:
+        print("[WARN] Telegram Bot Token not configured. Skipping real message.")
         return
 
     try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=f"CareerDev AI: Seu codigo de seguranca e {code}. Valido por 10 minutos. Nao compartilhe.",
-            from_=settings.TWILIO_FROM_NUMBER,
-            to=to_number
-        )
-        print(f"[SUCCESS] SMS sent via Twilio! SID: {message.sid}")
+        bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        message = f"🔒 *CareerDev AI* \n\nSeu código de segurança: `{code}`\n\nVálido por 10 minutos."
+        await bot.send_message(chat_id=chat_id, text=message, parse_mode="Markdown")
+        print(f"[SUCCESS] Telegram message sent to {chat_id}")
     except Exception as e:
-        print(f"[ERROR] Twilio error: {e}")
+        print(f"[ERROR] Telegram error: {e}")
 
 def verify_otp(db: Session, user_id: int, code: str):
     otp = db.query(OTP).filter(
@@ -127,7 +123,6 @@ def verify_otp(db: Session, user_id: int, code: str):
     ).first()
 
     if otp:
-        # Delete OTP after use to prevent replay
         db.delete(otp)
         db.commit()
         return True
