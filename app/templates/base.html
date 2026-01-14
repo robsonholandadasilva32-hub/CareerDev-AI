@@ -108,7 +108,7 @@
     .btn-outline:hover { background: rgba(0, 243, 255, 0.1); }
 
     /* A11y Classes */
-    html.dyslexic-font body { font-family: 'Verdana', sans-serif !important; letter-spacing: 0.5px; word-spacing: 2px; }
+    html.dyslexic-font body { font-family: 'OpenDyslexic', 'Verdana', sans-serif !important; letter-spacing: 0.5px; word-spacing: 2px; line-height: 1.8 !important; }
 
     html.high-contrast body {
         --bg-color: #000 !important;
@@ -122,6 +122,28 @@
     html.high-contrast a { color: yellow !important; text-decoration: underline !important; }
 
     html.reduced-motion * { animation: none !important; transition: none !important; }
+
+    /* Motor A11y: Big Targets */
+    html.big-targets .btn,
+    html.big-targets input,
+    html.big-targets select,
+    html.big-targets a.btn-outline,
+    html.big-targets nav a {
+        min-height: 60px !important;
+        padding: 15px 30px !important;
+        font-size: 1.2rem !important;
+        margin-bottom: 10px !important;
+    }
+    html.big-targets label { font-size: 1.2rem !important; margin-bottom: 10px !important; display: block; }
+    html.big-targets input[type="checkbox"] + .slider { height: 34px !important; width: 64px !important; }
+    html.big-targets input[type="checkbox"] + .slider::before { width: 26px !important; height: 26px !important; top: 4px !important; }
+    html.big-targets input[type="checkbox"]:checked + .slider::before { transform: translateX(30px) !important; }
+
+    /* Vision A11y: Color Blindness Filters (SVG-based logic simulations) */
+    html[data-color-filter="protanopia"] body { filter: url('/static/filters.svg#protanopia'); }
+    html[data-color-filter="deuteranopia"] body { filter: url('/static/filters.svg#deuteranopia'); }
+    html[data-color-filter="tritanopia"] body { filter: url('/static/filters.svg#tritanopia'); }
+    html[data-color-filter="achromatopsia"] body { filter: grayscale(100%); }
 
   </style>
   <script>
