@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -22,6 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent
 # Se faltar alguma biblioteca aqui, o erro vai aparecer no Log de Erros.
 from app.db.base import Base
 from app.db.session import engine
+from app.core.config import settings
+
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
@@ -50,7 +52,7 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     SessionMiddleware,
-    secret_key="a#j@dO6@6NA3qna1oa5hotn*%ndiTRX1285$x76h&ZsQN",
+    secret_key=settings.SESSION_SECRET_KEY,
     session_cookie="careerdev_session",
     same_site="lax",
     https_only=False
@@ -66,11 +68,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 # 8. Rota Principal
 @app.get("/")
 def root():
-    return JSONResponse({
-        "status": "online",
-        "message": "CareerDev AI rodando com sucesso!",
-        "database": "Conectado"
-    })
+    return RedirectResponse("/login")
 
 @app.get("/static/favicon/manifest.json")
 def manifest():

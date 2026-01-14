@@ -71,5 +71,20 @@
   "billing_benefit_3": "Soporte Prioritario",
   "billing_recurring_label": "Facturación Recurrente (Suscripción)",
   "billing_pay_button": "Pagar $1.00",
-  "month": "mes"
+  "month": "mes",
+
+  "social_login_title": "O accede vía",
+  "social_github_btn": "GitHub",
+  "social_linkedin_btn": "LinkedIn",
+
+  "integration_title": "Ecosistema de Carrera Inteligente",
+  "integration_desc": "Integramos las plataformas que definen el mercado para acelerar tu evolución.",
+
+  "int_github_title": "Upskilling Basado en Código Real",
+  "int_github_text": "Conecta GitHub para que nuestra IA analice tus repositorios, identifique brechas técnicas y genere planes de estudio con micro-proyectos prácticos en tecnologías de alta demanda.",
+
+  "int_linkedin_title": "Alineación de Mercado en Tiempo Real",
+  "int_linkedin_text": "Conecta LinkedIn para monitorear tendencias de empleo y recibir sugerencias de networking estratégico, enfocándote en nichos valiosos como IA Ética y Edge Computing.",
+
+  "int_impact_text": "Transforma tu experiencia en autoridad. CareerDev AI llena el vacío entre lo que sabes y lo que el mercado necesita."
 }
