@@ -71,5 +71,20 @@
   "billing_benefit_3": "Priority Support",
   "billing_recurring_label": "Recurring Billing (Subscription)",
   "billing_pay_button": "Pay $1.00",
-  "month": "month"
+  "month": "month",
+
+  "social_login_title": "Or sign in via",
+  "social_github_btn": "GitHub",
+  "social_linkedin_btn": "LinkedIn",
+
+  "integration_title": "Smart Career Ecosystem",
+  "integration_desc": "We integrate with market-defining platforms to accelerate your evolution.",
+
+  "int_github_title": "Code-Based Upskilling",
+  "int_github_text": "Connect GitHub to let our AI analyze your repositories, identify technical gaps, and generate study plans with practical micro-projects in high-demand technologies.",
+
+  "int_linkedin_title": "Real-Time Market Alignment",
+  "int_linkedin_text": "Connect LinkedIn to monitor job trends and receive strategic networking suggestions, focusing on valuable niches like Ethical AI and Edge Computing.",
+
+  "int_impact_text": "Transform your experience into authority. CareerDev AI fills the gap between what you know and what the market needs."
 }

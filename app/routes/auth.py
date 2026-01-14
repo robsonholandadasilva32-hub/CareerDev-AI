@@ -45,7 +45,7 @@ def login_page(request: Request):
 # LOGIN (POST)
 # =====================================================
 @router.post("/login", response_class=HTMLResponse)
-def login(
+async def login(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
@@ -125,38 +125,27 @@ def login(
         }
     )
 
-    # 2FA Check
-    if user.two_factor_enabled:
-        method = user.two_factor_method or "email"
-        create_otp(db, user.id, method)
+    # 🔐 Mandatory 2FA Check
+    # Force 2FA for everyone (defaulting to email if not set)
+    method = user.two_factor_method or "email"
+    create_otp(db, user.id, method)
 
-        # Temporary token for 2FA verification page
-        temp_token = create_access_token({
-            "sub": str(user.id),
-            "email": user.email,
-            "pre_2fa": True
-        }, expires_delta=timedelta(minutes=10))
-
-        response = RedirectResponse(f"/verify-2fa?lang={lang}", status_code=302)
-        response.set_cookie(key="temp_token", value=temp_token, httponly=True)
-        return response
-
-    # 🔐 JWT (FASE 2 – correto e funcional)
-    token = create_access_token({
+    # Temporary token for 2FA verification page
+    # Short expiry (5 mins) for security
+    temp_token = create_access_token({
         "sub": str(user.id),
         "email": user.email,
-        "2fa": False
-    })
+        "pre_2fa": True
+    }, expires_minutes=5)
 
-    response = RedirectResponse("/dashboard", status_code=302)
+    response = RedirectResponse(f"/verify-2fa?lang={lang}", status_code=302)
     response.set_cookie(
-        key="access_token",
-        value=token,
+        key="temp_token",
+        value=temp_token,
         httponly=True,
-        secure=False,  # HTTPS = True em produção
+        secure=request.url.scheme == "https", # Auto-detect HTTPS
         samesite="lax"
     )
-
     return response
 
 # =====================================================
@@ -189,7 +178,8 @@ def register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    phone: str = Form(None), # Optional for now
+    phone: str = Form(None),
+    two_factor_pref: str = Form("email"), # 'email' or 'sms'
     lang: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
@@ -206,6 +196,18 @@ def register(
             }
         )
 
+    # Validate SMS Requirement
+    if two_factor_pref == "sms" and not phone:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "error": "Phone number is required for SMS authentication."
+            }
+        )
+
     hashed_password = hash_password(password)
 
     # ✅ Captura o usuário criado
@@ -216,12 +218,13 @@ def register(
         hashed_password=hashed_password
     )
 
-    # Update phone if provided
+    # Configure 2FA & Phone
     if phone:
         user.phone_number = phone
-        user.two_factor_enabled = True # Auto-enable 2FA if phone provided for demo
-        user.two_factor_method = "sms"
-        db.commit()
+
+    user.two_factor_enabled = True # Mandatory
+    user.two_factor_method = two_factor_pref
+    db.commit()
 
     # =================================================
     # 📧 VERIFICAÇÃO DE E-MAIL (PREPARAÇÃO PROFISSIONAL)

@@ -1,14 +1,27 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Depends
 from pydantic import BaseModel
-from app.ai.chatbot import simple_ai_response
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.ai.chatbot import chatbot_service
+from app.core.auth_guard import get_current_user_from_request
 
-router = APIRouter(prefix="/chatbot")
+router = APIRouter()
 
-class ChatMessage(BaseModel):
+class ChatRequest(BaseModel):
     message: str
+    mode: str = "standard"
 
 @router.post("/message")
-def chat(message: ChatMessage):
-    response = simple_ai_response(message.message)
-    return {"response": response}
+async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
+    lang = request.session.get("lang", "pt")
+    user_id = get_current_user_from_request(request)
 
+    response = chatbot_service.get_response(
+        chat_req.message,
+        lang,
+        user_id=user_id,
+        db=db,
+        mode=chat_req.mode
+    )
+
+    return {"response": response}
