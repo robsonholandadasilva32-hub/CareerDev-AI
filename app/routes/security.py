@@ -49,11 +49,17 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
         }
     )
 
+from app.core.security import verify_password, hash_password
+
 @router.post("/security/update")
 def update_security(
     request: Request,
     method: str = Form("email"),
     phone: str = Form(None),
+    language: str = Form("pt"),
+    current_password: str = Form(None),
+    new_password: str = Form(None),
+    confirm_password: str = Form(None),
     contact_dev: str = Form(None),
     message_body: str = Form(None),
     db: Session = Depends(get_db)
@@ -63,26 +69,51 @@ def update_security(
     if not user:
          return RedirectResponse("/login", status_code=302)
 
-    # 1. Update 2FA Settings
+    # 1. Update Preferences
     user.two_factor_method = method
+    user.preferred_language = language
+    request.session["lang"] = language # Update session immediately
+
     if phone:
         user.phone_number = phone
 
-    # "Intelligent Fallback" logic is implied in the Notification Service (not here),
-    # but we ensure we have the data.
+    # 2. Password Change
+    if current_password and new_password:
+        if verify_password(current_password, user.hashed_password):
+            if new_password == confirm_password:
+                user.hashed_password = hash_password(new_password)
+                print(f"🔐 [SECURITY] Password updated for {user.email}")
+            else:
+                return RedirectResponse("/security?error=password_mismatch", status_code=302)
+        else:
+            return RedirectResponse("/security?error=invalid_password", status_code=302)
 
-    # 2. Contact Developer Feature
+    # 3. Contact Developer Feature
     if contact_dev == "true" and message_body:
         from app.services.notifications import send_email
-        # Attempt to send real email if configured, else log
         subject = f"Support Request from {user.email}: {user.name}"
         try:
              send_email(to="robsonholandasilva@yahoo.com.br", subject=subject, body=message_body)
-             print(f"📧 [SUPPORT] Sent email to developer from {user.email}")
         except Exception as e:
              print(f"📧 [SUPPORT ERROR] Could not send email: {e}")
-             # Fallback log
-             print(f"📧 [SUPPORT CONTENT] {message_body}")
 
     db.commit()
     return RedirectResponse("/security?success=true", status_code=302)
+
+@router.post("/security/delete-account")
+def delete_account(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    # Delete User (Cascade deletes profile/plans due to relationship config)
+    db.delete(user)
+    db.commit()
+
+    # Logout
+    response = RedirectResponse("/login?msg=account_deleted", status_code=302)
+    response.delete_cookie("access_token")
+    return response
