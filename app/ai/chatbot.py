@@ -92,7 +92,7 @@ class ChatbotService:
             lang_instruction = f"Reply in {lang}."
 
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=settings.OPENAI_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt + "\n" + context},
                     {"role": "system", "content": lang_instruction},

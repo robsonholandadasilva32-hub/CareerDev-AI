@@ -8,6 +8,10 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.core.limiter import limiter
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -57,6 +61,8 @@ async def lifespan(app: FastAPI):
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5.5 Exception Handlers
 templates = Jinja2Templates(directory="app/templates")
@@ -70,6 +76,7 @@ async def custom_500_handler(request: Request, exc):
     return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
 
 # 6. Middlewares
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
