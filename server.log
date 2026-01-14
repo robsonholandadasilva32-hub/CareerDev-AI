@@ -1,0 +1,8 @@
+INFO:     Started server process [2625]
+INFO:     Waiting for application startup.
+INFO:app.main:Criando tabelas no banco de dados...
+INFO:app.main:Banco de dados pronto!
+INFO:app.main:Badges inicializados.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57518 - "GET /login HTTP/1.1" 200 OK

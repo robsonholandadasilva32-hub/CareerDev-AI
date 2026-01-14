@@ -415,6 +415,52 @@
       .integration-info { grid-template-columns: 1fr; }
     }
 
+    /* Accessibility Showcase */
+    .accessibility-showcase {
+        width: 100%;
+        max-width: 900px;
+        text-align: center;
+        margin-top: 1rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-soft);
+        animation: fadeIn 1s ease-out;
+    }
+    .a11y-title {
+        background: linear-gradient(135deg, #bd00ff, #00b4ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 1.5rem;
+        margin: 0 0 0.5rem 0;
+    }
+    .a11y-subtitle {
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+    }
+    .a11y-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    .a11y-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-soft);
+        padding: 1.5rem;
+        border-radius: 12px;
+        transition: transform 0.2s, border-color 0.2s;
+    }
+    .a11y-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--accent-purple);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .icon-wrapper {
+        width: 48px; height: 48px;
+        margin: 0 auto 1rem auto;
+        color: var(--accent-blue);
+    }
+    .a11y-card h4 { margin: 0 0 0.5rem 0; color: var(--text-highlight); }
+    .a11y-card p { margin: 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+
     /* ===== FOOTER ===== */
     footer {
       text-align: center;
@@ -559,6 +605,50 @@
         </div>
         <div class="impact-statement">
             <p>{{ t.int_impact_text }}</p>
+        </div>
+    </div>
+
+    <!-- ACCESSIBILITY SHOWCASE -->
+    <div class="accessibility-showcase">
+        <h3 class="a11y-title">Inclusão no Código-Fonte</h3>
+        <p class="a11y-subtitle">Tecnologia adaptativa para todos os perfis. Ative no painel de controle.</p>
+
+        <div class="a11y-grid">
+            <!-- Card 1: Cognitive -->
+            <div class="a11y-card">
+                <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8m0 2v4l3.5 2-3.5 2v4" fill="currentColor" fill-opacity="0.2"/><path d="M12 6v6l4 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <h4>Foco Cognitivo</h4>
+                <p>Fontes amigáveis à dislexia e modos de redução de ruído visual.</p>
+            </div>
+
+            <!-- Card 2: Vision -->
+            <div class="a11y-card">
+                <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <h4>Visão Adaptativa</h4>
+                <p>Alto contraste e filtros inteligentes para daltonismo.</p>
+            </div>
+
+            <!-- Card 3: Hearing -->
+            <div class="a11y-card">
+                 <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+                 </div>
+                <h4>Sinalização Visual</h4>
+                <p>Alertas gráficos e comunicação simplificada por IA.</p>
+            </div>
+
+            <!-- Card 4: Motor -->
+            <div class="a11y-card">
+                 <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                 </div>
+                <h4>Controle Expandido</h4>
+                <p>Áreas de clique ampliadas e navegação por voz (Beta).</p>
+            </div>
         </div>
     </div>
   </main>
