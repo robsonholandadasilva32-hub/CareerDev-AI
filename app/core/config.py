@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: Optional[str] = None
     STRIPE_PUBLISHABLE_KEY: Optional[str] = None
 
+    # Feature Flags
+    FEATURES: dict = {
+        "ENABLE_CHATBOT": True,
+        "ENABLE_VOICE_MODE": True,
+        "ENABLE_SOCIAL_LOGIN": True,
+        "ENABLE_REGISTRATION": True
+    }
+
     class Config:
         env_file = ".env"
         extra = "ignore" # Prevent crash on extra env vars
