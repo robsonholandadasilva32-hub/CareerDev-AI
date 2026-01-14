@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "CareerDev AI"
     SECRET_KEY: str = "super-secret-key-change-in-production"
-    SESSION_SECRET_KEY: str = "a#j@dO6@6NA3qna1oa5hotn*%ndiTRX1285$x76h&ZsQN"
+    SESSION_SECRET_KEY: str = "change-this-to-a-secure-random-string"
 
     # Database
     DATABASE_URL: str = "sqlite:///./careerdev.db"

@@ -178,7 +178,8 @@ def register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    phone: str = Form(None), # Optional for now
+    phone: str = Form(None),
+    two_factor_pref: str = Form("email"), # 'email' or 'sms'
     lang: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
@@ -195,6 +196,18 @@ def register(
             }
         )
 
+    # Validate SMS Requirement
+    if two_factor_pref == "sms" and not phone:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "error": "Phone number is required for SMS authentication."
+            }
+        )
+
     hashed_password = hash_password(password)
 
     # ✅ Captura o usuário criado
@@ -205,12 +218,13 @@ def register(
         hashed_password=hashed_password
     )
 
-    # Update phone if provided
+    # Configure 2FA & Phone
     if phone:
         user.phone_number = phone
-        user.two_factor_enabled = True # Auto-enable 2FA if phone provided for demo
-        user.two_factor_method = "sms"
-        db.commit()
+
+    user.two_factor_enabled = True # Mandatory
+    user.two_factor_method = two_factor_pref
+    db.commit()
 
     # =================================================
     # 📧 VERIFICAÇÃO DE E-MAIL (PREPARAÇÃO PROFISSIONAL)

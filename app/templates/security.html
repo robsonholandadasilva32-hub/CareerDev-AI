@@ -1,61 +1,51 @@
-<!DOCTYPE html>
-<html lang="{{ lang }}">
-<head>
-    <meta charset="UTF-8">
-    <title>Segurança da Conta</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
+{% extends "base.html" %}
 
-<main>
+{% block content %}
+<div class="card security-panel">
+    <h2>🔐 Central de Segurança e Preferências</h2>
 
-{% if no_user %}
-    <section aria-live="polite">
-        <h1>Segurança da Conta</h1>
-        <p>
-            Nenhum usuário ativo foi identificado.
-            Faça login para gerenciar suas configurações de segurança.
-        </p>
-    </section>
-{% else %}
-    <section>
-        <h1>Segurança da Conta</h1>
-        <p>
-            Você controla como deseja se proteger.
-            Nenhuma configuração é obrigatória além da senha.
-        </p>
+    {% if success %}
+    <div style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+        Configurações atualizadas com sucesso!
+    </div>
+    {% endif %}
 
+    <form method="post" action="/security/update" style="display: flex; flex-direction: column; gap: 20px;">
 
-        <form method="post" action="/security/update">
-            <label>
-                <input type="checkbox" name="two_factor"
-                {% if two_factor_enabled %}checked{% endif %}>
-                Ativar autenticação em dois fatores (2FA)
-            </label>
+        <!-- 2FA Method -->
+        <div class="setting-group">
+            <h3>Método de Autenticação (2FA)</h3>
+            <p style="color: #9ca3af; font-size: 0.9rem;">Escolha como deseja receber seus códigos de segurança. Se um falhar, tentaremos o outro automaticamente.</p>
 
-            <fieldset>
-                <legend>Método</legend>
-
-                <label>
-                    <input type="radio" name="method" value="email"
-                    {% if two_factor_method == "email" %}checked{% endif %}>
-                    Código por e-mail
+            <div style="display: flex; gap: 20px;">
+                <label style="display: flex; items-center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="method" value="email" {% if two_factor_method == 'email' or not two_factor_method %}checked{% endif %}>
+                    <span>E-mail</span>
                 </label>
-
-                <label>
-                    <input type="radio" name="method" value="sms"
-                    {% if two_factor_method == "sms" %}checked{% endif %}>
-                    Código por SMS (simulado)
+                <label style="display: flex; items-center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="method" value="sms" {% if two_factor_method == 'sms' %}checked{% endif %}>
+                    <span>SMS</span>
                 </label>
-            </fieldset>
+            </div>
+        </div>
 
-            <button type="submit">Salvar configurações</button>
-        </form>
-    </section>
-{% endif %}
+        <!-- Phone Update -->
+        <div class="setting-group">
+            <label for="phone">Número de Celular (Para SMS)</label>
+            <input type="tel" name="phone" id="phone" placeholder="+55 11 99999-9999" style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;" value="{{ user_phone }}">
+        </div>
 
-</main>
+        <!-- Developer Contact -->
+        <div class="setting-group" style="border-top: 1px solid #2d3748; padding-top: 20px; margin-top: 10px;">
+            <h3>👨‍💻 Fale com o Desenvolvedor</h3>
+            <p style="color: #9ca3af; font-size: 0.9rem;">Tem alguma dúvida ou sugestão? Envie uma mensagem direta.</p>
 
-</body>
-</html>
+            <input type="hidden" name="contact_dev" value="true">
+            <textarea name="message_body" rows="4" placeholder="Sua mensagem aqui..." style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;"></textarea>
+            <small style="color: #6b7280;">Sua mensagem será enviada para: <strong>robsonholandasilva@yahoo.com.br</strong></small>
+        </div>
 
+        <button type="submit" class="btn">Salvar Alterações e Enviar</button>
+    </form>
+</div>
+{% endblock %}
