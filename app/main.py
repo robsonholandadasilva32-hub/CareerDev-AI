@@ -27,7 +27,7 @@ from app.core.config import settings
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    email_verification, two_factor, logout, social, billing
+    email_verification, two_factor, logout, social, billing, career
 )
 
 # 4. Lifespan (Conexão com Banco)
@@ -81,10 +81,11 @@ def manifest():
 # 9. Inclusão de Rotas
 app.include_router(auth.router)
 app.include_router(dashboard.router)
-app.include_router(chatbot.router)
+app.include_router(chatbot.router, prefix="/chatbot")
 app.include_router(security.router)
 app.include_router(email_verification.router)
 app.include_router(two_factor.router)
 app.include_router(logout.router)
 app.include_router(social.router)
 app.include_router(billing.router)
+app.include_router(career.router, prefix="/career")

@@ -25,8 +25,8 @@
             <a href="/security" class="btn-action">
                 <span>🔐</span> Gerenciar segurança da conta
             </a>
-            <a href="#" class="btn-action">
-                <span>📈</span> Ver progresso detalhado
+            <a href="#" class="btn-action" onclick="document.getElementById('resume-modal').style.display='flex'">
+                <span>📄</span> Analisar Currículo
             </a>
             <a href="/logout" class="btn-action danger">
                 <span>🚪</span> Sair com segurança
@@ -63,23 +63,32 @@
 
     <!-- USER IDENTITY -->
     <div class="card user-identity" style="margin-top: 20px;">
-        <h2>{{ t.dash_welcome }}, {{ email }}</h2>
-        <div class="stats-row" style="display: flex; gap: 20px; margin-top: 15px;">
-            <div class="stat-item">
-                <span class="label">{{ t.dash_level }}</span>
-                <span class="value">{{ profile.level }}</span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2>{{ t.dash_welcome }}, {{ email }}</h2>
+                <div class="stats-row" style="display: flex; gap: 20px; margin-top: 15px;">
+                    <div class="stat-item">
+                        <span class="label">{{ t.dash_level }}</span>
+                        <span class="value">{{ profile.level }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">{{ t.dash_area }}</span>
+                        <span class="value">{{ profile.focus }}</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="label">{{ t.dash_area }}</span>
-                <span class="value">{{ profile.focus }}</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">{{ t.dash_skills }}</span>
-                <span class="value">
-                    {% for skill, score in profile.skills.items() %}
-                        {% if score > 50 %}{{ skill }} {% endif %}
+
+            <!-- BADGES HALL -->
+            <div class="badges-hall" style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px;">
+                {% if badges %}
+                    {% for ub in badges %}
+                    <div class="badge-item" title="{{ ub.badge.name }}: {{ ub.badge.description }}" style="font-size: 1.5rem; cursor: help; transition: transform 0.2s;">
+                        {{ ub.badge.icon }}
+                    </div>
                     {% endfor %}
-                </span>
+                {% else %}
+                    <span style="color: #6b7280; font-size: 0.8rem;">Conquiste emblemas completando tarefas!</span>
+                {% endif %}
             </div>
         </div>
 
@@ -149,8 +158,66 @@
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
              <a href="https://discord.gg/rust-lang" target="_blank" class="btn-action">Rust Discord</a>
              <a href="https://gophers.slack.com/" target="_blank" class="btn-action">Gophers Slack</a>
-             <a href="#" class="btn-action">Simular Entrevista Técnica</a>
         </div>
     </div>
 </div>
+
+<!-- RESUME ANALYZER MODAL -->
+<div id="resume-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 600px; background: #0f172a; border: 1px solid var(--primary-color);">
+        <h3 style="margin-top: 0; color: var(--primary-color);">🤖 Análise Inteligente de Currículo</h3>
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Cole o texto do seu currículo abaixo. Nossa IA identificará lacunas para sua vaga alvo.</p>
+
+        <textarea id="resume-text" rows="10" style="width: 100%; background: #1e293b; color: white; border: 1px solid #334155; border-radius: 6px; padding: 10px;" placeholder="Cole seu CV aqui..."></textarea>
+
+        <div id="resume-result" style="display: none; margin-top: 15px; padding: 10px; background: rgba(0, 255, 136, 0.1); border-radius: 6px;">
+            <h4 id="res-score" style="margin: 0; color: var(--secondary-color);">Score: 0/100</h4>
+            <p id="res-feedback" style="font-size: 0.9rem;"></p>
+            <ul id="res-gaps" style="font-size: 0.85rem; color: #fbbf24;"></ul>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="document.getElementById('resume-modal').style.display='none'" class="btn-outline">Fechar</button>
+            <button onclick="analyzeResume()" class="btn">Analisar & Atualizar Plano</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function analyzeResume() {
+    const text = document.getElementById('resume-text').value;
+    if (!text) return alert("Por favor, cole o texto do currículo.");
+
+    const btn = document.querySelector('#resume-modal .btn');
+    btn.disabled = true;
+    btn.innerText = "Analisando...";
+
+    const formData = new FormData();
+    formData.append('resume_text', text);
+
+    try {
+        const res = await fetch('/career/analyze-resume', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+
+        document.getElementById('resume-result').style.display = 'block';
+        document.getElementById('res-score').innerText = `Score: ${data.score}/100`;
+        document.getElementById('res-feedback').innerText = data.feedback;
+
+        const gapsList = document.getElementById('res-gaps');
+        gapsList.innerHTML = "<strong>Gaps Adicionados ao Plano:</strong><br>" +
+            (data.added_plans.length ? data.added_plans.join(", ") : "Nenhum gap crítico encontrado.");
+
+        btn.innerText = "Concluído!";
+        setTimeout(() => location.reload(), 3000); // Reload to show new plans
+
+    } catch (e) {
+        alert("Erro na análise.");
+        btn.disabled = false;
+        btn.innerText = "Analisar";
+    }
+}
+</script>
 {% endblock %}

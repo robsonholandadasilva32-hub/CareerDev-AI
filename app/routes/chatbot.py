@@ -1,36 +1,27 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.ai.chatbot import chatbot_service
 from app.db.session import get_db
-from app.core.jwt import decode_token
+from app.ai.chatbot import chatbot_service
+from app.core.auth_guard import get_current_user_from_request
 
-router = APIRouter(prefix="/chatbot")
+router = APIRouter()
 
-class ChatMessage(BaseModel):
+class ChatRequest(BaseModel):
     message: str
+    mode: str = "standard"
 
 @router.post("/message")
-def chat(
-    request: Request,
-    message: ChatMessage,
-    db: Session = Depends(get_db)
-):
-    # Try to get user context from token
-    user_id = None
-    token = request.cookies.get("access_token")
-    if token:
-        payload = decode_token(token)
-        if payload:
-            user_id = int(payload.get("sub"))
-
-    # Determine language (simple check or session)
+async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
     lang = request.session.get("lang", "pt")
+    user_id = get_current_user_from_request(request)
 
     response = chatbot_service.get_response(
-        message=message.message,
-        lang=lang,
+        chat_req.message,
+        lang,
         user_id=user_id,
-        db=db
+        db=db,
+        mode=chat_req.mode
     )
+
     return {"response": response}

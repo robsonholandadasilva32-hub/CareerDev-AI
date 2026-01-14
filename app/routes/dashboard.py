@@ -64,6 +64,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "email": payload.get("email"),
             "profile": profile_data,
             "plan": plan_items, # List of LearningPlan objects
+            "badges": user.badges, # Pass UserBadges to template
             "t": t,
             "lang": lang
         }
