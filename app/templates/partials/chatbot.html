@@ -1,6 +1,13 @@
 <div id="chatbot-widget" class="chatbot-widget" aria-label="Chatbot Assistant">
     <div class="chatbot-header">
-        <span class="header-title">🤖 CareerDev AI</span>
+        <div class="header-brand">
+            <!-- Creative Neural/Circuit Icon -->
+            <div class="neural-icon">
+                <div class="node center"></div>
+                <div class="pulse-ring"></div>
+            </div>
+            <span class="header-title">CareerDev AI</span>
+        </div>
         <div class="header-controls">
             <!-- Voice Toggle -->
             <button id="voice-toggle" onclick="toggleVoice()" aria-label="Ativar voz" title="Ativar voz">
@@ -29,7 +36,10 @@
 
 <!-- Chatbot Toggle Button -->
 <button id="chatbot-toggle" onclick="toggleChat()" class="chatbot-toggle-btn" aria-label="Abrir assistente de carreira">
-    💬
+    <div class="neural-icon small">
+        <div class="node center"></div>
+        <div class="pulse-ring"></div>
+    </div>
 </button>
 
 <style>
@@ -60,7 +70,61 @@
         justify-content: space-between;
         align-items: center;
         color: var(--primary-color);
-        font-weight: 600;
+    }
+
+    .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-title {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: linear-gradient(90deg, var(--primary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* CREATIVE NEURAL ICON */
+    .neural-icon {
+        width: 24px;
+        height: 24px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .neural-icon .node {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--primary-color);
+        z-index: 2;
+    }
+
+    .neural-icon .pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        opacity: 0;
+        animation: ring-pulse 2s infinite;
+    }
+
+    .neural-icon.small {
+        width: 30px;
+        height: 30px;
+    }
+    .neural-icon.small .node { width: 10px; height: 10px; background: #000; }
+    .neural-icon.small .pulse-ring { border-color: #000; }
+
+    @keyframes ring-pulse {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
     }
 
     .header-controls {
@@ -177,16 +241,18 @@
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 55px;
-        height: 55px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         background: linear-gradient(135deg, var(--primary-color), #00d2ff);
         border: none;
-        font-size: 26px;
         cursor: pointer;
         z-index: 9999;
         box-shadow: 0 4px 15px rgba(0, 243, 255, 0.4);
         transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .chatbot-toggle-btn:hover {
@@ -234,7 +300,7 @@
             input.focus();
         } else {
             widget.style.display = 'none';
-            btn.style.display = 'block';
+            btn.style.display = 'flex'; // Changed to flex to keep icon centered
         }
     }
 
