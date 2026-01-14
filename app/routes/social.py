@@ -43,7 +43,7 @@ if settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET:
         }
     )
 
-def login_user_and_redirect(user):
+def login_user_and_redirect(request: Request, user):
     token = create_access_token({
         "sub": str(user.id),
         "email": user.email,
@@ -54,7 +54,7 @@ def login_user_and_redirect(user):
         key="access_token",
         value=token,
         httponly=True,
-        secure=False, # Set to True in prod if HTTPS
+        secure=request.url.scheme == "https", # Auto-detect HTTPS
         samesite="lax"
     )
     return response
@@ -93,7 +93,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         # 1. Check by ID
         user = get_user_by_github_id(db, github_id)
         if user:
-            return login_user_and_redirect(user)
+            return login_user_and_redirect(request, user)
 
         # 2. Check by Email
         user = get_user_by_email(db, email)
@@ -102,7 +102,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             if not user.avatar_url:
                 user.avatar_url = avatar
             db.commit()
-            return login_user_and_redirect(user)
+            return login_user_and_redirect(request, user)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
@@ -115,7 +115,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             avatar_url=avatar,
             email_verified=True # Trusted provider
         )
-        return login_user_and_redirect(user)
+        return login_user_and_redirect(request, user)
 
     except Exception as e:
         print(f"GitHub Error: {e}")
@@ -148,7 +148,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
         # 1. Check by ID
         user = get_user_by_linkedin_id(db, linkedin_id)
         if user:
-            return login_user_and_redirect(user)
+            return login_user_and_redirect(request, user)
 
         # 2. Check by Email
         user = get_user_by_email(db, email)
@@ -157,7 +157,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             if not user.avatar_url:
                 user.avatar_url = picture
             db.commit()
-            return login_user_and_redirect(user)
+            return login_user_and_redirect(request, user)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
@@ -170,7 +170,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             avatar_url=picture,
             email_verified=True
         )
-        return login_user_and_redirect(user)
+        return login_user_and_redirect(request, user)
 
     except Exception as e:
         print(f"LinkedIn Error: {e}")
