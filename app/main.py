@@ -14,11 +14,20 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.core.limiter import limiter
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
 
 # 1. Carregar .env e Configurar Logs
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry (if DSN provided)
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
 
 # 2. CAMINHO ABSOLUTO (Correção importante para o PythonAnywhere)
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,6 +38,7 @@ from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.core.config import settings
 from app.services.gamification import init_badges
+from app.services.worker import job_worker
 
 # Importando suas rotas
 from app.routes import (
@@ -52,12 +62,16 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
 
+        # Start Background Worker
+        job_worker.start()
+
     except Exception as e:
         logger.error(f"ERRO CRITICO NO BANCO: {e}")
         # Não queremos que o app inicie se o banco falhar
         raise e
     yield
     logger.info("Desligando...")
+    job_worker.stop()
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)

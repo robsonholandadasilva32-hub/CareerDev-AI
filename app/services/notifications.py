@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.db.models.otp import OTP
+from app.db.models.job import BackgroundJob
 from app.core.config import settings
 from email.message import EmailMessage
 from email.utils import formataddr
@@ -39,13 +40,24 @@ def create_otp(db: Session, user_id: int, method: str):
     phone_number = user_obj.phone_number if user_obj else None # Used as Chat ID
     email = user_obj.email if user_obj else None
 
-    # Try to send real notification, fallback to mock if config missing
-    asyncio.create_task(send_notification(method, code, phone_number, email))
+    # Add Job to DB (Robust Way)
+    payload = {'code': code}
+    task_type = "send_email"
+
+    if method == "email":
+        payload['email'] = email
+        task_type = "send_email"
+    elif method == "telegram":
+        payload['chat_id'] = phone_number
+        task_type = "send_telegram"
+
+    job = BackgroundJob(task_type=task_type, payload=payload)
+    db.add(job)
+    db.commit()
 
     # Mock Log (Always helpful for dev)
     print(f"========================================")
-    print(f"[MOCK/REAL NOTIFICATION] To User {user_id} via {method}")
-    print(f"Code: {code}")
+    print(f"[JOB ENQUEUED] To User {user_id} via {method} | Code: {code}")
     print(f"========================================")
 
     return otp

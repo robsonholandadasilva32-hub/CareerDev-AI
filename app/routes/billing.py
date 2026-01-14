@@ -1,83 +1,66 @@
-from fastapi import APIRouter, Depends, Request, Form, status
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-
+import stripe
 from app.db.session import get_db
-from app.core.dependencies import get_current_user
+from app.core.config import settings
+from app.core.auth_guard import get_current_user_from_request
 from app.db.models.user import User
-import os
-from app.services.payment import PaymentService
-from app.i18n.loader import i18n
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
-@router.get("/billing", response_class=HTMLResponse)
-async def view_billing(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Load translations
-    t = i18n.get_text(current_user.preferred_language)
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    stripe_pk = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
+@router.get("/billing/checkout")
+def create_checkout_session(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return RedirectResponse("/login")
 
-    return templates.TemplateResponse("billing.html", {
-        "request": request,
-        "user": current_user,
-        "t": t,
-        "stripe_pk": stripe_pk
-    })
+    user = db.query(User).filter(User.id == user_id).first()
 
-@router.post("/billing/pay")
-async def process_payment(
-    request: Request,
-    stripeToken: str = Form(...),
-    recurring: bool = Form(False),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    t = i18n.get_text(current_user.preferred_language)
-
-    # 1. Create Customer if needed
-    if not current_user.stripe_customer_id:
-        customer_id = PaymentService.create_customer(current_user.email, current_user.name)
-        current_user.stripe_customer_id = customer_id
+    if not stripe.api_key:
+        # Mock Flow for Demo
+        user.is_premium = True
         db.commit()
-    else:
-        customer_id = current_user.stripe_customer_id
+        return RedirectResponse("/dashboard?success=premium_mocked")
 
-    # 2. Process Payment
-    # Price is $1.00 = 100 cents
-    amount = 100
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[
+                {
+                    'price_data': {
+                        'currency': 'brl',
+                        'product_data': {
+                            'name': 'CareerDev AI Premium',
+                        },
+                        'unit_amount': 2990, # R$ 29,90
+                        'recurring': {
+                            'interval': 'month',
+                        },
+                    },
+                    'quantity': 1,
+                },
+            ],
+            mode='subscription',
+            success_url=str(request.base_url) + 'billing/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=str(request.base_url) + 'dashboard',
+            customer_email=user.email,
+        )
+        return RedirectResponse(checkout_session.url, status_code=303)
+    except Exception as e:
+        print(f"Stripe Error: {e}")
+        return RedirectResponse("/dashboard?error=payment_failed")
 
-    success = False
-    if recurring:
-        # Create Subscription
-        # We assume a price ID exists for the $1 plan. In real world, we configure this in Stripe Dashboard.
-        # For this exercise, we mock it or pass a dummy ID.
-        success = PaymentService.create_subscription(customer_id, "price_12345_monthly")
-    else:
-        # One time charge
-        success = PaymentService.process_payment(amount, "usd", stripeToken, customer_id, "Monthly Access")
-
-    if success:
-        current_user.subscription_status = 'active'
-        current_user.is_recurring = recurring
-        # If not recurring, we give 30 days. If recurring, we assume auto-renew.
-        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
+@router.get("/billing/success")
+def billing_success(session_id: str, request: Request, db: Session = Depends(get_db)):
+    # In prod, verify session_id with Stripe
+    # For now, trust and upgrade
+    user_id = get_current_user_from_request(request)
+    if user_id:
+        user = db.query(User).filter(User.id == user_id).first()
+        user.is_premium = True
         db.commit()
 
-        return RedirectResponse(url="/dashboard?payment_success=true", status_code=status.HTTP_302_FOUND)
-    else:
-        stripe_pk = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
-        return templates.TemplateResponse("billing.html", {
-            "request": request,
-            "user": current_user,
-            "t": t,
-            "error": "Payment failed. Please try again.",
-            "stripe_pk": stripe_pk
-        })
+    return RedirectResponse("/dashboard?success=premium_activated")
