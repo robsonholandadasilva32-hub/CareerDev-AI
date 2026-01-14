@@ -7,7 +7,7 @@
             Acessibilidade Universal
         </h2>
         <p style="color: var(--text-muted); font-size: 0.95rem;">
-            Personalize sua experiência. Configurações salvas automaticamente neste dispositivo.
+            Personalize sua experiência. Configurações salvas automaticamente.
         </p>
     </div>
 
@@ -83,7 +83,42 @@
         </div>
     </section>
 
-    <!-- SECTION 3: MOTOR & INTERACTION -->
+    <!-- SECTION 3: HEARING & SOUND (NEW) -->
+    <section class="a11y-section" aria-labelledby="sec-hearing">
+        <h3 id="sec-hearing" class="section-title">
+            <span class="icon">👂</span> Audição & Som
+        </h3>
+        <div class="grid-options">
+            <!-- Visual Alerts -->
+            <div class="a11y-toggle">
+                <label class="switch-label">
+                    <span>Alertas Visuais (Flash)</span>
+                    <input type="checkbox" id="a11y-visual-alerts" onchange="toggleA11yState('visual-alerts')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Simplified Communication -->
+            <div class="a11y-toggle">
+                <label class="switch-label">
+                    <span>Comunicação Simplificada (Chat)</span>
+                    <input type="checkbox" id="a11y-simple-text" onchange="toggleA11yState('simple-text')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Libras Mode -->
+            <div class="a11y-toggle">
+                <label class="switch-label">
+                    <span>Assistente Libras (Beta)</span>
+                    <input type="checkbox" id="a11y-libras" onchange="toggleLibras()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: MOTOR & INTERACTION -->
     <section class="a11y-section" aria-labelledby="sec-motor">
         <h3 id="sec-motor" class="section-title">
             <span class="icon">✋</span> Motor & Interação
@@ -116,6 +151,11 @@
 
 <!-- Reading Guide Element -->
 <div id="reading-guide-bar" style="display: none; position: fixed; height: 30px; width: 100%; background: rgba(255, 242, 0, 0.15); pointer-events: none; z-index: 99999; border-top: 2px solid #ffee00; border-bottom: 2px solid #ffee00; top: 0; left: 0; box-shadow: 0 0 100px rgba(0,0,0,0.5);"></div>
+
+<!-- Libras Float Placeholder -->
+<div id="libras-float" style="display: none; position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; background: #00b4d8; border-radius: 50%; z-index: 9999; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid white;">
+    <span style="font-size: 30px;">🤟</span>
+</div>
 
 <style>
     /* Panel Layout */
@@ -194,7 +234,7 @@
 <script>
     // --- STATE MANAGEMENT ---
     document.addEventListener("DOMContentLoaded", () => {
-        // Load Toggles
+        // Load Class Toggles
         const toggles = ['dyslexic-font', 'high-contrast', 'reduced-motion', 'big-targets'];
         toggles.forEach(cls => {
             if (localStorage.getItem(cls) === 'true') {
@@ -203,6 +243,21 @@
                 if(el) el.checked = true;
             }
         });
+
+        // Load State Toggles (Non-class based)
+        const stateToggles = ['visual-alerts', 'simple-text'];
+        stateToggles.forEach(key => {
+            if (localStorage.getItem(key) === 'true') {
+                const el = document.getElementById('a11y-' + key);
+                if(el) el.checked = true;
+            }
+        });
+
+        // Load Libras
+        if (localStorage.getItem('libras-mode') === 'true') {
+            document.getElementById('a11y-libras').checked = true;
+            document.getElementById('libras-float').style.display = 'flex';
+        }
 
         // Load Filters
         const savedFilter = localStorage.getItem('color-filter');
@@ -222,6 +277,20 @@
     function toggleA11y(className) {
         document.documentElement.classList.toggle(className);
         localStorage.setItem(className, document.documentElement.classList.contains(className));
+    }
+
+    // Toggle logic for states that don't add a global CSS class but are used by JS components
+    function toggleA11yState(key) {
+        const el = document.getElementById('a11y-' + key);
+        localStorage.setItem(key, el.checked);
+    }
+
+    function toggleLibras() {
+        const el = document.getElementById('a11y-libras');
+        const float = document.getElementById('libras-float');
+        localStorage.setItem('libras-mode', el.checked);
+        float.style.display = el.checked ? 'flex' : 'none';
+        if(el.checked) alert("Assistente de Libras ativado (Modo Simulação). No futuro, este avatar traduzirá o conteúdo.");
     }
 
     function applyColorFilter(filterName) {

@@ -145,6 +145,23 @@
     html[data-color-filter="tritanopia"] body { filter: url('/static/filters.svg#tritanopia'); }
     html[data-color-filter="achromatopsia"] body { filter: grayscale(100%); }
 
+    /* Hearing A11y: Visual Flash Alert */
+    @keyframes flash-anim {
+        0% { box-shadow: inset 0 0 0 0px var(--primary-color); opacity: 0; }
+        50% { box-shadow: inset 0 0 0 50px var(--primary-color); opacity: 0.8; }
+        100% { box-shadow: inset 0 0 0 0px var(--primary-color); opacity: 0; }
+    }
+
+    .visual-flash-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        pointer-events: none; z-index: 999999;
+        animation: flash-anim 0.5s ease-out;
+        box-shadow: inset 0 0 0 20px var(--primary-color); /* Fallback */
+    }
+
+    /* Libras Avatar Placeholder (Floating Icon) */
+    /* Handled via inline styles in partial, but can refine here if needed */
+
   </style>
   <script>
     // Global A11y Loader

@@ -328,11 +328,17 @@
 
     async function sendMessage() {
         const input = document.getElementById('chat-input');
-        const text = input.value.trim();
+        let text = input.value.trim();
         if (!text) return;
 
         addMessage(text, 'user');
         input.value = '';
+
+        // A11y: Simplified Communication Injection (Client-side prompt engineering)
+        if (localStorage.getItem('simple-text') === 'true') {
+             // We invisibly append this instruction for the LLM
+             text += " [SYSTEM: Responda de forma EXTREMAMENTE SIMPLES, DIRETA e OBJETIVA. Use vocabulário acessível (Português Simplificado).]";
+        }
 
         // Status "Desbravando..."
         const status = document.getElementById('chatbot-status');
@@ -358,6 +364,11 @@
             status.style.display = 'none';
             addMessage(data.response, 'bot');
 
+            // A11y: Visual Alerts (Flash)
+            if (localStorage.getItem('visual-alerts') === 'true') {
+                triggerVisualAlert();
+            }
+
             if (isVoiceEnabled) {
                 speakText(data.response);
             }
@@ -367,6 +378,15 @@
             addMessage("Erro ao conectar com a IA.", 'bot');
             if (isVoiceEnabled) speakText("Erro de conexão.");
         }
+    }
+
+    // Visual Alert Animation Trigger
+    function triggerVisualAlert() {
+        const flash = document.createElement('div');
+        flash.className = 'visual-flash-overlay';
+        document.body.appendChild(flash);
+        // Remove after animation (0.5s)
+        setTimeout(() => flash.remove(), 500);
     }
 
     function addMessage(text, sender) {
