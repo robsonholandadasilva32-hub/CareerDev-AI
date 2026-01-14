@@ -21,8 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent
 # 3. IMPORTAÇÕES SEM PROTEÇÃO (Para descobrirmos o erro real)
 # Se faltar alguma biblioteca aqui, o erro vai aparecer no Log de Erros.
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import engine, SessionLocal
 from app.core.config import settings
+from app.services.gamification import init_badges
 
 # Importando suas rotas
 from app.routes import (
@@ -37,6 +38,15 @@ async def lifespan(app: FastAPI):
         logger.info("Criando tabelas no banco de dados...")
         Base.metadata.create_all(bind=engine)
         logger.info("Banco de dados pronto!")
+
+        # Initialize Badges
+        db = SessionLocal()
+        try:
+            init_badges(db)
+            logger.info("Badges inicializados.")
+        finally:
+            db.close()
+
     except Exception as e:
         logger.error(f"ERRO CRITICO NO BANCO: {e}")
         # Não queremos que o app inicie se o banco falhar
