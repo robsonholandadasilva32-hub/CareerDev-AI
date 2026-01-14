@@ -9,6 +9,10 @@
             <span class="header-title">CareerDev AI</span>
         </div>
         <div class="header-controls">
+            <!-- Interview Mode Toggle -->
+            <button id="interview-toggle" onclick="toggleInterview()" aria-label="Modo Entrevista" title="Simular Entrevista" style="font-size: 0.9rem;">
+                🎙️
+            </button>
             <!-- Voice Toggle -->
             <button id="voice-toggle" onclick="toggleVoice()" aria-label="Ativar voz" title="Ativar voz">
                 🔇
@@ -277,13 +281,14 @@
 
 <script>
     let isVoiceEnabled = false;
+    let isInterviewMode = false;
     let currentLang = document.documentElement.lang || 'pt';
 
     // Translations for UI strings
     const i18n = {
-        pt: { exploring: "Desbravando...", voiceOn: "Desativar voz", voiceOff: "Ativar voz" },
-        en: { exploring: "Exploring...", voiceOn: "Disable voice", voiceOff: "Enable voice" },
-        es: { exploring: "Explorando...", voiceOn: "Desactivar voz", voiceOff: "Activar voz" }
+        pt: { exploring: "Desbravando...", voiceOn: "Desativar voz", voiceOff: "Ativar voz", interviewOn: "Sair da Entrevista", interviewOff: "Modo Entrevista" },
+        en: { exploring: "Exploring...", voiceOn: "Disable voice", voiceOff: "Enable voice", interviewOn: "Exit Interview", interviewOff: "Interview Mode" },
+        es: { exploring: "Explorando...", voiceOn: "Desactivar voz", voiceOff: "Activar voz", interviewOn: "Salir de Entrevista", interviewOff: "Modo Entrevista" }
     };
 
     // Fallback to PT if lang not found
@@ -354,10 +359,14 @@
         }
 
         try {
+            // Include mode in request
             const response = await fetch('/chatbot/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({
+                    message: text,
+                    mode: isInterviewMode ? 'interview' : 'standard'
+                })
             });
             const data = await response.json();
 
@@ -417,6 +426,25 @@
             utterance.rate = 1.1; // Slightly faster for modern feel
 
             window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function toggleInterview() {
+        isInterviewMode = !isInterviewMode;
+        const btn = document.getElementById('interview-toggle');
+        const header = document.querySelector('.chatbot-header');
+
+        if (isInterviewMode) {
+            btn.style.color = 'var(--secondary-color)';
+            btn.title = t.interviewOn;
+            header.style.background = 'rgba(40, 0, 80, 0.95)'; // Visual cue (Purple)
+            addMessage("🎙️ Modo Entrevista Ativado. Eu sou seu Tech Lead Sênior. Diga 'Iniciar' quando estiver pronto.", 'bot');
+            if (isVoiceEnabled) speakText("Modo Entrevista Ativado. Diga Iniciar.");
+        } else {
+            btn.style.color = 'var(--text-muted)';
+            btn.title = t.interviewOff;
+            header.style.background = 'rgba(10, 15, 28, 0.9)'; // Reset
+            addMessage("Modo entrevista encerrado.", 'bot');
         }
     }
 

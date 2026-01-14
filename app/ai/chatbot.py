@@ -3,7 +3,7 @@ import openai
 import json
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.ai.prompts import CAREER_ASSISTANT_SYSTEM_PROMPT
+from app.ai.prompts import CAREER_ASSISTANT_SYSTEM_PROMPT, get_interviewer_system_prompt
 from app.db.models.user import User
 
 class ChatbotService:
@@ -16,8 +16,12 @@ class ChatbotService:
         else:
             self.simulated = True
 
-    def get_response(self, message: str, lang: str = "pt", user_id: int = None, db: Session = None) -> str:
+    def get_response(self, message: str, lang: str = "pt", user_id: int = None, db: Session = None, mode: str = "standard") -> str:
+        """
+        Mode can be 'standard' or 'interview'.
+        """
         context_str = ""
+        system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
 
         # 1. Fetch User Context if available
         if user_id and db:
@@ -26,26 +30,40 @@ class ChatbotService:
                 profile = user.career_profile
                 plans = user.learning_plans
 
+                # Context Build
                 skills = profile.skills_snapshot if profile else {}
+                target_role = profile.target_role if profile else 'Software Engineer'
                 active_plans = [p.title for p in plans if p.status != 'completed']
 
-                context_str = f"""
-                **User Context:**
-                - Name: {user.name}
-                - Current Skills: {json.dumps(skills)}
-                - Active Learning Plan: {', '.join(active_plans)}
-                - Focus: {profile.target_role if profile else 'Not set'}
+                # Check Mode
+                if mode == "interview":
+                     system_prompt = get_interviewer_system_prompt(
+                         {"target_role": target_role, "skills": skills},
+                         user.name
+                     )
+                else:
+                    context_str = f"""
+                    **User Context:**
+                    - Name: {user.name}
+                    - Current Skills: {json.dumps(skills)}
+                    - Active Learning Plan: {', '.join(active_plans)}
+                    - Focus: {target_role}
 
-                Use this context to give personalized advice. If they ask about their plan, refer to the active items.
-                """
+                    Use this context to give personalized advice. If they ask about their plan, refer to the active items.
+                    """
 
         if self.simulated:
-            return self._simulated_response(message, lang, context_str)
+            return self._simulated_response(message, lang, context_str, mode)
         else:
-            return self._llm_response(message, lang, context_str)
+            return self._llm_response(message, lang, context_str, system_prompt)
 
-    def _simulated_response(self, message: str, lang: str, context: str) -> str:
+    def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
         msg = message.lower()
+
+        if mode == "interview":
+             if "start" in msg or "iniciar" in msg:
+                 return "Vamos começar. Explique a diferença entre TCP e UDP."
+             return "Boa resposta (Simulada). Próxima: O que é Dependency Injection?"
 
         # Enhanced Mock Responses using Context
         if "meu plano" in msg or "my plan" in msg:
@@ -65,10 +83,10 @@ class ChatbotService:
 
         # Default fallback
         if lang == "pt":
-            return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'."
-        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'."
+            return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'. Tente o modo Entrevista!"
+        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
 
-    def _llm_response(self, message: str, lang: str, context: str) -> str:
+    def _llm_response(self, message: str, lang: str, context: str, system_prompt: str) -> str:
         try:
             # Determine language prompt suffix
             lang_instruction = f"Reply in {lang}."
@@ -76,7 +94,7 @@ class ChatbotService:
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": CAREER_ASSISTANT_SYSTEM_PROMPT + "\n" + context},
+                    {"role": "system", "content": system_prompt + "\n" + context},
                     {"role": "system", "content": lang_instruction},
                     {"role": "user", "content": message}
                 ],

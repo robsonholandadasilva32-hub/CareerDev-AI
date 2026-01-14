@@ -19,3 +19,17 @@ def require_auth(request: Request):
 
     return None
 
+def get_current_user_from_request(request: Request):
+    """
+    Helper to extract user_id from token without redirecting.
+    Returns None if invalid.
+    """
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    return int(payload.get("sub"))
