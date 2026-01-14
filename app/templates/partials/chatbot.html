@@ -437,7 +437,8 @@
         if (isInterviewMode) {
             btn.style.color = 'var(--secondary-color)';
             btn.title = t.interviewOn;
-            header.style.background = 'rgba(40, 0, 80, 0.95)'; // Visual cue (Purple)
+            // Visual cue - Ensure header class is targeted correctly or use inline
+            header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
             addMessage("🎙️ Modo Entrevista Ativado. Eu sou seu Tech Lead Sênior. Diga 'Iniciar' quando estiver pronto.", 'bot');
             if (isVoiceEnabled) speakText("Modo Entrevista Ativado. Diga Iniciar.");
         } else {
