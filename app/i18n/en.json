@@ -100,5 +100,14 @@
   "a11y_card_motor_text": "Enlarged click areas and voice navigation (Beta).",
   "a11y_spotlight_title": "Did you know? CareerDev AI adapts to you.",
   "a11y_spotlight_text": "Dyslexia, Color Blindness, Focus, and more. Customize your experience in the Universal Panel.",
-  "a11y_spotlight_btn": "Configure Accessibility"
+  "a11y_spotlight_btn": "Configure Accessibility",
+
+  "security_promise_title": "Security & Privacy Promise",
+  "security_promise_subtitle": "Your trust is the foundation of our architecture. Non-negotiable guarantees:",
+  "sec_card_selling_title": "Zero Data Selling",
+  "sec_card_selling_text": "You are not the product. We never sell your information to third parties.",
+  "sec_card_encrypt_title": "Military-Grade Encryption",
+  "sec_card_encrypt_text": "Data protected at rest and in transit. Bank-level security for your career.",
+  "sec_card_ai_title": "Private AI",
+  "sec_card_ai_text": "Your data does not train public AI. Your interactions are isolated and confidential."
 }
