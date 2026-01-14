@@ -4,11 +4,35 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.jwt import decode_token, create_access_token
-from app.services.notifications import verify_otp
+from app.services.notifications import verify_otp, create_otp
 from app.i18n.loader import get_texts
+from app.db.models.user import User
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+@router.post("/resend-2fa")
+def resend_2fa(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    temp_token = request.cookies.get("temp_token")
+    if not temp_token:
+        return RedirectResponse("/login", status_code=302)
+
+    payload = decode_token(temp_token)
+    if not payload or not payload.get("pre_2fa"):
+        return RedirectResponse("/login", status_code=302)
+
+    user_id = int(payload["sub"])
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if user:
+        method = user.two_factor_method or "email"
+        create_otp(db, user_id, method)
+        # In prod: Add flash message "Code resent"
+
+    return RedirectResponse("/verify-2fa", status_code=302)
 
 @router.get("/verify-2fa", response_class=HTMLResponse)
 def verify_2fa_page(request: Request):
