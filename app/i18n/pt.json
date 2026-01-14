@@ -100,5 +100,14 @@
   "a11y_card_motor_text": "Áreas de clique ampliadas e navegação por voz (Beta).",
   "a11y_spotlight_title": "Você sabia? O CareerDev AI se adapta a você.",
   "a11y_spotlight_text": "Dislexia, Daltonismo, Foco e mais. Personalize sua experiência no Painel Universal.",
-  "a11y_spotlight_btn": "Configurar Acessibilidade"
+  "a11y_spotlight_btn": "Configurar Acessibilidade",
+
+  "security_promise_title": "Compromisso de Segurança e Privacidade",
+  "security_promise_subtitle": "Sua confiança é a base da nossa arquitetura. Garantias inegociáveis:",
+  "sec_card_selling_title": "Zero Venda de Dados",
+  "sec_card_selling_text": "Você não é o produto. Nunca vendemos suas informações para terceiros.",
+  "sec_card_encrypt_title": "Criptografia Militar",
+  "sec_card_encrypt_text": "Dados protegidos em repouso e trânsito. Segurança bancária para sua carreira.",
+  "sec_card_ai_title": "IA Privada",
+  "sec_card_ai_text": "Seus dados não treinam a IA pública. Suas interações são isoladas e confidenciais."
 }
