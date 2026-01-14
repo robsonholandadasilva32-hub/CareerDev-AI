@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # AI
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o"
 
     # OAuth
     GITHUB_CLIENT_ID: Optional[str] = None

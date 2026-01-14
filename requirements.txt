@@ -16,3 +16,4 @@ twilio==9.9.1
 pydantic-settings==2.12.0
 stripe
 authlib
+slowapi
