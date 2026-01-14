@@ -1,0 +1,45 @@
+<div id="cookie-notice" style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 15, 28, 0.95);
+    border: 1px solid var(--secondary-color);
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: none;
+    max-width: 90%;
+    width: 600px;
+    backdrop-filter: blur(10px);
+    text-align: center;
+">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+        <div style="text-align: left; flex: 1;">
+            <strong style="color: var(--secondary-color); display: block; margin-bottom: 5px;">🍪 Transparência Total</strong>
+            <span style="font-size: 0.9rem; color: #cbd5e1;">
+                Utilizamos <strong>apenas cookies essenciais</strong> para segurança (login) e suas preferências.
+                <br>
+                <strong>Zero rastreamento. Zero venda de dados.</strong>
+                <a href="/legal/privacy" style="text-decoration: underline; margin-left: 5px;">Saiba mais</a>.
+            </span>
+        </div>
+        <button onclick="acceptCookies()" class="btn" style="white-space: nowrap; padding: 10px 20px;">
+            Entendido
+        </button>
+    </div>
+</div>
+
+<script>
+    function acceptCookies() {
+        localStorage.setItem('cookie_notice_accepted', 'true');
+        document.getElementById('cookie-notice').style.display = 'none';
+    }
+
+    (function() {
+        if (!localStorage.getItem('cookie_notice_accepted')) {
+            document.getElementById('cookie-notice').style.display = 'block';
+        }
+    })();
+</script>

@@ -2,9 +2,10 @@ import sys
 import os
 
 # Add the project directory to the sys.path
-path = os.path.expanduser('~/CareerDevAI') # Typical structure, adjustable
-if path not in sys.path:
-    sys.path.append(path)
+# Uses the directory of the current file (wsgi.py) as the root
+project_home = os.path.dirname(os.path.abspath(__file__))
+if project_home not in sys.path:
+    sys.path.append(project_home)
 
 from app.main import app as application
 

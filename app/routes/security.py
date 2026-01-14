@@ -63,7 +63,7 @@ from app.core.security import verify_password, hash_password
 def update_security(
     request: Request,
     method: str = Form("email"),
-    phone: str = Form(None),
+    phone: str = Form(None), # Stores Telegram Chat ID now
     language: str = Form("pt"),
     current_password: str = Form(None),
     new_password: str = Form(None),
