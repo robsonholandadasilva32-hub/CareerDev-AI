@@ -1,0 +1,59 @@
+import time
+import threading
+import traceback
+import asyncio
+from sqlalchemy.orm import Session
+from app.db.session import SessionLocal
+from app.db.models.job import BackgroundJob
+from app.services.notifications import send_email, send_telegram
+
+# Worker function to process jobs
+def process_jobs():
+    db = SessionLocal()
+    try:
+        jobs = db.query(BackgroundJob).filter(BackgroundJob.status == "pending").all()
+
+        for job in jobs:
+            try:
+                # Dispatch tasks
+                if job.task_type == "send_email":
+                    # We need an event loop for async functions if running in sync thread
+                    # Or better: make send_email synchronous or wrap it
+                    # For simplicity in this script, we'll use asyncio.run logic wrapper
+                    asyncio.run(send_email(job.payload['code'], job.payload['email']))
+
+                elif job.task_type == "send_telegram":
+                    asyncio.run(send_telegram(job.payload['code'], job.payload['chat_id']))
+
+                job.status = "completed"
+
+            except Exception as e:
+                job.status = "failed"
+                job.error_log = str(e)
+                job.attempts += 1
+                print(f"[JOB FAILED] ID {job.id}: {e}")
+
+            finally:
+                db.commit()
+
+    except Exception as e:
+        print(f"[WORKER ERROR] {e}")
+    finally:
+        db.close()
+
+class JobWorker(threading.Thread):
+    def __init__(self, interval=10):
+        super().__init__()
+        self.interval = interval
+        self._stop_event = threading.Event()
+
+    def run(self):
+        print("🚀 Background Job Worker Started")
+        while not self._stop_event.is_set():
+            process_jobs()
+            time.sleep(self.interval)
+
+    def stop(self):
+        self._stop_event.set()
+
+job_worker = JobWorker()

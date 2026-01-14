@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+
 <div class="dashboard-grid">
     <!-- SECURITY HEADER -->
-    <div class="card security-status">
+    <div class="card security-status" id="tour-security">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h3>🔒 {{ t.dash_security_active }}</h3>
@@ -16,7 +18,7 @@
     </div>
 
     <!-- ACCESSIBILITY SPOTLIGHT (NEW) -->
-    <div class="card a11y-spotlight">
+    <div class="card a11y-spotlight" id="tour-a11y">
         <div class="a11y-spotlight-content">
             <div class="a11y-spotlight-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -83,7 +85,14 @@
     <div class="card user-identity" style="margin-top: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-                <h2>{{ t.dash_welcome }}, {{ email }}</h2>
+                <h2>
+                    {{ t.dash_welcome }}, {{ email }}
+                    {% if user.is_premium %}
+                        <span style="font-size: 0.6em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; vertical-align: middle;">PREMIUM</span>
+                    {% else %}
+                         <a href="/billing/checkout" style="font-size: 0.5em; background: #374151; color: white; padding: 4px 8px; border-radius: 10px; text-decoration: none; vertical-align: middle; border: 1px solid gold;">Assinar Premium</a>
+                    {% endif %}
+                </h2>
                 <div class="stats-row" style="display: flex; gap: 20px; margin-top: 15px;">
                     <div class="stat-item">
                         <span class="label">{{ t.dash_level }}</span>
@@ -224,7 +233,33 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
 <script>
+// Tour Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const hasSeenTour = localStorage.getItem('hasSeenTour_v1');
+
+    if (!hasSeenTour) {
+        const driver = window.driver.js.driver;
+
+        const driverObj = driver({
+            showProgress: true,
+            steps: [
+                { popover: { title: 'Bem-vindo ao CareerDev AI! 🚀', description: 'Vamos fazer um tour rápido pela sua nova central de carreira.' } },
+                { element: '#tour-security', popover: { title: 'Segurança em Primeiro Lugar', description: 'Aqui você monitora o status da sua conta. Mantenha o 2FA sempre ativo!' } },
+                { element: '#tour-a11y', popover: { title: 'Acessibilidade Universal', description: 'Nosso painel exclusivo para adaptar a plataforma às suas necessidades (Visão, Audição, Motor).' } },
+                { element: '#chatbot-toggle', popover: { title: 'IA Assistente', description: 'Precisa de dicas de estudo ou simular uma entrevista? Chame nossa IA aqui.' } },
+                { element: '.badges-hall', popover: { title: 'Suas Conquistas', description: 'Complete tarefas e ganhe badges que você pode compartilhar no LinkedIn!' } }
+            ],
+            onDestroyed: () => {
+                localStorage.setItem('hasSeenTour_v1', 'true');
+            }
+        });
+
+        driverObj.drive();
+    }
+});
+
 // Badge Logic
 let currentBadgeName = "";
 
