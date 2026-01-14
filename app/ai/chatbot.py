@@ -1,7 +1,10 @@
 from typing import Optional
 import openai
+import json
+from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.ai.prompts import CAREER_ASSISTANT_SYSTEM_PROMPT
+from app.db.models.user import User
 
 class ChatbotService:
     def __init__(self, simulated: bool = True):
@@ -13,16 +16,44 @@ class ChatbotService:
         else:
             self.simulated = True
 
-    def get_response(self, message: str, lang: str = "pt") -> str:
-        if self.simulated:
-            return self._simulated_response(message, lang)
-        else:
-            return self._llm_response(message, lang)
+    def get_response(self, message: str, lang: str = "pt", user_id: int = None, db: Session = None) -> str:
+        context_str = ""
 
-    def _simulated_response(self, message: str, lang: str) -> str:
+        # 1. Fetch User Context if available
+        if user_id and db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                profile = user.career_profile
+                plans = user.learning_plans
+
+                skills = profile.skills_snapshot if profile else {}
+                active_plans = [p.title for p in plans if p.status != 'completed']
+
+                context_str = f"""
+                **User Context:**
+                - Name: {user.name}
+                - Current Skills: {json.dumps(skills)}
+                - Active Learning Plan: {', '.join(active_plans)}
+                - Focus: {profile.target_role if profile else 'Not set'}
+
+                Use this context to give personalized advice. If they ask about their plan, refer to the active items.
+                """
+
+        if self.simulated:
+            return self._simulated_response(message, lang, context_str)
+        else:
+            return self._llm_response(message, lang, context_str)
+
+    def _simulated_response(self, message: str, lang: str, context: str) -> str:
         msg = message.lower()
 
-        # Contextual Simulated Responses
+        # Enhanced Mock Responses using Context
+        if "meu plano" in msg or "my plan" in msg:
+            if "Active Learning Plan" in context:
+                 # Extract plan mock
+                 return "Baseado no seu perfil, você deve focar em: " + context.split("Active Learning Plan:")[1].split("- Focus")[0].strip()
+            return "Você ainda não tem um plano ativo. Acesse o dashboard para gerar um."
+
         if "rust" in msg:
             return "Rust é uma linguagem focada em segurança e performance. Ótima para sistemas embarcados e serviços críticos."
         elif "go" in msg or "golang" in msg:
@@ -31,17 +62,13 @@ class ChatbotService:
             return "Para avançar sua carreira, o CareerDev AI sugere focar em T-Shaped skills e conectar seu GitHub para análise de lacunas."
         elif "login" in msg or "entrar" in msg:
             return "Você pode entrar usando E-mail/Senha, GitHub ou LinkedIn para uma experiência completa."
-        elif "segurança" in msg or "security" in msg:
-            return "Nossa segurança inclui criptografia de ponta, sessões seguras e autenticação em dois fatores (2FA)."
-        elif "objetivo" in msg or "goal" in msg:
-            return "Nosso objetivo é automatizar seu upskilling com IA, identificando o que o mercado pede e o que você precisa aprender."
 
         # Default fallback
         if lang == "pt":
-            return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Login'."
-        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'Login'."
+            return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'."
+        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'."
 
-    def _llm_response(self, message: str, lang: str) -> str:
+    def _llm_response(self, message: str, lang: str, context: str) -> str:
         try:
             # Determine language prompt suffix
             lang_instruction = f"Reply in {lang}."
@@ -49,7 +76,7 @@ class ChatbotService:
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": CAREER_ASSISTANT_SYSTEM_PROMPT},
+                    {"role": "system", "content": CAREER_ASSISTANT_SYSTEM_PROMPT + "\n" + context},
                     {"role": "system", "content": lang_instruction},
                     {"role": "user", "content": message}
                 ],
@@ -62,8 +89,3 @@ class ChatbotService:
 
 # Global Instance
 chatbot_service = ChatbotService()
-
-def simple_ai_response(message: str) -> str:
-    # In a real app, we would detect language from the request context
-    # For now, we default to PT or try to infer from the message content in a robust implementation
-    return chatbot_service.get_response(message)
