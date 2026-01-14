@@ -16,19 +16,19 @@
     </div>
 
     <!-- ACCESSIBILITY SPOTLIGHT (NEW) -->
-    <div class="card a11y-spotlight" style="margin-top: 20px; border: 1px solid var(--secondary-color); background: linear-gradient(90deg, rgba(0,255,136,0.05) 0%, rgba(10,15,28,0) 100%);">
-        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <div style="background: rgba(0,255,136,0.1); padding: 12px; border-radius: 50%; color: var(--secondary-color); display: flex; align-items: center; justify-content: center;">
+    <div class="card a11y-spotlight">
+        <div class="a11y-spotlight-content">
+            <div class="a11y-spotlight-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
             </div>
-            <div style="flex: 1; min-width: 250px;">
-                <h4 style="margin: 0; color: var(--text-color); font-size: 1.1rem;">Você sabia? O CareerDev AI se adapta a você.</h4>
-                <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #9ca3af;">
-                    Dislexia, Daltonismo, Foco e mais. Personalize sua experiência no Painel Universal.
+            <div class="a11y-spotlight-text">
+                <h4>{{ t.a11y_spotlight_title }}</h4>
+                <p>
+                    {{ t.a11y_spotlight_text }}
                 </p>
             </div>
-            <a href="/security" class="btn-outline" style="border-color: var(--secondary-color); color: var(--secondary-color); white-space: nowrap;">
-                Configurar Acessibilidade
+            <a href="/security" class="btn-outline a11y-btn">
+                {{ t.a11y_spotlight_btn }}
             </a>
         </div>
     </div>
