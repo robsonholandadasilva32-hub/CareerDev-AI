@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.db.models.user import User
+from app.core.jwt import decode_token
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -16,22 +17,26 @@ def get_db():
     finally:
         db.close()
 
+def get_current_user(request: Request, db: Session) -> User | None:
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    user_id = int(payload.get("sub"))
+    return db.query(User).filter(User.id == user_id).first()
+
 
 @router.get("/security", response_class=HTMLResponse)
 def security_panel(request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).first()
+    user = get_current_user(request, db)
 
     # 🛡️ PROTEÇÃO ABSOLUTA: nunca acessar atributos se user for None
     if user is None:
-        return templates.TemplateResponse(
-            "security.html",
-            {
-                "request": request,
-                "two_factor_enabled": False,
-                "two_factor_method": None,
-                "no_user": True
-            }
-        )
+        return RedirectResponse("/login", status_code=302)
 
     return templates.TemplateResponse(
         "security.html",
@@ -39,23 +44,21 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "two_factor_enabled": bool(user.two_factor_enabled),
             "two_factor_method": user.two_factor_method,
+            "user_phone": user.phone_number, # Pass phone to template
             "no_user": False
         }
     )
 
 @router.post("/security/update")
 def update_security(
+    request: Request,
     method: str = Form("email"),
     phone: str = Form(None),
     contact_dev: str = Form(None),
     message_body: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    # Retrieve user correctly from session in real app, here we mock 'first' for now or need context
-    # Note: In a real route we would use Depends(get_current_user)
-    # Since we lack that helper in this file context, we assume the user is logged in if they hit this.
-    # We will query the first user for simplicity as per existing pattern or fetch via token if passed.
-    user = db.query(User).first()
+    user = get_current_user(request, db)
 
     if not user:
          return RedirectResponse("/login", status_code=302)
@@ -83,4 +86,3 @@ def update_security(
 
     db.commit()
     return RedirectResponse("/security?success=true", status_code=302)
-
