@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
+from app.i18n.loader import get_texts
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -38,6 +39,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse("/login", status_code=302)
 
+    # Load Language
+    lang = request.session.get("lang", user.preferred_language or "pt")
+    t = get_texts(lang)
+
     return templates.TemplateResponse(
         "security.html",
         {
@@ -45,7 +50,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
             "two_factor_enabled": bool(user.two_factor_enabled),
             "two_factor_method": user.two_factor_method,
             "user_phone": user.phone_number, # Pass phone to template
-            "no_user": False
+            "no_user": False,
+            "lang": lang,
+            "t": t,
+            "user": user # Pass full user object for base template checks (like trial banner)
         }
     )
 

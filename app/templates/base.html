@@ -107,7 +107,33 @@
     .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
     .btn-outline:hover { background: rgba(0, 243, 255, 0.1); }
 
+    /* A11y Classes */
+    html.dyslexic-font body { font-family: 'Verdana', sans-serif !important; letter-spacing: 0.5px; word-spacing: 2px; }
+
+    html.high-contrast body {
+        --bg-color: #000 !important;
+        --text-color: #fff !important;
+        --primary-color: #ffff00 !important;
+        --secondary-color: #00ffff !important;
+        background-color: black !important;
+        color: white !important;
+    }
+    html.high-contrast .card { border: 2px solid white !important; background: black !important; }
+    html.high-contrast a { color: yellow !important; text-decoration: underline !important; }
+
+    html.reduced-motion * { animation: none !important; transition: none !important; }
+
   </style>
+  <script>
+    // Global A11y Loader
+    (function() {
+        if (localStorage.getItem('dyslexic-font') === 'true') document.documentElement.classList.add('dyslexic-font');
+        if (localStorage.getItem('high-contrast') === 'true') document.documentElement.classList.add('high-contrast');
+        if (localStorage.getItem('reduced-motion') === 'true') document.documentElement.classList.add('reduced-motion');
+        const savedSize = localStorage.getItem('font-size');
+        if (savedSize) document.documentElement.style.fontSize = savedSize + '%';
+    })();
+  </script>
   <link rel="stylesheet" href="/static/css/logo.css">
 </head>
 
