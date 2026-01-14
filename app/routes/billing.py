@@ -20,8 +20,9 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not stripe.api_key:
-        # Mock Flow for Demo
+        # Mock Flow for Demo/Dev
         user.is_premium = True
+        user.subscription_status = "active"
         db.commit()
         return RedirectResponse("/dashboard?success=premium_mocked")
 
@@ -55,12 +56,30 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/billing/success")
 def billing_success(session_id: str, request: Request, db: Session = Depends(get_db)):
-    # In prod, verify session_id with Stripe
-    # For now, trust and upgrade
     user_id = get_current_user_from_request(request)
-    if user_id:
-        user = db.query(User).filter(User.id == user_id).first()
-        user.is_premium = True
-        db.commit()
+    if not user_id:
+        return RedirectResponse("/login")
 
-    return RedirectResponse("/dashboard?success=premium_activated")
+    # If keys are missing (Mock/Dev), allow bypass
+    if not stripe.api_key:
+         user = db.query(User).filter(User.id == user_id).first()
+         user.is_premium = True
+         user.subscription_status = "active"
+         db.commit()
+         return RedirectResponse("/dashboard?success=premium_activated")
+
+    # Secure Verification
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status == 'paid':
+            user = db.query(User).filter(User.id == user_id).first()
+            user.is_premium = True
+            user.subscription_status = "active"
+            user.stripe_customer_id = session.customer
+            db.commit()
+            return RedirectResponse("/dashboard?success=premium_activated")
+        else:
+            return RedirectResponse("/dashboard?error=payment_pending")
+    except Exception as e:
+        print(f"Stripe Verification Error: {e}")
+        return RedirectResponse("/dashboard?error=verification_failed")
