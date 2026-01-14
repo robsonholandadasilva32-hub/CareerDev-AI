@@ -86,5 +86,19 @@
   "int_linkedin_title": "Alinhamento de Mercado em Tempo Real",
   "int_linkedin_text": "Conecte o LinkedIn para monitorar tendências de vagas e receber sugestões de networking estratégico, focando em nichos valiosos como IA Ética e Edge Computing.",
 
-  "int_impact_text": "Transforme sua experiência em autoridade. O CareerDev AI preenche a lacuna entre o que você sabe e o que o mercado precisa."
+  "int_impact_text": "Transforme sua experiência em autoridade. O CareerDev AI preenche a lacuna entre o que você sabe e o que o mercado precisa.",
+
+  "a11y_title": "Inclusão no Código-Fonte",
+  "a11y_subtitle": "Tecnologia adaptativa para todos os perfis. Ative no painel de controle.",
+  "a11y_card_cognitive_title": "Foco Cognitivo",
+  "a11y_card_cognitive_text": "Fontes amigáveis à dislexia e modos de redução de ruído visual.",
+  "a11y_card_vision_title": "Visão Adaptativa",
+  "a11y_card_vision_text": "Alto contraste e filtros inteligentes para daltonismo.",
+  "a11y_card_hearing_title": "Sinalização Visual",
+  "a11y_card_hearing_text": "Alertas gráficos e comunicação simplificada por IA.",
+  "a11y_card_motor_title": "Controle Expandido",
+  "a11y_card_motor_text": "Áreas de clique ampliadas e navegação por voz (Beta).",
+  "a11y_spotlight_title": "Você sabia? O CareerDev AI se adapta a você.",
+  "a11y_spotlight_text": "Dislexia, Daltonismo, Foco e mais. Personalize sua experiência no Painel Universal.",
+  "a11y_spotlight_btn": "Configurar Acessibilidade"
 }
