@@ -1,28 +1,53 @@
+import logging
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from pathlib import Path
+from dotenv import load_dotenv
 
+# 1. Carregar .env e Configurar Logs
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 2. CAMINHO ABSOLUTO (Correção importante para o PythonAnywhere)
+BASE_DIR = Path(__file__).resolve().parent
+
+# 3. IMPORTAÇÕES SEM PROTEÇÃO (Para descobrirmos o erro real)
+# Se faltar alguma biblioteca aqui, o erro vai aparecer no Log de Erros.
 from app.db.base import Base
 from app.db.session import engine
-from app.routes import auth, dashboard, chatbot, security, email_verification, two_factor, logout, social, billing
-
-app = FastAPI(title="CareerDev AI")
-
-# Database Creation
-Base.metadata.create_all(bind=engine)
-
-# Security Middleware
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["*"] # Restrict this in production
+# Importando suas rotas
+from app.routes import (
+    auth, dashboard, chatbot, security,
+    email_verification, two_factor, logout, social, billing
 )
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Session Middleware
+# 4. Lifespan (Conexão com Banco)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        logger.info("Criando tabelas no banco de dados...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Banco de dados pronto!")
+    except Exception as e:
+        logger.error(f"ERRO CRITICO NO BANCO: {e}")
+        # Não queremos que o app inicie se o banco falhar
+        raise e
+    yield
+    logger.info("Desligando...")
+
+# 5. Inicialização do App
+app = FastAPI(title="CareerDev AI", lifespan=lifespan)
+
+# 6. Middlewares
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     SessionMiddleware,
     secret_key="a#j@dO6@6NA3qna1oa5hotn*%ndiTRX1285$x76h&ZsQN",
@@ -31,24 +56,30 @@ app.add_middleware(
     https_only=False
 )
 
-# Static Files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# 7. Arquivos Estáticos (Com caminho absoluto corrigido)
+static_dir = BASE_DIR / "static"
+if not static_dir.exists():
+    static_dir.mkdir(parents=True, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# 8. Rota Principal
+@app.get("/")
+def root():
+    return JSONResponse({
+        "status": "online",
+        "message": "CareerDev AI rodando com sucesso!",
+        "database": "Conectado"
+    })
 
 @app.get("/static/favicon/manifest.json")
 def manifest():
-    return FileResponse(
-        Path("app/static/favicon/manifest.json"),
-        media_type="application/manifest+json"
-    )
+    manifest_path = static_dir / "favicon" / "manifest.json"
+    if manifest_path.exists():
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return JSONResponse({"error": "Manifest not found"}, status_code=404)
 
-@app.get("/sw.js")
-def service_worker():
-    return FileResponse(
-        Path("app/static/sw.js"),
-        media_type="application/javascript"
-    )
-
-# Routes
+# 9. Inclusão de Rotas
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(chatbot.router)

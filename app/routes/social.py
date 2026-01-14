@@ -50,3 +50,44 @@ async def auth_github_callback(request: Request):
     except Exception as e:
         print(f"GitHub Auth Error: {e}")
         return RedirectResponse("/login?error=github_failed")
+
+        # --- PARTE DO LINKEDIN (Cole isso no final do arquivo social.py) ---
+
+# 1. Registrar o LinkedIn no Oauth
+# Nota: O objeto 'oauth' já deve ter sido criado lá em cima para o GitHub.
+# Nós apenas adicionamos o registro do LinkedIn nele.
+oauth.register(
+    name='linkedin',
+    client_id=settings.LINKEDIN_CLIENT_ID,
+    # TEM QUE SER EXATAMENTE ASSIM:
+    client_secret=settings.LINKEDIN_CLIENT_SECRET,
+    server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid profile email'
+    }
+)
+
+# 2. Rota que o Usuário clica para Entrar
+@router.get("/login/linkedin")
+async def login_linkedin(request: Request):
+    # O endereço para onde o LinkedIn vai devolver o usuário
+    redirect_uri = "https://careerdev.pythonanywhere.com/auth/linkedin/callback"
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+
+# 3. Rota de Retorno (Callback)
+@router.get("/auth/linkedin/callback")
+async def auth_linkedin(request: Request):
+    try:
+        # Troca o código temporário pelo Token de acesso
+        token = await oauth.linkedin.authorize_access_token(request)
+
+        # Pega os dados do usuário (Nome, Email, Foto)
+        user_info = token.get('userinfo')
+
+        # SUCESSO!
+        return {
+            "status": "Login LinkedIn Realizado com Sucesso!",
+            "usuario": user_info
+        }
+    except Exception as e:
+        return {"erro_login": str(e)}
