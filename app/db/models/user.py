@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base import Base
 
@@ -32,3 +33,13 @@ class User(Base):
     subscription_end_date = Column(DateTime, nullable=True)
     is_recurring = Column(Boolean, default=False)
     stripe_customer_id = Column(String, nullable=True)
+
+    # Social Auth
+    github_id = Column(String, nullable=True, unique=True)
+    linkedin_id = Column(String, nullable=True, unique=True)
+    avatar_url = Column(String, nullable=True)
+
+    # Relationships
+    career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
+    badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")

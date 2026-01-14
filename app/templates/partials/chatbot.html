@@ -1,25 +1,49 @@
-<div id="chatbot-widget" class="chatbot-widget">
+<div id="chatbot-widget" class="chatbot-widget" aria-label="Chatbot Assistant">
     <div class="chatbot-header">
-        <span>🤖 CareerDev AI</span>
-        <button onclick="toggleChat()" style="background:none; border:none; color:white; cursor:pointer;">✖</button>
-    </div>
-    <div id="chatbot-messages" class="chatbot-messages">
-        <div class="message bot">
-            Olá! Sou seu assistente de carreira. Pergunte sobre Rust, Go, ou dicas de carreira.
+        <div class="header-brand">
+            <!-- Creative Neural/Circuit Icon -->
+            <div class="neural-icon">
+                <div class="node center"></div>
+                <div class="pulse-ring"></div>
+            </div>
+            <span class="header-title">CareerDev AI</span>
+        </div>
+        <div class="header-controls">
+            <!-- Interview Mode Toggle -->
+            <button id="interview-toggle" onclick="toggleInterview()" aria-label="Modo Entrevista" title="Simular Entrevista" style="font-size: 0.9rem;">
+                🎙️
+            </button>
+            <!-- Voice Toggle -->
+            <button id="voice-toggle" onclick="toggleVoice()" aria-label="Ativar voz" title="Ativar voz">
+                🔇
+            </button>
+            <button onclick="toggleChat()" aria-label="Fechar chat" title="Fechar chat" class="close-btn">✖</button>
         </div>
     </div>
-    <div id="chatbot-status" class="chatbot-status" style="display:none; padding: 5px 10px; font-size: 0.8em; color: var(--primary-color);">
-        <span class="pulse">●</span> Desbravando...
+
+    <div id="chatbot-messages" class="chatbot-messages" aria-live="polite" role="log">
+        <div class="message bot">
+            Olá! Sou seu assistente de carreira. Pergunte sobre Rust, Go, ou como conectar seu GitHub.
+        </div>
     </div>
+
+    <!-- Status Indicator -->
+    <div id="chatbot-status" class="chatbot-status" aria-live="assertive" style="display:none;">
+        <span class="pulse">●</span> <span id="status-text">Desbravando...</span>
+    </div>
+
     <div class="chatbot-input">
-        <input type="text" id="chat-input" placeholder="Pergunte algo..." onkeypress="handleEnter(event)">
-        <button onclick="sendMessage()">➤</button>
+        <input type="text" id="chat-input" placeholder="Pergunte algo..." onkeypress="handleEnter(event)" aria-label="Digite sua mensagem">
+        <button onclick="sendMessage()" aria-label="Enviar mensagem">➤</button>
     </div>
 </div>
 
 <!-- Chatbot Toggle Button -->
-<button id="chatbot-toggle" onclick="toggleChat()" class="chatbot-toggle-btn">
-    💬
+<button id="chatbot-toggle" onclick="toggleChat()" class="chatbot-toggle-btn" aria-label="Abrir assistente de carreira">
+    <div class="neural-icon small">
+        <div class="node center"></div>
+        <div class="pulse-ring"></div>
+    </div>
 </button>
 
 <style>
@@ -27,111 +51,279 @@
         position: fixed;
         bottom: 80px;
         right: 20px;
-        width: 300px;
-        height: 400px;
+        width: 320px;
+        height: 450px;
         background: rgba(17, 24, 39, 0.95);
         border: 1px solid var(--primary-color);
-        border-radius: 10px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         z-index: 9999;
-        box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
         display: none; /* Hidden by default */
-        backdrop-filter: blur(5px);
+        backdrop-filter: blur(8px);
+        font-family: 'Inter', sans-serif;
     }
 
     .chatbot-header {
-        padding: 10px;
-        background: var(--accent-color);
-        border-bottom: 1px solid var(--primary-color);
-        border-radius: 10px 10px 0 0;
+        padding: 12px 15px;
+        background: rgba(10, 15, 28, 0.9);
+        border-bottom: 1px solid var(--accent-color);
+        border-radius: 12px 12px 0 0;
         display: flex;
         justify-content: space-between;
-        font-weight: bold;
+        align-items: center;
+        color: var(--primary-color);
+    }
+
+    .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-title {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: linear-gradient(90deg, var(--primary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* CREATIVE NEURAL ICON */
+    .neural-icon {
+        width: 24px;
+        height: 24px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .neural-icon .node {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--primary-color);
+        z-index: 2;
+    }
+
+    .neural-icon .pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        opacity: 0;
+        animation: ring-pulse 2s infinite;
+    }
+
+    .neural-icon.small {
+        width: 30px;
+        height: 30px;
+    }
+    .neural-icon.small .node { width: 10px; height: 10px; background: #000; }
+    .neural-icon.small .pulse-ring { border-color: #000; }
+
+    @keyframes ring-pulse {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .header-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .header-controls button {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: color 0.2s;
+        padding: 0;
+    }
+
+    .header-controls button:hover {
+        color: var(--text-main);
+    }
+
+    .close-btn:hover {
+        color: var(--error-color) !important;
     }
 
     .chatbot-messages {
         flex: 1;
-        padding: 10px;
+        padding: 15px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-color) transparent;
     }
 
     .message {
-        padding: 8px 12px;
-        border-radius: 8px;
-        max-width: 80%;
-        font-size: 0.9em;
+        padding: 10px 14px;
+        border-radius: 12px;
+        max-width: 85%;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        word-wrap: break-word;
     }
 
     .message.bot {
-        background: rgba(0, 243, 255, 0.1);
-        color: var(--primary-color);
+        background: rgba(0, 243, 255, 0.08);
+        color: #e0f2fe;
         align-self: flex-start;
-        border: 1px solid rgba(0, 243, 255, 0.3);
+        border-bottom-left-radius: 2px;
+        border: 1px solid rgba(0, 243, 255, 0.15);
     }
 
     .message.user {
-        background: rgba(0, 255, 136, 0.1);
-        color: var(--secondary-color);
+        background: rgba(0, 255, 136, 0.08);
+        color: #d1fae5;
         align-self: flex-end;
-        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-bottom-right-radius: 2px;
+        border: 1px solid rgba(0, 255, 136, 0.15);
+    }
+
+    .chatbot-status {
+        padding: 8px 15px;
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        background: rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-style: italic;
     }
 
     .chatbot-input {
-        padding: 10px;
+        padding: 15px;
         border-top: 1px solid var(--accent-color);
         display: flex;
-        gap: 5px;
+        gap: 10px;
+        background: rgba(10, 15, 28, 0.8);
+        border-radius: 0 0 12px 12px;
     }
 
     .chatbot-input input {
         flex: 1;
-        background: #0f172a;
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--accent-color);
         color: white;
-        padding: 5px;
-        border-radius: 4px;
+        padding: 10px;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+
+    .chatbot-input input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .chatbot-input button {
+        background: var(--primary-color);
+        border: none;
+        border-radius: 6px;
+        padding: 0 15px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #000;
+        transition: opacity 0.2s;
+    }
+
+    .chatbot-input button:hover {
+        opacity: 0.9;
     }
 
     .chatbot-toggle-btn {
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
-        background: var(--primary-color);
+        background: linear-gradient(135deg, var(--primary-color), #00d2ff);
         border: none;
-        font-size: 24px;
         cursor: pointer;
         z-index: 9999;
-        box-shadow: 0 0 10px var(--primary-color);
+        box-shadow: 0 4px 15px rgba(0, 243, 255, 0.4);
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chatbot-toggle-btn:hover {
+        transform: scale(1.05);
     }
 
     .pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: var(--primary-color);
+        border-radius: 50%;
         animation: pulse-anim 1.5s infinite;
     }
 
     @keyframes pulse-anim {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
     }
 </style>
 
 <script>
+    let isVoiceEnabled = false;
+    let isInterviewMode = false;
+    let currentLang = document.documentElement.lang || 'pt';
+
+    // Translations for UI strings
+    const i18n = {
+        pt: { exploring: "Desbravando...", voiceOn: "Desativar voz", voiceOff: "Ativar voz", interviewOn: "Sair da Entrevista", interviewOff: "Modo Entrevista" },
+        en: { exploring: "Exploring...", voiceOn: "Disable voice", voiceOff: "Enable voice", interviewOn: "Exit Interview", interviewOff: "Interview Mode" },
+        es: { exploring: "Explorando...", voiceOn: "Desactivar voz", voiceOff: "Activar voz", interviewOn: "Salir de Entrevista", interviewOff: "Modo Entrevista" }
+    };
+
+    // Fallback to PT if lang not found
+    const t = i18n[currentLang] || i18n.pt;
+
     function toggleChat() {
         const widget = document.getElementById('chatbot-widget');
         const btn = document.getElementById('chatbot-toggle');
+        const input = document.getElementById('chat-input');
+
         if (widget.style.display === 'none' || widget.style.display === '') {
             widget.style.display = 'flex';
             btn.style.display = 'none';
+            input.focus();
         } else {
             widget.style.display = 'none';
-            btn.style.display = 'block';
+            btn.style.display = 'flex'; // Changed to flex to keep icon centered
+        }
+    }
+
+    function toggleVoice() {
+        isVoiceEnabled = !isVoiceEnabled;
+        const btn = document.getElementById('voice-toggle');
+
+        if (isVoiceEnabled) {
+            btn.innerHTML = '🔊';
+            btn.setAttribute('aria-label', t.voiceOn);
+            btn.title = t.voiceOn;
+            // Welcome message if turning on
+            speakText("Modo de voz ativado.");
+        } else {
+            btn.innerHTML = '🔇';
+            btn.setAttribute('aria-label', t.voiceOff);
+            btn.title = t.voiceOff;
+            window.speechSynthesis.cancel();
         }
     }
 
@@ -141,35 +333,69 @@
 
     async function sendMessage() {
         const input = document.getElementById('chat-input');
-        const text = input.value.trim();
+        let text = input.value.trim();
         if (!text) return;
 
         addMessage(text, 'user');
         input.value = '';
 
+        // A11y: Simplified Communication Injection (Client-side prompt engineering)
+        if (localStorage.getItem('simple-text') === 'true') {
+             // We invisibly append this instruction for the LLM
+             text += " [SYSTEM: Responda de forma EXTREMAMENTE SIMPLES, DIRETA e OBJETIVA. Use vocabulário acessível (Português Simplificado).]";
+        }
+
         // Status "Desbravando..."
         const status = document.getElementById('chatbot-status');
+        const statusText = document.getElementById('status-text');
+
+        // Update status text based on lang
+        statusText.innerText = t.exploring;
         status.style.display = 'block';
 
-        // Audio Accessibility (Speech Synthesis)
-        speakText("Desbravando...");
+        // Audio Accessibility: Speak "Exploring..." immediately if voice is on
+        if (isVoiceEnabled) {
+            speakText(t.exploring);
+        }
 
         try {
+            // Include mode in request
             const response = await fetch('/chatbot/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({
+                    message: text,
+                    mode: isInterviewMode ? 'interview' : 'standard'
+                })
             });
             const data = await response.json();
 
             status.style.display = 'none';
             addMessage(data.response, 'bot');
-            speakText(data.response); // Accessibility: Speak response
+
+            // A11y: Visual Alerts (Flash)
+            if (localStorage.getItem('visual-alerts') === 'true') {
+                triggerVisualAlert();
+            }
+
+            if (isVoiceEnabled) {
+                speakText(data.response);
+            }
 
         } catch (error) {
             status.style.display = 'none';
             addMessage("Erro ao conectar com a IA.", 'bot');
+            if (isVoiceEnabled) speakText("Erro de conexão.");
         }
+    }
+
+    // Visual Alert Animation Trigger
+    function triggerVisualAlert() {
+        const flash = document.createElement('div');
+        flash.className = 'visual-flash-overlay';
+        document.body.appendChild(flash);
+        // Remove after animation (0.5s)
+        setTimeout(() => flash.remove(), 500);
     }
 
     function addMessage(text, sender) {
@@ -182,10 +408,74 @@
     }
 
     function speakText(text) {
+        if (!isVoiceEnabled) return;
+
         if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Stop current speech
+
             const utterance = new SpeechSynthesisUtterance(text);
-            // utterance.lang = 'pt-BR'; // Detect language ideally
+
+            // Map HTML lang to SpeechSynthesis lang codes
+            const langMap = {
+                'pt': 'pt-BR',
+                'en': 'en-US',
+                'es': 'es-ES'
+            };
+
+            utterance.lang = langMap[currentLang] || 'pt-BR';
+            utterance.rate = 1.1; // Slightly faster for modern feel
+
             window.speechSynthesis.speak(utterance);
         }
     }
+
+    function toggleInterview() {
+        isInterviewMode = !isInterviewMode;
+        const btn = document.getElementById('interview-toggle');
+        const header = document.querySelector('.chatbot-header');
+
+        if (isInterviewMode) {
+            btn.style.color = 'var(--secondary-color)';
+            btn.title = t.interviewOn;
+            // Visual cue - Ensure header class is targeted correctly or use inline
+            header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
+            addMessage("🎙️ Modo Entrevista Ativado. Eu sou seu Tech Lead Sênior. Diga 'Iniciar' quando estiver pronto.", 'bot');
+            if (isVoiceEnabled) speakText("Modo Entrevista Ativado. Diga Iniciar.");
+        } else {
+            btn.style.color = 'var(--text-muted)';
+            btn.title = t.interviewOff;
+            header.style.background = 'rgba(10, 15, 28, 0.9)'; // Reset
+            addMessage("Modo entrevista encerrado.", 'bot');
+        }
+    }
+
+    // Initialize UI Text
+    document.addEventListener("DOMContentLoaded", () => {
+        const voiceBtn = document.getElementById('voice-toggle');
+        voiceBtn.setAttribute('aria-label', t.voiceOff);
+        voiceBtn.title = t.voiceOff;
+
+        // 🚀 Creative 2FA Guidance on Register Page
+        if (window.location.pathname.includes('/register')) {
+            setTimeout(() => {
+                const guideMsg = {
+                    pt: "Olá, futuro dev! 🚀 Percebi que você está se cadastrando. Para segurança nível 'fortaleza', ative o 2FA! Escolha **SMS** para agilidade no celular ou **E-mail** se você é old school. Segurança não é feature, é requisito! 😉",
+                    en: "Hello, future dev! 🚀 I see you're signing up. For 'fortress-level' security, enable 2FA! Choose **SMS** for mobile speed or **Email** if you're old school. Security is not a feature, it's a requirement! 😉",
+                    es: "¡Hola, futuro dev! 🚀 Veo que te estás registrando. ¡Para seguridad nivel 'fortaleza', activa 2FA! Elige **SMS** para agilidad o **Email** si eres de la vieja escuela. ¡La seguridad no es una función, es un requisito! 😉"
+                };
+
+                // Open chat and show message
+                const widget = document.getElementById('chatbot-widget');
+                const btn = document.getElementById('chatbot-toggle');
+
+                if (widget.style.display === 'none' || widget.style.display === '') {
+                    widget.style.display = 'flex';
+                    btn.style.display = 'none';
+                }
+
+                addMessage(guideMsg[currentLang] || guideMsg.pt, 'bot');
+                if (isVoiceEnabled) speakText(guideMsg[currentLang] || guideMsg.pt);
+            }, 1000);
+        }
+    });
 </script>

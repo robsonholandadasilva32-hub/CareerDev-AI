@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
@@ -14,7 +15,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
+def dashboard(request: Request, db: Session = Depends(get_db)):
     # 1️⃣ Recupera o token JWT do cookie
     token = request.cookies.get("access_token")
 
@@ -29,25 +30,23 @@ def dashboard(request: Request):
 
     user_id = int(payload.get("sub"))
 
-    # 2.5️⃣ Check Subscription Status
-    # We need to fetch the user object to check created_at and subscription fields
-    # Since we don't have dependency injection for DB here easily without refactoring the whole route signature,
-    # we will do a quick session.
-    from app.db.session import SessionLocal
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            is_allowed = check_subscription_status(user)
-            if not is_allowed:
-                 # Redirect to Billing if trial expired
-                 return RedirectResponse("/billing", status_code=302)
-    finally:
-        db.close()
+    # Fetch User
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return RedirectResponse("/login")
 
-    # 3️⃣ Career Data
-    profile = career_engine.analyze_profile(user_id)
-    plan = career_engine.generate_plan(user_id)
+    # 2.5️⃣ Check Subscription Status
+    is_allowed = check_subscription_status(user)
+    if not is_allowed:
+            # Redirect to Billing if trial expired
+            return RedirectResponse("/billing", status_code=302)
+
+    # 3️⃣ Career Data (Real Logic)
+    # This will create/update the profile and sync (simulated) external data
+    profile_data = career_engine.analyze_profile(db, user_id)
+
+    # Generate/Fetch Plan
+    plan_items = career_engine.generate_plan(db, user_id)
 
     # 4️⃣ Load Language
     lang = request.query_params.get("lang")
@@ -56,17 +55,17 @@ def dashboard(request: Request):
 
     t = get_texts(lang)
 
-    # 5️⃣ Renderiza o dashboard com dados seguros do token
+    # 5️⃣ Renderiza o dashboard
     return templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,
             "user_id": user_id,
             "email": payload.get("email"),
-            "profile": profile,
-            "plan": plan,
+            "profile": profile_data,
+            "plan": plan_items, # List of LearningPlan objects
+            "badges": user.badges, # Pass UserBadges to template
             "t": t,
             "lang": lang
         }
     )
-
