@@ -182,7 +182,7 @@ def register(
     email: str = Form(...),
     password: str = Form(...),
     phone: str = Form(None),
-    two_factor_pref: str = Form("email"), # 'email' or 'sms'
+    two_factor_pref: str = Form("email"), # 'email' or 'telegram'
     lang: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
@@ -199,15 +199,15 @@ def register(
             }
         )
 
-    # Validate SMS Requirement
-    if two_factor_pref == "sms" and not phone:
+    # Validate Telegram Requirement
+    if two_factor_pref == "telegram" and not phone:
         return templates.TemplateResponse(
             "register.html",
             {
                 "request": request,
                 "lang": lang,
                 "t": t,
-                "error": "Phone number is required for SMS authentication."
+                "error": "Telegram Chat ID is required for Telegram authentication."
             }
         )
 
