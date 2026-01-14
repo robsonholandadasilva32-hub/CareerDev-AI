@@ -109,11 +109,14 @@
 
             <!-- Libras Mode -->
             <div class="a11y-toggle">
-                <label class="switch-label">
+                <label class="switch-label" title="Adicionada uma opção que ativa uma interface de usuário flutuante para um futuro avatar em Língua de Sinais.">
                     <span>Assistente Libras (Beta)</span>
                     <input type="checkbox" id="a11y-libras" onchange="toggleLibras()">
                     <span class="slider"></span>
                 </label>
+                <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.2;">
+                    Adicionada uma opção que ativa uma interface de usuário flutuante para um futuro avatar em Língua de Sinais.
+                </small>
             </div>
         </div>
     </section>
@@ -152,9 +155,9 @@
 <!-- Reading Guide Element -->
 <div id="reading-guide-bar" style="display: none; position: fixed; height: 30px; width: 100%; background: rgba(255, 242, 0, 0.15); pointer-events: none; z-index: 99999; border-top: 2px solid #ffee00; border-bottom: 2px solid #ffee00; top: 0; left: 0; box-shadow: 0 0 100px rgba(0,0,0,0.5);"></div>
 
-<!-- Libras Float Placeholder -->
-<div id="libras-float" style="display: none; position: fixed; bottom: 100px; right: 20px; width: 60px; height: 60px; background: #00b4d8; border-radius: 50%; z-index: 9999; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid white;">
-    <span style="font-size: 30px;">🤟</span>
+<!-- Libras Float Placeholder (George Boole Avatar) -->
+<div id="libras-float" title="Intérprete Virtual: George Boole" style="display: none; position: fixed; bottom: 100px; right: 20px; width: 70px; height: 70px; border-radius: 50%; z-index: 9999; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 3px solid #ffd700; overflow: hidden; background: #1a1a1a; transition: transform 0.3s ease;">
+    <img src="/static/img/george_boole.jpg" alt="George Boole Avatar" style="width: 100%; height: 100%; object-fit: cover; filter: sepia(0.4) contrast(1.1);">
 </div>
 
 <style>
@@ -229,6 +232,10 @@
     }
     input[type=range] { flex: 1; accent-color: var(--primary-color); cursor: pointer; }
 
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 
 <script>
@@ -289,8 +296,11 @@
         const el = document.getElementById('a11y-libras');
         const float = document.getElementById('libras-float');
         localStorage.setItem('libras-mode', el.checked);
-        float.style.display = el.checked ? 'flex' : 'none';
-        if(el.checked) alert("Assistente de Libras ativado (Modo Simulação). No futuro, este avatar traduzirá o conteúdo.");
+        float.style.display = el.checked ? 'block' : 'none';
+        if(el.checked) {
+             // Optional animation entry
+             float.style.animation = "fadeIn 0.5s ease-out";
+        }
     }
 
     function applyColorFilter(filterName) {
