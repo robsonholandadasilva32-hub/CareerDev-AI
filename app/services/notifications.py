@@ -87,6 +87,47 @@ def enqueue_email(db: Session, user_id: int, template_name: str, context: dict):
     db.commit()
     print(f"[JOB ENQUEUED] Email '{template_name}' to {user.email}")
 
+def enqueue_telegram(db: Session, user_id: int, template_key: str, context: dict):
+    from app.db.models.user import User
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user or not user.phone_number:
+        # User might not have Telegram set up or has SMS as fallback
+        return
+
+    # Only send if they explicitly chose Telegram as their method.
+    # We strictly check for 'telegram' here to avoid sending API requests to SMS numbers.
+    if user.two_factor_method != "telegram":
+        return
+
+    if "user_name" not in context:
+        context["user_name"] = user.name
+
+    payload = {
+        "chat_id": user.phone_number,
+        "template_key": template_key,
+        "context": context,
+        "lang": user.preferred_language or "pt"
+    }
+
+    job = BackgroundJob(task_type="send_telegram_template", payload=payload)
+    db.add(job)
+    db.commit()
+    print(f"[JOB ENQUEUED] Telegram '{template_key}' to {user.phone_number}")
+
+# Global Jinja2 Environment for caching and security
+_jinja_env = None
+
+def get_jinja_env():
+    global _jinja_env
+    if _jinja_env is None:
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+        _jinja_env = Environment(
+            loader=FileSystemLoader("app/templates"),
+            autoescape=select_autoescape(['html', 'xml'])
+        )
+    return _jinja_env
+
 async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         print("[WARN] SMTP not configured. Skipping real email.")
@@ -94,10 +135,8 @@ async def send_email_template(to_email: str, template_name: str, context: dict, 
 
     t = get_texts(lang)
 
-    # Jinja2 environment setup could be more robust, but simplistic loading is fine for now
     try:
-        from jinja2 import Environment, FileSystemLoader
-        env = Environment(loader=FileSystemLoader("app/templates"))
+        env = get_jinja_env()
         template = env.get_template(f"email/{template_name}.html")
 
         # Inject translations
@@ -195,6 +234,40 @@ async def send_telegram(code: str, chat_id: str):
         print(f"[SUCCESS] Telegram message sent to {chat_id}")
     except Exception as e:
         print(f"[ERROR] Telegram error: {e}")
+
+async def send_telegram_template(chat_id: str, template_key: str, context: dict, lang: str = "pt"):
+    if not settings.TELEGRAM_BOT_TOKEN:
+        print("[WARN] Telegram Bot Token not configured. Skipping real message.")
+        return
+
+    t = get_texts(lang)
+    message_template = t.get(template_key, "")
+
+    if not message_template:
+        print(f"[WARN] Telegram template '{template_key}' not found.")
+        return
+
+    # Replace placeholders with markdown escaping
+    for key, value in context.items():
+        # Escape markdown special characters in values
+        val_str = str(value)
+        escape_chars = r"_*[]()~`>#+-=|{}.!"
+        for char in escape_chars:
+            val_str = val_str.replace(char, f"\\{char}")
+
+        message_template = message_template.replace(f"{{{{{key}}}}}", val_str)
+
+    # Add footer if not already in template (simple consistency check)
+    if "CareerDev AI" not in message_template:
+        message_template += "\n\n_Sent via CareerDev AI_"
+
+    try:
+        bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        await bot.send_message(chat_id=chat_id, text=message_template, parse_mode="Markdown")
+        print(f"[SUCCESS] Telegram template '{template_key}' sent to {chat_id}")
+    except Exception as e:
+        print(f"[ERROR] Telegram error: {e}")
+
 
 def verify_otp(db: Session, user_id: int, code: str):
     otp = db.query(OTP).filter(

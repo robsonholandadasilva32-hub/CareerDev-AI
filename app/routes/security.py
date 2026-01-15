@@ -7,6 +7,8 @@ from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
+from app.core.security import verify_password, hash_password
+from app.services.notifications import enqueue_email, enqueue_telegram
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -56,9 +58,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
             "user": user # Pass full user object for base template checks (like trial banner)
         }
     )
-
-from app.core.security import verify_password, hash_password
-from app.services.notifications import enqueue_email
 
 @router.post("/security/update")
 def update_security(
@@ -118,13 +117,21 @@ def update_security(
 
     db.commit()
 
-    # Trigger Emails
+    # Trigger Emails & Telegram
+    t = get_texts(language) # Ensure we have texts for keys
+
+    # Send independent notifications for each distinct type of change
     if password_changed:
         enqueue_email(db, user.id, "account_update", {"change_type": "password"})
-    elif "2fa" in changes:
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_password", "Password changed")})
+
+    if "2fa" in changes:
         enqueue_email(db, user.id, "account_update", {"change_type": "2fa"})
-    elif "profile" in changes:
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_2fa", "2FA updated")})
+
+    if "profile" in changes:
         enqueue_email(db, user.id, "account_update", {"change_type": "profile"})
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_profile", "Profile updated")})
 
     return RedirectResponse("/security?success=true", status_code=302)
 
@@ -138,7 +145,9 @@ def delete_account(
         return RedirectResponse("/login", status_code=302)
 
     # Notify before deletion
+    t = get_texts(user.preferred_language or "pt")
     enqueue_email(db, user.id, "account_update", {"change_type": "account_deleted"})
+    enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_account_deleted", "Account deleted")})
 
     # Delete User (Cascade deletes profile/plans due to relationship config)
     db.delete(user)
