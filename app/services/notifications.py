@@ -263,7 +263,7 @@ async def send_telegram_template(chat_id: str, template_key: str, context: dict,
 
     try:
         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
-        await bot.send_message(chat_id=chat_id, text=message_template, parse_mode="Markdown")
+        await bot.send_message(chat_id=chat_id, text=message_template, parse_mode="MarkdownV2")
         print(f"[SUCCESS] Telegram template '{template_key}' sent to {chat_id}")
     except Exception as e:
         print(f"[ERROR] Telegram error: {e}")
