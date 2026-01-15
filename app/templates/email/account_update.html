@@ -1,0 +1,35 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+    <h1 style="color: #ff9c00;">{{ t.email_update_title }}</h1>
+
+    <p>{{ t.email_greeting.replace('{{name}}', user_name) }}</p>
+
+    <p>{{ t.email_update_body }}</p>
+
+    <!-- Alert Box -->
+    <div style="background-color: rgba(255, 156, 0, 0.1); border-left: 4px solid #ff9c00; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <strong style="color: #ff9c00; display: block; margin-bottom: 5px;">⚠️ {{ t.dash_security_active }}</strong>
+        <p style="margin: 0; color: #e6e9ef;">
+            {% if change_type == 'password' %}
+                {{ t.email_update_change_password }}
+            {% elif change_type == 'profile' %}
+                {{ t.email_update_change_profile }}
+            {% elif change_type == '2fa' %}
+                {{ t.email_update_change_2fa }}
+            {% elif change_type == 'account_deleted' %}
+                {{ t.email_update_account_deleted }}
+            {% else %}
+                {{ t.email_update_body }}
+            {% endif %}
+        </p>
+    </div>
+
+    <p style="font-size: 14px; color: #9aa4b2; margin-top: 30px;">
+        {{ t.email_security_advice }}
+    </p>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="https://careerdev.ai/security" class="btn" style="background-color: #2d3748; border: 1px solid #4a5568;">{{ t.dash_manage_security }}</a>
+    </div>
+{% endblock %}

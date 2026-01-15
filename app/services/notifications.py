@@ -12,6 +12,7 @@ from email.utils import formataddr
 from jinja2 import Template
 import aiosmtplib
 from telegram import Bot
+from app.i18n.loader import get_texts
 
 def generate_otp_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
@@ -61,6 +62,74 @@ def create_otp(db: Session, user_id: int, method: str):
     print(f"========================================")
 
     return otp
+
+def enqueue_email(db: Session, user_id: int, template_name: str, context: dict):
+    from app.db.models.user import User
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user or not user.email:
+        print(f"[WARN] Cannot enqueue email: User {user_id} not found or no email.")
+        return
+
+    # Add localized user name if not present
+    if "user_name" not in context:
+        context["user_name"] = user.name
+
+    payload = {
+        "email": user.email,
+        "template": template_name,
+        "context": context,
+        "lang": user.preferred_language or "pt"
+    }
+
+    job = BackgroundJob(task_type="send_email_template", payload=payload)
+    db.add(job)
+    db.commit()
+    print(f"[JOB ENQUEUED] Email '{template_name}' to {user.email}")
+
+async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
+    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
+        print("[WARN] SMTP not configured. Skipping real email.")
+        return
+
+    t = get_texts(lang)
+
+    # Jinja2 environment setup could be more robust, but simplistic loading is fine for now
+    try:
+        from jinja2 import Environment, FileSystemLoader
+        env = Environment(loader=FileSystemLoader("app/templates"))
+        template = env.get_template(f"email/{template_name}.html")
+
+        # Inject translations
+        full_context = {**context, "t": t, "lang": lang}
+        html_content = template.render(**full_context)
+
+        # Determine subject based on template or key
+        subject_key = f"email_{template_name}_subject"
+        subject = t.get(subject_key, "CareerDev AI Notification")
+
+        message = EmailMessage()
+        message["From"] = formataddr(("CareerDev AI", settings.SMTP_FROM_EMAIL))
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content("Please enable HTML to view this email.")
+        message.add_alternative(html_content, subtype='html')
+
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_SERVER,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME,
+            password=settings.SMTP_PASSWORD,
+            use_tls=False,
+            start_tls=True
+        )
+        print(f"[SUCCESS] Email '{template_name}' sent to {to_email}")
+
+    except Exception as e:
+        print(f"[ERROR] Failed to send email template '{template_name}': {e}")
+        import traceback
+        traceback.print_exc()
 
 async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
     if method == "email":

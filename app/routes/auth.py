@@ -10,7 +10,7 @@ from app.core.jwt import create_access_token
 from app.db.crud.users import get_user_by_email, create_user
 from app.db.crud.email_verification import create_email_verification
 from app.db.session import get_db
-from app.services.notifications import create_otp
+from app.services.notifications import create_otp, enqueue_email
 from app.core.limiter import limiter
 
 router = APIRouter()
@@ -236,6 +236,9 @@ def register(
 
     # ⚠️ Em dev: apenas loga o código
     print(f"[DEV] Código de verificação de e-mail: {verification.code}")
+
+    # Enqueue Welcome Email
+    enqueue_email(db, user.id, "welcome", {})
 
     return RedirectResponse(
         url=f"/verify-email?user_id={user.id}&lang={lang}",

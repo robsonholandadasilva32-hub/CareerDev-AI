@@ -5,7 +5,7 @@ import asyncio
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.db.models.job import BackgroundJob
-from app.services.notifications import send_email, send_telegram
+from app.services.notifications import send_email, send_telegram, send_email_template
 
 # Worker function to process jobs
 def process_jobs():
@@ -24,6 +24,14 @@ def process_jobs():
 
                 elif job.task_type == "send_telegram":
                     asyncio.run(send_telegram(job.payload['code'], job.payload['chat_id']))
+
+                elif job.task_type == "send_email_template":
+                    asyncio.run(send_email_template(
+                        to_email=job.payload['email'],
+                        template_name=job.payload['template'],
+                        context=job.payload['context'],
+                        lang=job.payload.get('lang', 'pt')
+                    ))
 
                 job.status = "completed"
 

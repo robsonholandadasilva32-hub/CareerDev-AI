@@ -58,6 +58,7 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     )
 
 from app.core.security import verify_password, hash_password
+from app.services.notifications import enqueue_email
 
 @router.post("/security/update")
 def update_security(
@@ -78,18 +79,28 @@ def update_security(
          return RedirectResponse("/login", status_code=302)
 
     # 1. Update Preferences
+    changes = []
+
+    if user.two_factor_method != method:
+        changes.append("2fa")
     user.two_factor_method = method
+
+    if user.preferred_language != language:
+        changes.append("profile")
     user.preferred_language = language
     request.session["lang"] = language # Update session immediately
 
-    if phone:
+    if phone and user.phone_number != phone:
         user.phone_number = phone
+        changes.append("profile")
 
     # 2. Password Change
+    password_changed = False
     if current_password and new_password:
         if verify_password(current_password, user.hashed_password):
             if new_password == confirm_password:
                 user.hashed_password = hash_password(new_password)
+                password_changed = True
                 print(f"🔐 [SECURITY] Password updated for {user.email}")
             else:
                 return RedirectResponse("/security?error=password_mismatch", status_code=302)
@@ -106,6 +117,15 @@ def update_security(
              print(f"📧 [SUPPORT ERROR] Could not send email: {e}")
 
     db.commit()
+
+    # Trigger Emails
+    if password_changed:
+        enqueue_email(db, user.id, "account_update", {"change_type": "password"})
+    elif "2fa" in changes:
+        enqueue_email(db, user.id, "account_update", {"change_type": "2fa"})
+    elif "profile" in changes:
+        enqueue_email(db, user.id, "account_update", {"change_type": "profile"})
+
     return RedirectResponse("/security?success=true", status_code=302)
 
 @router.post("/security/delete-account")
@@ -116,6 +136,9 @@ def delete_account(
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=302)
+
+    # Notify before deletion
+    enqueue_email(db, user.id, "account_update", {"change_type": "account_deleted"})
 
     # Delete User (Cascade deletes profile/plans due to relationship config)
     db.delete(user)

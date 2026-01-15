@@ -109,5 +109,30 @@
   "sec_card_encrypt_title": "Criptografia Militar",
   "sec_card_encrypt_text": "Dados protegidos em repouso e trânsito. Segurança bancária para sua carreira.",
   "sec_card_ai_title": "IA Privada",
-  "sec_card_ai_text": "Seus dados não treinam a IA pública. Suas interações são isoladas e confidenciais."
+  "sec_card_ai_text": "Seus dados não treinam a IA pública. Suas interações são isoladas e confidenciais.",
+
+  "email_greeting": "Olá, {{name}}",
+  "email_welcome_subject": "Bem-vindo ao CareerDev AI",
+  "email_welcome_title": "Comece sua Jornada de Carreira",
+  "email_welcome_body": "Estamos felizes em ter você conosco. O CareerDev AI foi projetado para acelerar sua carreira com ferramentas de IA, acessibilidade e segurança.",
+  "email_welcome_cta": "Acessar Dashboard",
+  "email_welcome_feature_1_title": "Análise de Currículo com IA",
+  "email_welcome_feature_1_desc": "Feedback instantâneo e personalizado.",
+  "email_welcome_feature_2_title": "Acessibilidade Universal",
+  "email_welcome_feature_2_desc": "Ferramentas adaptativas para todos.",
+  "email_welcome_feature_3_title": "Segurança de Dados",
+  "email_welcome_feature_3_desc": "Seus dados são seus. Não vendemos informações.",
+
+  "email_update_subject": "Aviso de Segurança: Atualização na Conta",
+  "email_update_title": "Alteração na Conta",
+  "email_update_body": "Detectamos uma alteração nas configurações da sua conta.",
+  "email_update_change_password": "Sua senha foi alterada.",
+  "email_update_change_profile": "Seu perfil foi atualizado.",
+  "email_update_change_2fa": "Suas configurações de 2FA foram alteradas.",
+  "email_update_account_deleted": "Sua conta foi excluída permanentemente.",
+  "email_security_advice": "Se você não realizou esta ação, entre em contato com o suporte imediatamente.",
+
+  "email_footer_rights": "Todos os direitos reservados.",
+  "email_footer_address": "Desenvolvido por pessoa física - Brasil",
+  "email_unsubscribe": "Você está recebendo este e-mail porque possui uma conta no CareerDev AI."
 }
