@@ -14,26 +14,27 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db)):
-    # 1️⃣ Recupera o token JWT do cookie
+def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
-
     if not token:
-        return RedirectResponse("/login")
+        return None
 
-    # 2️⃣ Decodifica e valida o token
     payload = decode_token(token)
-
     if not payload:
-        return RedirectResponse("/login")
+        return None
 
     user_id = int(payload.get("sub"))
-
-    # Fetch User
     user = db.query(User).filter(User.id == user_id).first()
+    return user
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
+    # 1️⃣ Secure Auth Dependency Check
     if not user:
-        return RedirectResponse("/login")
+        return RedirectResponse("/login", status_code=302)
+
+    user_id = user.id
+    email = user.email
 
     # 2.5️⃣ Check Subscription Status
     is_allowed = check_subscription_status(user)
@@ -61,7 +62,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "user_id": user_id,
-            "email": payload.get("email"),
+            "email": email,
             "profile": profile_data,
             "plan": plan_items, # List of LearningPlan objects
             "badges": user.badges, # Pass UserBadges to template
