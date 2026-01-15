@@ -134,5 +134,12 @@
 
   "email_footer_rights": "Todos os direitos reservados.",
   "email_footer_address": "Desenvolvido por pessoa física - Brasil",
-  "email_unsubscribe": "Você está recebendo este e-mail porque possui uma conta no CareerDev AI."
+  "email_unsubscribe": "Você está recebendo este e-mail porque possui uma conta no CareerDev AI.",
+
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Olá, {{user_name}}!\n\nBem-vindo ao CareerDev AI. Sua conta foi criada com sucesso.\n\nAgora você tem acesso a:\n🧠 Análise de Currículo com IA\n👁️ Ferramentas de Acessibilidade\n🛡️ Segurança de Dados Avançada\n\nAcesse seu painel: https://careerdev.ai/dashboard",
+  "telegram_security_alert": "🔐 *CareerDev AI: Alerta de Segurança*\n\n⚠️ Detectamos uma alteração na sua conta:\n\n*{{change_desc}}*\n\nSe você não reconhece esta ação, acesse https://careerdev.ai/security imediatamente.",
+  "telegram_update_password": "Sua senha foi alterada.",
+  "telegram_update_profile": "Seu perfil foi atualizado.",
+  "telegram_update_2fa": "Configurações de 2FA alteradas.",
+  "telegram_update_account_deleted": "Sua conta foi agendada para exclusão."
 }
