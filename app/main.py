@@ -144,6 +144,10 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 def root():
     return RedirectResponse("/login")
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 @app.get("/static/favicon/manifest.json")
 def manifest():
     manifest_path = static_dir / "favicon" / "manifest.json"
