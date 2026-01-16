@@ -9,6 +9,7 @@ from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
 from app.core.security import verify_password, hash_password
 from app.services.notifications import enqueue_email, enqueue_telegram
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -114,7 +115,7 @@ def update_security(
         from app.services.notifications import send_email
         subject = f"Support Request from {user.email}: {user.name}"
         try:
-             send_email(to="robsonholandasilva@yahoo.com.br", subject=subject, body=message_body)
+             send_email(to=settings.ADMIN_EMAIL, subject=subject, body=message_body)
         except Exception as e:
              logger.error(f"SUPPORT ERROR: Could not send email: {e}")
 
