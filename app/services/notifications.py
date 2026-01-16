@@ -249,8 +249,10 @@ async def send_telegram_template(chat_id: str, template_key: str, context: dict,
 
     # Replace placeholders with markdown escaping
     for key, value in context.items():
-        # Escape markdown special characters in values
+        # Escape markdown special characters in values (MarkdownV2)
         val_str = str(value)
+        # Escape backslash first to avoid double escaping
+        val_str = val_str.replace("\\", "\\\\")
         escape_chars = r"_*[]()~`>#+-=|{}.!"
         for char in escape_chars:
             val_str = val_str.replace(char, f"\\{char}")
