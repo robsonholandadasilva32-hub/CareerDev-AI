@@ -3,11 +3,12 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 # Configuration
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class PaymentService:
     @staticmethod
@@ -16,11 +17,14 @@ class PaymentService:
         Creates a Stripe customer.
         Returns the Customer ID.
         """
-        if not stripe.api_key or "test" in stripe.api_key:
-             # If keys are missing or it's a test key, we proceed.
-             # But if keys are TOTALLY missing (None), we might want to mock.
-             if not stripe.api_key:
+        # Strictly enable mock only in dev AND if keys are missing
+        if not stripe.api_key:
+             if settings.ENVIRONMENT == "development":
+                 logger.warning("Stripe Key missing. Using MOCK CUSTOMER in Development.")
                  return "cus_mock_12345"
+             else:
+                 logger.error("CRITICAL: Stripe Key missing in PRODUCTION. Payment failed.")
+                 return None
 
         try:
             customer = stripe.Customer.create(
@@ -30,8 +34,9 @@ class PaymentService:
             return customer.id
         except Exception as e:
             logger.error(f"Stripe Error (create_customer): {e}")
-            # Fallback for sandbox/offline dev if no internet or invalid key
-            return "cus_mock_fallback"
+            if settings.ENVIRONMENT == "development":
+                 return "cus_mock_fallback"
+            return None
 
     @staticmethod
     def process_payment(
@@ -43,12 +48,12 @@ class PaymentService:
     ) -> bool:
         """
         Process a one-time charge or setup for subscription.
-        For this simplified requirement:
-        - If recurring, we would usually create a Subscription.
-        - If not recurring, we create a Charge or PaymentIntent.
         """
         if not stripe.api_key:
-            return True # Mock success
+            if settings.ENVIRONMENT == "development":
+                 logger.warning("Stripe Key missing. Using MOCK PAYMENT in Development.")
+                 return True
+            return False
 
         try:
             # Attach the source (card token) to the customer
@@ -67,11 +72,11 @@ class PaymentService:
             return True
         except Exception as e:
             logger.error(f"Stripe Error (process_payment): {e}")
-            # Ensure we don't accidentally give free access if there's a real error
-            # But for this specific sandbox task where we don't have real keys:
-            if "Authentication failed" in str(e) or "Invalid API Key" in str(e):
-                logger.info("Mocking success due to invalid keys in sandbox.")
-                return True
+            # Only mock in dev
+            if settings.ENVIRONMENT == "development":
+                if "Authentication failed" in str(e) or "Invalid API Key" in str(e):
+                    logger.info("Mocking success due to invalid keys in sandbox.")
+                    return True
             return False
 
     @staticmethod
@@ -80,7 +85,9 @@ class PaymentService:
         Creates a recurring subscription.
         """
         if not stripe.api_key:
-            return True
+             if settings.ENVIRONMENT == "development":
+                 return True
+             return False
 
         try:
             stripe.Subscription.create(

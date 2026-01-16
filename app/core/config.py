@@ -4,6 +4,8 @@ from typing import Optional
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "CareerDev AI"
+    ENVIRONMENT: str = "development" # development, production, test
+    ALLOWED_HOSTS: list[str] = ["*"]
     SECRET_KEY: str = "super-secret-key-change-in-production"
     SESSION_SECRET_KEY: str = "change-this-to-a-secure-random-string"
 
