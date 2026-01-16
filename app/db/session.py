@@ -15,6 +15,10 @@ engine = create_engine(
     connect_args=connect_args
 )
 
+if settings.ENVIRONMENT == "production" and "sqlite" in DATABASE_URL:
+    import logging
+    logging.getLogger("app.db").warning("⚠️  PRODUCTION WARNING: Using SQLite in production is NOT recommended. Use PostgreSQL.")
+
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
