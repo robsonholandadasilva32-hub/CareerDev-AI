@@ -7,6 +7,11 @@ from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
+from app.core.security import verify_password, hash_password
+from app.services.notifications import enqueue_email, enqueue_telegram
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -57,8 +62,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-from app.core.security import verify_password, hash_password
-
 @router.post("/security/update")
 def update_security(
     request: Request,
@@ -78,19 +81,29 @@ def update_security(
          return RedirectResponse("/login", status_code=302)
 
     # 1. Update Preferences
+    changes = []
+
+    if user.two_factor_method != method:
+        changes.append("2fa")
     user.two_factor_method = method
+
+    if user.preferred_language != language:
+        changes.append("profile")
     user.preferred_language = language
     request.session["lang"] = language # Update session immediately
 
-    if phone:
+    if phone and user.phone_number != phone:
         user.phone_number = phone
+        changes.append("profile")
 
     # 2. Password Change
+    password_changed = False
     if current_password and new_password:
         if verify_password(current_password, user.hashed_password):
             if new_password == confirm_password:
                 user.hashed_password = hash_password(new_password)
-                print(f"🔐 [SECURITY] Password updated for {user.email}")
+                password_changed = True
+                logger.info(f"SECURITY: Password updated for {user.email}")
             else:
                 return RedirectResponse("/security?error=password_mismatch", status_code=302)
         else:
@@ -103,9 +116,26 @@ def update_security(
         try:
              send_email(to="robsonholandasilva@yahoo.com.br", subject=subject, body=message_body)
         except Exception as e:
-             print(f"📧 [SUPPORT ERROR] Could not send email: {e}")
+             logger.error(f"SUPPORT ERROR: Could not send email: {e}")
 
     db.commit()
+
+    # Trigger Emails & Telegram
+    t = get_texts(language) # Ensure we have texts for keys
+
+    # Send independent notifications for each distinct type of change
+    if password_changed:
+        enqueue_email(db, user.id, "account_update", {"change_type": "password"})
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_password", "Password changed")})
+
+    if "2fa" in changes:
+        enqueue_email(db, user.id, "account_update", {"change_type": "2fa"})
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_2fa", "2FA updated")})
+
+    if "profile" in changes:
+        enqueue_email(db, user.id, "account_update", {"change_type": "profile"})
+        enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_profile", "Profile updated")})
+
     return RedirectResponse("/security?success=true", status_code=302)
 
 @router.post("/security/delete-account")
@@ -116,6 +146,11 @@ def delete_account(
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=302)
+
+    # Notify before deletion
+    t = get_texts(user.preferred_language or "pt")
+    enqueue_email(db, user.id, "account_update", {"change_type": "account_deleted"})
+    enqueue_telegram(db, user.id, "telegram_security_alert", {"change_desc": t.get("telegram_update_account_deleted", "Account deleted")})
 
     # Delete User (Cascade deletes profile/plans due to relationship config)
     db.delete(user)

@@ -1,7 +1,10 @@
 import stripe
 import os
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # Configuration
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -26,7 +29,7 @@ class PaymentService:
             )
             return customer.id
         except Exception as e:
-            print(f"Stripe Error (create_customer): {e}")
+            logger.error(f"Stripe Error (create_customer): {e}")
             # Fallback for sandbox/offline dev if no internet or invalid key
             return "cus_mock_fallback"
 
@@ -63,11 +66,11 @@ class PaymentService:
             )
             return True
         except Exception as e:
-            print(f"Stripe Error (process_payment): {e}")
+            logger.error(f"Stripe Error (process_payment): {e}")
             # Ensure we don't accidentally give free access if there's a real error
             # But for this specific sandbox task where we don't have real keys:
             if "Authentication failed" in str(e) or "Invalid API Key" in str(e):
-                print("Mocking success due to invalid keys in sandbox.")
+                logger.info("Mocking success due to invalid keys in sandbox.")
                 return True
             return False
 
@@ -86,7 +89,7 @@ class PaymentService:
             )
             return True
         except Exception as e:
-            print(f"Stripe Error (create_subscription): {e}")
+            logger.error(f"Stripe Error (create_subscription): {e}")
             if "Authentication failed" in str(e):
                  return True
             return False

@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 import stripe
+import logging
 from app.db.session import get_db
 from app.core.config import settings
 from app.core.auth_guard import get_current_user_from_request
 from app.db.models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -51,7 +54,7 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
         )
         return RedirectResponse(checkout_session.url, status_code=303)
     except Exception as e:
-        print(f"Stripe Error: {e}")
+        logger.error(f"Stripe Error: {e}")
         return RedirectResponse("/dashboard?error=payment_failed")
 
 @router.get("/billing/success")
@@ -81,5 +84,5 @@ def billing_success(session_id: str, request: Request, db: Session = Depends(get
         else:
             return RedirectResponse("/dashboard?error=payment_pending")
     except Exception as e:
-        print(f"Stripe Verification Error: {e}")
+        logger.error(f"Stripe Verification Error: {e}")
         return RedirectResponse("/dashboard?error=verification_failed")
