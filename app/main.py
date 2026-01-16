@@ -8,6 +8,8 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -18,8 +20,25 @@ import sentry_sdk
 
 # 1. Carregar .env e Configurar Logs
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
+
+# Structured Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';"
+        return response
 
 # Initialize Sentry (if DSN provided)
 if os.getenv("SENTRY_DSN"):
@@ -90,15 +109,26 @@ async def custom_500_handler(request: Request, exc):
     return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
 
 # 6. Middlewares
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"]) # Review allow_hosts for production!
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# CORS (Configured for Production Safety)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","), # Use env var in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET_KEY,
     session_cookie="careerdev_session",
     same_site="lax",
-    https_only=False, # Set to True in production with env var check
+    https_only=os.getenv("Render", "False") == "True" or os.getenv("DYNO") is not None, # Auto-detect prod envs (Render/Heroku)
     max_age=1800 # 30 minutes session invalidation
 )
 
@@ -113,6 +143,10 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 @app.get("/")
 def root():
     return RedirectResponse("/login")
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.get("/static/favicon/manifest.json")
 def manifest():

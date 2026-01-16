@@ -6,6 +6,9 @@ from app.db.session import get_db
 from app.core.auth_guard import get_current_user_from_request
 from app.services.resume import process_resume_upload
 from app.db.models.user import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -24,5 +27,5 @@ def analyze_resume(
         result = process_resume_upload(db, user_id, resume_text)
         return JSONResponse(result)
     except Exception as e:
-        print(f"Error analyzing resume: {e}")
+        logger.error(f"Error analyzing resume: {e}")
         return JSONResponse({"error": "Failed to analyze"}, status_code=500)
