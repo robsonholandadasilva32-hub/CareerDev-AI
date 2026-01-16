@@ -12,6 +12,9 @@ from app.db.crud.email_verification import create_email_verification
 from app.db.session import get_db
 from app.services.notifications import create_otp, enqueue_email, enqueue_telegram
 from app.core.limiter import limiter
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -235,7 +238,7 @@ def register(
     verification = create_email_verification(db, user.id)
 
     # ⚠️ Em dev: apenas loga o código
-    print(f"[DEV] Código de verificação de e-mail: {verification.code}")
+    logger.info(f"DEV MODE: Email Verification Code: {verification.code}")
 
     # Enqueue Welcome Email
     enqueue_email(db, user.id, "welcome", {})

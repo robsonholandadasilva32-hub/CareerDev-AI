@@ -9,6 +9,9 @@ from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
 from app.core.security import verify_password, hash_password
 from app.services.notifications import enqueue_email, enqueue_telegram
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -100,7 +103,7 @@ def update_security(
             if new_password == confirm_password:
                 user.hashed_password = hash_password(new_password)
                 password_changed = True
-                print(f"🔐 [SECURITY] Password updated for {user.email}")
+                logger.info(f"SECURITY: Password updated for {user.email}")
             else:
                 return RedirectResponse("/security?error=password_mismatch", status_code=302)
         else:
@@ -113,7 +116,7 @@ def update_security(
         try:
              send_email(to="robsonholandasilva@yahoo.com.br", subject=subject, body=message_body)
         except Exception as e:
-             print(f"📧 [SUPPORT ERROR] Could not send email: {e}")
+             logger.error(f"SUPPORT ERROR: Could not send email: {e}")
 
     db.commit()
 

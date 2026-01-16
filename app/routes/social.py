@@ -13,6 +13,9 @@ from app.db.crud.users import (
 from app.core.security import hash_password
 from app.core.jwt import create_access_token
 import secrets
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 oauth = OAuth()
@@ -118,7 +121,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         return login_user_and_redirect(request, user)
 
     except Exception as e:
-        print(f"GitHub Error: {e}")
+        logger.error(f"GitHub Error: {e}")
         return RedirectResponse("/login?error=github_failed")
 
 @router.get("/login/linkedin")
@@ -173,5 +176,5 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
         return login_user_and_redirect(request, user)
 
     except Exception as e:
-        print(f"LinkedIn Error: {e}")
+        logger.error(f"LinkedIn Error: {e}")
         return RedirectResponse("/login?error=linkedin_failed")
