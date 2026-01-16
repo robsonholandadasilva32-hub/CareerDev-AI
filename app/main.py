@@ -111,7 +111,7 @@ async def custom_500_handler(request: Request, exc):
 # 6. Middlewares
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"]) # Review allow_hosts for production!
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS (Configured for Production Safety)

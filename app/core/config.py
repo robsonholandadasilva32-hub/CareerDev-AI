@@ -4,6 +4,8 @@ from typing import Optional
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "CareerDev AI"
+    ENVIRONMENT: str = "development" # development, production, test
+    ALLOWED_HOSTS: list[str] = ["*"]
     SECRET_KEY: str = "super-secret-key-change-in-production"
     SESSION_SECRET_KEY: str = "change-this-to-a-secure-random-string"
 
@@ -16,6 +18,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
+    ADMIN_EMAIL: str = "admin@careerdev.ai"
 
     TELEGRAM_BOT_TOKEN: Optional[str] = None
 
