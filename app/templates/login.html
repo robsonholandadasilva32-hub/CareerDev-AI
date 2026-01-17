@@ -467,6 +467,18 @@
           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
         <span>{{ t.security_status }}</span>
+      </div>
+
+      <div class="lang-selector">
+          <select class="lang-select" onchange="window.location.href='?lang='+this.value">
+              <option value="pt" {% if lang == 'pt' %}selected{% endif %}>🇵🇹 PT</option>
+              <option value="en" {% if lang == 'en' %}selected{% endif %}>🇺🇸 EN</option>
+              <option value="es" {% if lang == 'es' %}selected{% endif %}>🇪🇸 ES</option>
+              <option value="fr" {% if lang == 'fr' %}selected{% endif %}>🇫🇷 FR</option>
+              <option value="de" {% if lang == 'de' %}selected{% endif %}>🇩🇪 DE</option>
+          </select>
+      </div>
+    </div>
   </header>
 
   <!-- LOGIN CONTENT -->
@@ -639,6 +651,11 @@
   <!-- FOOTER -->
   <footer>
     <p>{{ t.footer_text }}</p>
+    <div style="margin: 10px 0; font-size: 0.9em;">
+        <a href="/legal/terms?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Termos de Uso</a>
+        |
+        <a href="/legal/privacy?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Política de Privacidade</a>
+    </div>
   </footer>
 
   <script>

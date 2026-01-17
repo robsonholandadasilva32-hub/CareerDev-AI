@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto; padding: 40px; color: #cbd5e1;">
+    <h1 style="color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 20px;">Términos de Uso</h1>
+
+    <p>Última actualización: Hoy.</p>
+
+    <h3>1. Introducción y Aceptación</h3>
+    <p>Bienvenido a <strong>CareerDev AI</strong> (accesible vía <a href="https://careerdev-ai-production.up.railway.app/" target="_blank">https://careerdev-ai-production.up.railway.app/</a>). Este servicio es desarrollado y operado por un <strong>Desarrollador Independiente</strong>, regido por las leyes de la República Federativa de Brasil.</p>
+    <p>Al acceder, registrarse o suscribirse a nuestros servicios, usted acepta expresamente estos términos. Si no está de acuerdo, por favor no utilice la plataforma.</p>
+
+    <h3>2. Descripción del Servicio</h3>
+    <p>CareerDev AI es una plataforma de educación y mentoría asistida por Inteligencia Artificial diseñada para desarrolladores. Nuestros servicios incluyen:</p>
+    <ul>
+        <li>Análisis de perfil profesional, currículum y repositorios de código.</li>
+        <li>Generación de planes de estudio personalizados vía IA.</li>
+        <li>Mentoría interactiva vía Chatbot ("CareerDev AI Assistant").</li>
+        <li>Herramientas de accesibilidad en el código fuente.</li>
+    </ul>
+
+    <h3>3. Suscripciones y Pagos</h3>
+    <p>Algunas funcionalidades de la plataforma son exclusivas para suscriptores ("Premium").</p>
+    <ul>
+        <li><strong>Procesamiento:</strong> Utilizamos <strong>Stripe</strong> para el procesamiento seguro de pagos. No almacenamos los datos de su tarjeta de crédito.</li>
+        <li><strong>Facturación:</strong> Las suscripciones se cobran mensualmente de forma recurrente. Al suscribirse, autoriza el cobro automático en el método de pago proporcionado.</li>
+        <li><strong>Cancelación:</strong> Puede cancelar su suscripción en cualquier momento a través del panel de control. El acceso Premium permanecerá activo hasta el final del período de facturación actual.</li>
+        <li><strong>Reembolso:</strong> Garantizamos el derecho de desistimiento de 7 días.</li>
+    </ul>
+
+    <h3>4. Uso Aceptable y Seguridad</h3>
+    <p>Para mantener un entorno seguro, usted acepta:</p>
+    <ul>
+        <li>Proporcionar información veraz y mantener sus datos de contacto (especialmente correo electrónico) actualizados.</li>
+        <li>Utilizar mecanismos de seguridad como 2FA (Autenticación de Dos Factores), que es obligatorio en la plataforma.</li>
+        <li>No compartir sus credenciales de acceso.</li>
+        <li>No intentar ingeniería inversa, "scraping" o ataques a la infraestructura.</li>
+    </ul>
+
+    <h3>5. Exención de Responsabilidad (AI Disclaimer)</h3>
+    <p>Los consejos de carrera y análisis técnicos son generados por modelos de Inteligencia Artificial (OpenAI GPT-4). Aunque nos esforzamos por la precisión:</p>
+    <ul>
+        <li>La IA puede alucinar o generar información inexacta.</li>
+        <li>Las sugerencias son orientativas y <strong>no sustituyen</strong> el asesoramiento profesional humano, legal o financiero.</li>
+        <li>El Desarrollador Independiente no se responsabiliza por decisiones de carrera tomadas exclusivamente con base en la IA.</li>
+    </ul>
+
+    <h3>6. Propiedad Intelectual</h3>
+    <p>Todo el código fuente, diseño, interfaz, textos y marcas son propiedad exclusiva del Desarrollador Independiente, protegidos por las Leyes de Derechos de Autor y Propiedad Industrial.</p>
+
+    <h3>7. Privacidad</h3>
+    <p>El tratamiento de sus datos se rige por nuestra <a href="/legal/privacy" target="_blank">Política de Privacidad</a>.</p>
+
+    <h3>8. Contacto y Soporte</h3>
+    <p>Para soporte, dudas sobre pagos o cuestiones legales, entre en contacto:</p>
+    <p>📧 <strong>E-mail:</strong> <a href="mailto:robsonholandasilva@yahoo.com.br">robsonholandasilva@yahoo.com.br</a></p>
+
+    <h3>9. Jurisdicción</h3>
+    <p>Se elige el foro de la comarca de residencia del Desarrollador para dirimir cualquier duda, con renuncia a cualquier otro.</p>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" class="btn">Volver al Inicio</a>
+    </div>
+</div>
+{% endblock %}

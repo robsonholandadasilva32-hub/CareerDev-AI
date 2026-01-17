@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto; padding: 40px; color: #cbd5e1;">
+    <h1 style="color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 20px;">Política de Privacidad</h1>
+
+    <div style="background: rgba(0, 255, 136, 0.1); border: 1px solid var(--secondary-color); padding: 15px; border-radius: 8px; margin-bottom: 30px;">
+        <h3 style="color: var(--secondary-color); margin-top: 0;">🔒 Compromiso de Transparencia</h3>
+        <p>Nuestra arquitectura fue diseñada con privacidad en primer lugar ("Privacy by Design"). <strong>No vendemos sus datos. No lo rastreamos fuera de esta plataforma.</strong></p>
+    </div>
+
+    <p>Esta política describe cómo <strong>CareerDev AI</strong> (operado por un Desarrollador Independiente) trata sus datos, en conformidad con las leyes de protección de datos.</p>
+
+    <h3>1. Controlador de Datos</h3>
+    <p>El controlador de sus datos personales es el Desarrollador Independiente responsable de la plataforma CareerDev AI.</p>
+    <p>📧 Contacto del DPO: <a href="mailto:robsonholandasilva@yahoo.com.br">robsonholandasilva@yahoo.com.br</a></p>
+
+    <h3>2. Datos Recopilados</h3>
+    <p>Recopilamos solo lo necesario para el funcionamiento del servicio:</p>
+    <ul>
+        <li><strong>Datos de Cuenta:</strong> Nombre, Correo Electrónico y Contraseña (cifrada).</li>
+        <li><strong>Datos de Carrera:</strong> Información que usted proporciona voluntariamente al Chatbot o al Analizador de Currículum (Habilidades, Experiencia).</li>
+        <li><strong>Datos Financieros:</strong> Historial de transacciones (procesado por Stripe; no almacenamos detalles completos de la tarjeta).</li>
+        <li><strong>Datos Técnicos:</strong> Registros de acceso e IP estrictamente para fines de seguridad y auditoría (2FA).</li>
+    </ul>
+
+    <h3>3. Finalidad del Tratamiento</h3>
+    <p>Sus datos se utilizan para:</p>
+    <ul>
+        <li>Proveer el servicio de mentoría y análisis de carrera.</li>
+        <li>Procesar pagos de suscripciones Premium.</li>
+        <li>Garantizar la seguridad de su cuenta (Autenticación de Dos Factores).</li>
+        <li>Enviar notificaciones importantes sobre su cuenta (no enviamos spam).</li>
+    </ul>
+
+    <h3>4. Compartición de Datos</h3>
+    <p>No vendemos datos. La compartición ocurre solo con procesadores esenciales:</p>
+    <ul>
+        <li><strong>Stripe:</strong> Para procesamiento de pagos seguros.</li>
+        <li><strong>OpenAI (API):</strong> Para generar las respuestas del asistente de IA. (Configurado para no retener datos para entrenamiento de modelos públicos).</li>
+        <li><strong>Proveedor de Alojamiento (Railway):</strong> Para infraestructura del servidor.</li>
+    </ul>
+
+    <h3>5. Sus Derechos</h3>
+    <p>Usted tiene control total sobre sus datos. Puede en cualquier momento:</p>
+    <ul>
+        <li>Solicitar acceso a sus datos.</li>
+        <li>Corregir datos incompletos o inexactos.</li>
+        <li><strong>Eliminar su cuenta:</strong> La eliminación es permanente y remueve sus datos de nuestra base activa.</li>
+    </ul>
+
+    <h3>6. Seguridad</h3>
+    <p>Adoptamos medidas rigurosas, incluyendo cifrado en reposo y en tránsito (HTTPS), y exigimos autenticación fuerte (2FA) para proteger su cuenta contra acceso no autorizado.</p>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" class="btn">Volver al Inicio</a>
+    </div>
+</div>
+{% endblock %}

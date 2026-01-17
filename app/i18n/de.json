@@ -1,0 +1,131 @@
+{
+  "page_title": "CareerDev AI",
+  "page_description": "Intelligentes Karrieremanagement für Entwickler",
+
+  "project_phrase": "Die Maschine ersetzt den Menschen nicht. Sie verstärkt sein Potenzial.",
+
+  "security_status": "Sichere Sitzung · Verschlüsselung aktiv",
+
+  "language_label": "Sprache",
+
+  "login_title": "Anmelden",
+  "register_title": "Konto erstellen",
+
+  "email_label": "E-Mail",
+  "password_label": "Passwort",
+  "password_register_label": "Passwort (min. 8 Zeichen)",
+  "name_label": "Name",
+
+  "login_button": "Sicher anmelden",
+  "register_button": "Registrieren",
+
+  "about_title": "Über die App",
+  "about_text": "CareerDev AI hilft Entwicklern, sich beruflich weiterzuentwickeln – mit Sicherheit, Ethik und verantwortungsvoller künstlicher Intelligenz.",
+
+  "quote_turing": "Wir können nur ein kurzes Stück in die Zukunft sehen, aber wir sehen vieles, das getan werden muss. — Alan Turing",
+  "quote_lanier": "Technologie ist kein Schicksal. Wir formen unsere Werkzeuge, und danach formen unsere Werkzeuge uns. — Jaron Lanier",
+
+  "footer_text": "CareerDev AI · Privacy by Design · Keine Daten werden verkauft",
+
+  "chatbot_title": "CareerDev AI Assistent",
+  "chatbot_welcome": "Hallo! Ich bin hier, um Ihnen zu helfen, sich sicher anzumelden und die App zu verstehen.",
+  "chatbot_placeholder": "Geben Sie Ihre Frage oder Ihren Befehl ein",
+  "chatbot_input_aria": "Eingabefeld für Nachrichten an den Assistenten",
+
+  "chatbot_help_button": "Hilfe",
+  "chatbot_repeat_button": "Wiederholen",
+  "chatbot_send_button": "Senden",
+  "chatbot_voice_button": "Sprechen",
+  "chatbot_voice_aria": "Sprachkonversation aktivieren",
+
+  "no_account_text": "Noch kein Konto?",
+  "register_link_text": "Erstellen Sie Ihr Konto sicher",
+
+  "error_user_not_found": "Benutzer nicht gefunden",
+  "error_invalid_password": "Ungültiges Passwort",
+  "error_email_exists": "E-Mail bereits registriert",
+
+  "dash_security_active": "Sicherheit Aktiv",
+  "dash_security_detail": "Verschlüsselte Sitzung • Echtzeit-Überwachung",
+  "dash_manage_security": "Sicherheit verwalten",
+  "dash_welcome": "Willkommen",
+  "dash_level": "Level",
+  "dash_area": "Bereich",
+  "dash_skills": "Top Skills",
+  "dash_trends_title": "🔮 Karrieretrends (Echte KI)",
+  "dash_trend_rust_desc": "Speichersicherheit und hohe Leistung. Ideal für kritische Systeme.",
+  "dash_trend_rust_growth": "Wachstum: Hoch 🔥",
+  "dash_trend_go_desc": "Skalierbarkeit für Cloud und Microservices.",
+  "dash_trend_go_demand": "Nachfrage: Sehr Hoch 🚀",
+  "dash_trend_ethics_desc": "Verantwortungsvolle Entwicklung und Erklärbarkeit (XAI).",
+  "dash_trend_ethics_strat": "Strategischer Trend 👁️",
+  "dash_plan_title": "🛠️ Personalisierter Studienplan",
+
+  "trial_banner": "Erster Monat kostenlos! Genießen Sie Ihren Testzeitraum.",
+  "trial_register_notice": "Melden Sie sich an und erhalten Sie 1 Monat kostenlos! Schalten Sie KI-Analysen frei.",
+
+  "billing_title": "Abonnement & Abrechnung",
+  "billing_desc": "Um Ihre Karriere weiterzuentwickeln, aktivieren Sie Ihr Abonnement.",
+  "billing_benefit_1": "Voller Zugriff auf das Dashboard",
+  "billing_benefit_2": "KI-Karriereanalyse",
+  "billing_benefit_3": "Priorisierter Support",
+  "billing_recurring_label": "Wiederkehrende Abrechnung (Abonnement)",
+  "billing_pay_button": "Zahlen $1.00",
+  "month": "monat",
+
+  "social_login_title": "Oder anmelden via",
+  "social_github_btn": "GitHub",
+  "social_linkedin_btn": "LinkedIn",
+
+  "integration_title": "Intelligentes Karriere-Ökosystem",
+  "integration_desc": "Wir integrieren die Plattformen, die den Markt definieren, um Ihre Entwicklung zu beschleunigen.",
+
+  "int_github_title": "Code-basiertes Upskilling",
+  "int_github_text": "Verbinden Sie GitHub, damit unsere KI Ihre Repositories analysiert, technische Lücken identifiziert und Studienpläne erstellt.",
+
+  "int_linkedin_title": "Echtzeit-Marktanpassung",
+  "int_linkedin_text": "Verbinden Sie LinkedIn, um Jobtrends zu überwachen und strategische Netzwerkvorschläge zu erhalten.",
+
+  "int_impact_text": "Verwandeln Sie Ihre Erfahrung in Autorität. CareerDev AI schließt die Lücke zwischen dem, was Sie wissen, und dem, was der Markt braucht.",
+
+  "a11y_title": "Inklusion im Quellcode",
+  "a11y_subtitle": "Adaptive Technologie für alle Profile. Aktivieren Sie es im Kontrollpanel.",
+  "a11y_card_cognitive_title": "Kognitiver Fokus",
+  "a11y_card_cognitive_text": "Dyslexie-freundliche Schriftarten und Modi zur Reduzierung visueller Störungen.",
+  "a11y_card_vision_title": "Adaptives Sehen",
+  "a11y_card_vision_text": "Hoher Kontrast und intelligente Filter für Farbenblindheit.",
+  "a11y_card_hearing_title": "Visuelle Signalisierung",
+  "a11y_card_hearing_text": "Grafische Warnungen und vereinfachte KI-Kommunikation.",
+  "a11y_card_motor_title": "Erweiterte Kontrolle",
+  "a11y_card_motor_text": "Vergrößerte Klickbereiche und Sprachnavigation (Beta).",
+  "a11y_spotlight_title": "Wussten Sie schon? CareerDev AI passt sich Ihnen an.",
+  "a11y_spotlight_text": "Dyslexie, Farbenblindheit, Fokus und mehr. Personalisieren Sie Ihre Erfahrung.",
+  "a11y_spotlight_btn": "Barrierefreiheit konfigurieren",
+
+  "security_promise_title": "Sicherheits- und Datenschutzversprechen",
+  "security_promise_subtitle": "Ihr Vertrauen ist das Fundament unserer Architektur. Nicht verhandelbare Garantien:",
+  "sec_card_selling_title": "Kein Datenverkauf",
+  "sec_card_selling_text": "Sie sind nicht das Produkt. Wir verkaufen Ihre Informationen niemals an Dritte.",
+  "sec_card_encrypt_title": "Militärische Verschlüsselung",
+  "sec_card_encrypt_text": "Daten geschützt im Ruhezustand und während der Übertragung.",
+  "sec_card_ai_title": "Private KI",
+  "sec_card_ai_text": "Ihre Daten trainieren keine öffentliche KI. Ihre Interaktionen sind isoliert.",
+
+  "email_greeting": "Hallo, {{name}}",
+  "email_welcome_subject": "Willkommen bei CareerDev AI",
+  "email_welcome_title": "Starten Sie Ihre Karriere-Reise",
+  "email_welcome_body": "Wir freuen uns, Sie bei uns zu haben. CareerDev AI wurde entwickelt, um Ihre Karriere mit KI-Tools, Barrierefreiheit und Sicherheit zu beschleunigen.",
+  "email_welcome_cta": "Zum Dashboard",
+  "email_welcome_feature_1_title": "KI-Lebenslauf-Analyse",
+  "email_welcome_feature_1_desc": "Sofortiges und personalisiertes Feedback.",
+  "email_welcome_feature_2_title": "Universelle Barrierefreiheit",
+  "email_welcome_feature_2_desc": "Adaptive Tools für alle.",
+  "email_welcome_feature_3_title": "Datensicherheit",
+  "email_welcome_feature_3_desc": "Ihre Daten gehören Ihnen. Wir verkaufen keine Informationen.",
+
+  "email_footer_rights": "Alle Rechte vorbehalten.",
+  "email_footer_address": "Entwickelt von einer Privatperson - Brasilien",
+  "email_unsubscribe": "Sie erhalten diese E-Mail, weil Sie ein Konto bei CareerDev AI haben.",
+
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Hallo, {{user_name}}!\n\nWillkommen bei CareerDev AI. Ihr Konto wurde erfolgreich erstellt.\n\nZugang zu Ihrem Dashboard: https://careerdev.ai/dashboard"
+}
