@@ -30,7 +30,7 @@ LOCKOUT_TIME_MINUTES = 15
 def login_page(request: Request):
     lang = request.query_params.get("lang")
 
-    if lang not in ("pt", "en", "es"):
+    if lang not in ("pt", "en", "es", "fr", "de"):
         lang = request.session.get("lang", "pt")
 
     request.session["lang"] = lang
@@ -160,7 +160,7 @@ async def login(
 def register_page(request: Request):
     lang = request.query_params.get("lang", "pt")
 
-    if lang not in ("pt", "en", "es"):
+    if lang not in ("pt", "en", "es", "fr", "de"):
         lang = "pt"
 
     t = get_texts(lang)

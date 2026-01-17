@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto; padding: 40px; color: #cbd5e1;">
+    <h1 style="color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 20px;">Privacy Policy</h1>
+
+    <div style="background: rgba(0, 255, 136, 0.1); border: 1px solid var(--secondary-color); padding: 15px; border-radius: 8px; margin-bottom: 30px;">
+        <h3 style="color: var(--secondary-color); margin-top: 0;">🔒 Transparency Commitment</h3>
+        <p>Our architecture was designed with privacy first ("Privacy by Design"). <strong>We do not sell your data. We do not track you outside this platform.</strong></p>
+    </div>
+
+    <p>This policy describes how <strong>CareerDev AI</strong> (operated by an Independent Developer) treats your data, in compliance with data protection laws.</p>
+
+    <h3>1. Data Controller</h3>
+    <p>The controller of your personal data is the Independent Developer responsible for the CareerDev AI platform.</p>
+    <p>📧 DPO Contact: <a href="mailto:robsonholandasilva@yahoo.com.br">robsonholandasilva@yahoo.com.br</a></p>
+
+    <h3>2. Collected Data</h3>
+    <p>We collect only what is necessary for the service operation:</p>
+    <ul>
+        <li><strong>Account Data:</strong> Name, Email, and Password (encrypted).</li>
+        <li><strong>Career Data:</strong> Information you voluntarily provide to the Chatbot or Resume Analyzer (Skills, Experience).</li>
+        <li><strong>Financial Data:</strong> Transaction history (processed by Stripe; we do not store full card details).</li>
+        <li><strong>Technical Data:</strong> Access logs and IP strictly for security and audit purposes (2FA).</li>
+    </ul>
+
+    <h3>3. Purpose of Processing</h3>
+    <p>Your data is used to:</p>
+    <ul>
+        <li>Provide mentorship and career analysis services.</li>
+        <li>Process Premium subscription payments.</li>
+        <li>Ensure your account security (Two-Factor Authentication).</li>
+        <li>Send important notifications about your account (we do not send spam).</li>
+    </ul>
+
+    <h3>4. Data Sharing</h3>
+    <p>We do not sell data. Sharing occurs only with essential processors:</p>
+    <ul>
+        <li><strong>Stripe:</strong> For secure payment processing.</li>
+        <li><strong>OpenAI (API):</strong> To generate AI assistant responses. (Configured not to retain data for public model training).</li>
+        <li><strong>Hosting Provider (Railway):</strong> For server infrastructure.</li>
+    </ul>
+
+    <h3>5. Your Rights</h3>
+    <p>You have full control over your data. You may at any time:</p>
+    <ul>
+        <li>Request access to your data.</li>
+        <li>Correct incomplete or inaccurate data.</li>
+        <li><strong>Delete your account:</strong> Deletion is permanent and removes your data from our active database.</li>
+    </ul>
+
+    <h3>6. Security</h3>
+    <p>We adopt rigorous measures, including encryption at rest and in transit (HTTPS), and require strong authentication (2FA) to protect your account against unauthorized access.</p>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

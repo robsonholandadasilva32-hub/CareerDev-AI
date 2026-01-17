@@ -1,0 +1,131 @@
+{
+  "page_title": "CareerDev AI",
+  "page_description": "Gestion intelligente de carrière pour les développeurs",
+
+  "project_phrase": "La machine ne remplace pas l'humain. Elle amplifie son potentiel.",
+
+  "security_status": "Session sécurisée · Chiffrement actif",
+
+  "language_label": "Langue",
+
+  "login_title": "Connexion",
+  "register_title": "Créer un compte",
+
+  "email_label": "E-mail",
+  "password_label": "Mot de passe",
+  "password_register_label": "Mot de passe (min. 8 caractères)",
+  "name_label": "Nom",
+
+  "login_button": "Connexion sécurisée",
+  "register_button": "S'inscrire",
+
+  "about_title": "À propos de l'application",
+  "about_text": "CareerDev AI aide les développeurs à évoluer professionnellement avec sécurité, éthique et intelligence artificielle responsable.",
+
+  "quote_turing": "Nous ne pouvons voir que peu vers l'avenir, mais nous voyons beaucoup à faire. — Alan Turing",
+  "quote_lanier": "La technologie n'est pas le destin. Nous façonnons nos outils, et ensuite nos outils nous façonnent. — Jaron Lanier",
+
+  "footer_text": "CareerDev AI · Confidentialité dès la conception · Aucune donnée vendue",
+
+  "chatbot_title": "Assistant CareerDev AI",
+  "chatbot_welcome": "Bonjour ! Je suis là pour vous aider à vous connecter en toute sécurité et à comprendre l'application.",
+  "chatbot_placeholder": "Tapez votre question ou commande",
+  "chatbot_input_aria": "Champ de saisie pour l'assistant",
+
+  "chatbot_help_button": "Aide",
+  "chatbot_repeat_button": "Répéter",
+  "chatbot_send_button": "Envoyer",
+  "chatbot_voice_button": "Parler",
+  "chatbot_voice_aria": "Activer la conversation vocale",
+
+  "no_account_text": "Pas encore de compte ?",
+  "register_link_text": "Créez votre compte en toute sécurité",
+
+  "error_user_not_found": "Utilisateur introuvable",
+  "error_invalid_password": "Mot de passe invalide",
+  "error_email_exists": "L'e-mail est déjà enregistré",
+
+  "dash_security_active": "Sécurité Active",
+  "dash_security_detail": "Session Chiffrée • Surveillance en Temps Réel",
+  "dash_manage_security": "Gérer la Sécurité",
+  "dash_welcome": "Bienvenue",
+  "dash_level": "Niveau",
+  "dash_area": "Domaine",
+  "dash_skills": "Compétences Principales",
+  "dash_trends_title": "🔮 Tendances de Carrière (IA Réelle)",
+  "dash_trend_rust_desc": "Sécurité de la mémoire et haute performance. Idéal pour les systèmes critiques.",
+  "dash_trend_rust_growth": "Croissance : Élevée 🔥",
+  "dash_trend_go_desc": "Évolutivité pour le cloud et les microservices.",
+  "dash_trend_go_demand": "Demande : Très Élevée 🚀",
+  "dash_trend_ethics_desc": "Développement responsable et explicabilité (XAI).",
+  "dash_trend_ethics_strat": "Tendance Stratégique 👁️",
+  "dash_plan_title": "🛠️ Plan d'Étude Personnalisé",
+
+  "trial_banner": "Premier mois gratuit ! Profitez de votre période d'essai.",
+  "trial_register_notice": "Inscrivez-vous et obtenez 1 mois gratuit ! Débloquez l'analyse IA et accélérez votre carrière aujourd'hui.",
+
+  "billing_title": "Abonnement et Facturation",
+  "billing_desc": "Pour continuer à faire évoluer votre carrière, activez votre abonnement.",
+  "billing_benefit_1": "Accès complet au tableau de bord",
+  "billing_benefit_2": "Analyse de carrière avec IA",
+  "billing_benefit_3": "Support Prioritaire",
+  "billing_recurring_label": "Facturation Récurrente (Abonnement)",
+  "billing_pay_button": "Payer $1.00",
+  "month": "mois",
+
+  "social_login_title": "Ou connectez-vous via",
+  "social_github_btn": "GitHub",
+  "social_linkedin_btn": "LinkedIn",
+
+  "integration_title": "Écosystème de Carrière Intelligent",
+  "integration_desc": "Nous intégrons les plateformes qui définissent le marché pour accélérer votre évolution.",
+
+  "int_github_title": "Upskilling Basé sur le Code",
+  "int_github_text": "Connectez GitHub pour laisser notre IA analyser vos dépôts, identifier les lacunes techniques et générer des plans d'étude.",
+
+  "int_linkedin_title": "Alignement du Marché en Temps Réel",
+  "int_linkedin_text": "Connectez LinkedIn pour surveiller les tendances de l'emploi et recevoir des suggestions de réseautage stratégique.",
+
+  "int_impact_text": "Transformez votre expérience en autorité. CareerDev AI comble le fossé entre ce que vous savez et ce dont le marché a besoin.",
+
+  "a11y_title": "Inclusion dans le Code Source",
+  "a11y_subtitle": "Technologie adaptative pour tous les profils. Activez dans le panneau de contrôle.",
+  "a11y_card_cognitive_title": "Focus Cognitif",
+  "a11y_card_cognitive_text": "Polices adaptées à la dyslexie et modes de réduction du bruit visuel.",
+  "a11y_card_vision_title": "Vision Adaptative",
+  "a11y_card_vision_text": "Haut contraste et filtres intelligents pour le daltonisme.",
+  "a11y_card_hearing_title": "Signalisation Visuelle",
+  "a11y_card_hearing_text": "Alertes graphiques et communication simplifiée par IA.",
+  "a11y_card_motor_title": "Contrôle Étendu",
+  "a11y_card_motor_text": "Zones de clic agrandies et navigation vocale (Bêta).",
+  "a11y_spotlight_title": "Le saviez-vous ? CareerDev AI s'adapte à vous.",
+  "a11y_spotlight_text": "Dyslexie, Daltonisme, Focus et plus. Personnalisez votre expérience.",
+  "a11y_spotlight_btn": "Configurer l'Accessibilité",
+
+  "security_promise_title": "Engagement de Sécurité et Confidentialité",
+  "security_promise_subtitle": "Votre confiance est la base de notre architecture. Garanties non négociables :",
+  "sec_card_selling_title": "Zéro Vente de Données",
+  "sec_card_selling_text": "Vous n'êtes pas le produit. Nous ne vendons jamais vos informations.",
+  "sec_card_encrypt_title": "Chiffrement Militaire",
+  "sec_card_encrypt_text": "Données protégées au repos et en transit. Sécurité bancaire pour votre carrière.",
+  "sec_card_ai_title": "IA Privée",
+  "sec_card_ai_text": "Vos données n'entraînent pas l'IA publique. Vos interactions sont isolées et confidentielles.",
+
+  "email_greeting": "Bonjour, {{name}}",
+  "email_welcome_subject": "Bienvenue sur CareerDev AI",
+  "email_welcome_title": "Commencez votre Parcours Professionnel",
+  "email_welcome_body": "Nous sommes heureux de vous avoir parmi nous. CareerDev AI a été conçu pour accélérer votre carrière avec des outils d'IA, l'accessibilité et la sécurité.",
+  "email_welcome_cta": "Accéder au Tableau de Bord",
+  "email_welcome_feature_1_title": "Analyse de CV avec IA",
+  "email_welcome_feature_1_desc": "Feedback instantané et personnalisé.",
+  "email_welcome_feature_2_title": "Accessibilité Universelle",
+  "email_welcome_feature_2_desc": "Outils adaptatifs pour tous.",
+  "email_welcome_feature_3_title": "Sécurité des Données",
+  "email_welcome_feature_3_desc": "Vos données vous appartiennent.",
+
+  "email_footer_rights": "Tous droits réservés.",
+  "email_footer_address": "Développé par un particulier - Brésil",
+  "email_unsubscribe": "Vous recevez cet e-mail car vous avez un compte sur CareerDev AI.",
+
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Bonjour, {{user_name}}!\n\nBienvenue sur CareerDev AI. Votre compte a été créé avec succès.\n\nAccédez à votre tableau de bord : https://careerdev.ai/dashboard"
+}

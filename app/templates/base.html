@@ -59,6 +59,15 @@
 
     .logo-anim { width: 30px; height: 30px; }
 
+    .lang-selector select {
+        background: #121a2f;
+        color: #e0e6ed;
+        border: 1px solid var(--accent-color);
+        padding: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
     main {
         flex: 1;
         padding: 2rem;
@@ -191,12 +200,25 @@
         </div>
         CareerDev AI
     </h1>
-    <nav>
-        {% if user_id %}
-            <a href="/dashboard">Dashboard</a>
-            <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
-        {% endif %}
-    </nav>
+
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="lang-selector">
+            <select onchange="window.location.href='?lang='+this.value">
+                <option value="pt" {% if lang == 'pt' %}selected{% endif %}>🇵🇹 PT</option>
+                <option value="en" {% if lang == 'en' %}selected{% endif %}>🇺🇸 EN</option>
+                <option value="es" {% if lang == 'es' %}selected{% endif %}>🇪🇸 ES</option>
+                <option value="fr" {% if lang == 'fr' %}selected{% endif %}>🇫🇷 FR</option>
+                <option value="de" {% if lang == 'de' %}selected{% endif %}>🇩🇪 DE</option>
+            </select>
+        </div>
+
+        <nav>
+            {% if user_id %}
+                <a href="/dashboard">Dashboard</a>
+                <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
+            {% endif %}
+        </nav>
+    </div>
   </header>
 
   <!-- CONTEÚDO DAS PÁGINAS -->
@@ -221,9 +243,9 @@
   <footer>
     <p>{{ t.footer_text }}</p>
     <div style="margin: 10px 0; font-size: 0.9em;">
-        <a href="/legal/terms" style="color: #64748b; margin: 0 10px;">Termos de Uso</a>
+        <a href="/legal/terms?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Termos de Uso</a>
         |
-        <a href="/legal/privacy" style="color: #64748b; margin: 0 10px;">Política de Privacidade</a>
+        <a href="/legal/privacy?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Política de Privacidade</a>
     </div>
     <p style="font-size: 0.8em; margin-top: 10px;">
         "We can only see a short distance ahead, but we can see plenty there that needs to be done." — Alan Turing

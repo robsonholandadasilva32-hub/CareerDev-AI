@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto; padding: 40px; color: #cbd5e1;">
+    <h1 style="color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 20px;">Conditions d'Utilisation</h1>
+
+    <p>Dernière mise à jour : Aujourd'hui.</p>
+
+    <h3>1. Introduction et Acceptation</h3>
+    <p>Bienvenue sur <strong>CareerDev AI</strong> (accessible via <a href="https://careerdev-ai-production.up.railway.app/" target="_blank">https://careerdev-ai-production.up.railway.app/</a>). Ce service est développé et exploité par un <strong>Développeur Indépendant</strong>, régi par les lois de la République Fédérative du Brésil.</p>
+    <p>En accédant, en vous inscrivant ou en vous abonnant à nos services, vous acceptez expressément ces conditions. Si vous n'êtes pas d'accord, veuillez ne pas utiliser la plateforme.</p>
+
+    <h3>2. Description du Service</h3>
+    <p>CareerDev AI est une plateforme d'éducation et de mentorat assistée par l'Intelligence Artificielle conçue pour les développeurs. Nos services incluent :</p>
+    <ul>
+        <li>Analyse de profil professionnel, CV et dépôts de code.</li>
+        <li>Génération de plans d'étude personnalisés via IA.</li>
+        <li>Mentorat interactif via Chatbot ("CareerDev AI Assistant").</li>
+        <li>Outils d'accessibilité dans le code source.</li>
+    </ul>
+
+    <h3>3. Abonnements et Paiements</h3>
+    <p>Certaines fonctionnalités de la plateforme sont exclusives aux abonnés ("Premium").</p>
+    <ul>
+        <li><strong>Traitement :</strong> Nous utilisons <strong>Stripe</strong> pour le traitement sécurisé des paiements. Nous ne stockons pas vos données de carte de crédit.</li>
+        <li><strong>Facturation :</strong> Les abonnements sont facturés mensuellement de manière récurrente. En vous abonnant, vous autorisez la facturation automatique sur le moyen de paiement fourni.</li>
+        <li><strong>Annulation :</strong> Vous pouvez annuler votre abonnement à tout moment via le panneau de contrôle. L'accès Premium restera actif jusqu'à la fin de la période de facturation en cours.</li>
+        <li><strong>Remboursement :</strong> Nous garantissons un droit de rétractation de 7 jours pour le premier abonnement.</li>
+    </ul>
+
+    <h3>4. Utilisation Acceptable et Sécurité</h3>
+    <p>Pour maintenir un environnement sécurisé, vous acceptez de :</p>
+    <ul>
+        <li>Fournir des informations véridiques et maintenir vos coordonnées (surtout l'e-mail) à jour.</li>
+        <li>Utiliser des mécanismes de sécurité tels que la 2FA (Authentification à Deux Facteurs), qui est obligatoire sur la plateforme.</li>
+        <li>Ne pas partager vos identifiants d'accès.</li>
+        <li>Ne pas tenter l'ingénierie inverse, le "scraping" ou les attaques sur l'infrastructure.</li>
+    </ul>
+
+    <h3>5. Clause de Non-responsabilité (AI Disclaimer)</h3>
+    <p>Les conseils de carrière et les analyses techniques sont générés par des modèles d'Intelligence Artificielle (OpenAI GPT-4). Bien que nous nous efforcions d'être précis :</p>
+    <ul>
+        <li>L'IA peut halluciner ou générer des informations inexactes.</li>
+        <li>Les suggestions sont indicatives et <strong>ne remplacent pas</strong> les conseils professionnels humains, juridiques ou financiers.</li>
+        <li>Le Développeur Indépendant n'est pas responsable des décisions de carrière prises uniquement sur la base de l'IA.</li>
+    </ul>
+
+    <h3>6. Propriété Intellectuelle</h3>
+    <p>Tout le code source, le design, l'interface, les textes et les marques sont la propriété exclusive du Développeur Indépendant, protégés par les lois sur le droit d'auteur et la propriété industrielle.</p>
+
+    <h3>7. Confidentialité</h3>
+    <p>Le traitement de vos données est régi par notre <a href="/legal/privacy" target="_blank">Politique de Confidentialité</a>.</p>
+
+    <h3>8. Contact et Support</h3>
+    <p>Pour le support, les questions de paiement ou les questions juridiques, veuillez contacter :</p>
+    <p>📧 <strong>E-mail :</strong> <a href="mailto:robsonholandasilva@yahoo.com.br">robsonholandasilva@yahoo.com.br</a></p>
+
+    <h3>9. Juridiction</h3>
+    <p>Le tribunal du district de résidence du Développeur est élu pour régler tout litige, en renonçant à tout autre.</p>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" class="btn">Retour à l'Accueil</a>
+    </div>
+</div>
+{% endblock %}

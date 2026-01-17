@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
-    ADMIN_EMAIL: str = "admin@careerdev.ai"
+    ADMIN_EMAIL: str = "robsonholandasilva@yahoo.com.br"
 
     TELEGRAM_BOT_TOKEN: Optional[str] = None
 
