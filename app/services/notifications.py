@@ -221,6 +221,32 @@ async def send_raw_email(to_email: str, subject: str, body: str):
         if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
              raise e
 
+async def send_raw_email(to_email: str, subject: str, body: str):
+    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
+        logger.warning("SMTP not configured. Skipping real email.")
+        return
+
+    try:
+        message = EmailMessage()
+        message["From"] = formataddr(("CareerDev AI Support", settings.SMTP_FROM_EMAIL))
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content(body)
+
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_SERVER,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME,
+            password=settings.SMTP_PASSWORD,
+            use_tls=False,
+            start_tls=True
+        )
+        logger.info(f"SUCCESS: Raw Email sent to {to_email}")
+
+    except Exception as e:
+        logger.error(f"Failed to send raw email: {e}")
+
 async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
     # This function is largely deprecated by create_otp using jobs directly,
     # but kept if used elsewhere.
@@ -238,6 +264,8 @@ async def send_email(code: str, to_email: str):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return
+        logger.warning("SMTP not configured. Skipping real email.")
+        return
 
     if not to_email:
         logger.warning("No target email provided. Skipping.")
@@ -249,6 +277,7 @@ async def send_email(code: str, to_email: str):
     message["Subject"] = "Seu código de acesso | CareerDev AI"
 
     try:
+        # Fallback to old template if exists, or just verify code template
         template_path = os.path.join(os.getcwd(), "app/templates/email/otp.html")
         if os.path.exists(template_path):
             with open(template_path, "r", encoding="utf-8") as f:
