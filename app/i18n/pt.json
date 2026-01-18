@@ -141,5 +141,6 @@
   "telegram_update_password": "Sua senha foi alterada.",
   "telegram_update_profile": "Seu perfil foi atualizado.",
   "telegram_update_2fa": "Configurações de 2FA alteradas.",
-  "telegram_update_account_deleted": "Sua conta foi agendada para exclusão."
+  "telegram_update_account_deleted": "Sua conta foi agendada para exclusão.",
+  "email_email_verification_subject": "Verifique seu e-mail"
 }
