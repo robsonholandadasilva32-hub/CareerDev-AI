@@ -237,8 +237,8 @@ def register(
     # =================================================
     verification = create_email_verification(db, user.id)
 
-    # Enqueue Email Verification
-    enqueue_email(db, user.id, "email_verification", {"code": verification.code})
+    # ⚠️ Em dev: apenas loga o código
+    logger.info(f"DEV MODE: Email Verification Code: {verification.code}")
 
     # Enqueue Welcome Email
     enqueue_email(db, user.id, "welcome", {})
