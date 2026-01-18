@@ -112,12 +112,12 @@ def update_security(
 
     # 3. Contact Developer Feature
     if contact_dev == "true" and message_body:
-        from app.services.notifications import send_email
+        from app.services.notifications import enqueue_raw_email
         subject = f"Support Request from {user.email}: {user.name}"
         try:
-             send_email(to=settings.ADMIN_EMAIL, subject=subject, body=message_body)
+             enqueue_raw_email(db, settings.ADMIN_EMAIL, subject, message_body)
         except Exception as e:
-             logger.error(f"SUPPORT ERROR: Could not send email: {e}")
+             logger.error(f"SUPPORT ERROR: Could not enqueue email: {e}")
 
     db.commit()
 

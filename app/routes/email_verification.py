@@ -4,8 +4,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.crud.email_verification import get_verification_by_user, verify_code
+from app.db.crud.email_verification import get_verification_by_user, verify_code, create_email_verification
+from app.services.notifications import enqueue_email
 from app.i18n.loader import get_texts
+from app.core.limiter import limiter
+from app.db.models.user import User
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -29,6 +32,32 @@ def verify_email_page(
             "lang": lang,
             "t": t
         }
+    )
+
+# =====================================================
+# RESEND VERIFICATION (POST)
+# =====================================================
+@router.post("/resend-verification")
+@limiter.limit("3/minute")
+def resend_verification(
+    request: Request,
+    user_id: int = Form(...),
+    lang: str = Form("pt"),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if user and not user.email_verified:
+        # Create new code
+        verification = create_email_verification(db, user.id)
+
+        # Enqueue email
+        enqueue_email(db, user.id, "verification_code", {"code": verification.code})
+
+    # Redirect back to verify page
+    return RedirectResponse(
+        url=f"/verify-email?user_id={user_id}&lang={lang}",
+        status_code=302
     )
 
 # =====================================================
@@ -60,4 +89,3 @@ def verify_email(
         url=f"/login?lang={lang}",
         status_code=302
     )
-

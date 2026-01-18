@@ -1,13 +1,7 @@
-<!DOCTYPE html>
-<html lang="{{ lang }}">
-<head>
-  <meta charset="UTF-8">
-  <title>Verificação de Segurança</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<main aria-live="polite">
-
+{% block content %}
+<section class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
   <h1>Verificação de Segurança</h1>
 
   <p>
@@ -19,43 +13,44 @@
     Digite abaixo o código temporário enviado para você.
   </p>
 
-  <form method="post" action="/verify-2fa">
-    <label for="code">
-      Código de verificação
-    </label>
-    <input
-      id="code"
-      name="code"
-      type="text"
-      inputmode="numeric"
-      aria-describedby="help"
-      required
-    >
+  <form method="post" action="/verify-2fa" style="display: flex; flex-direction: column; gap: 15px;">
+    <div style="text-align: left;">
+        <label for="code" style="display: block; margin-bottom: 5px;">Código de verificação</label>
+        <input
+          id="code"
+          name="code"
+          type="text"
+          inputmode="numeric"
+          aria-describedby="help"
+          required
+          style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #2d3748; background: #0a0f1c; color: white;"
+        >
+    </div>
 
-    <p id="help">
+    {% if error %}
+    <p style="color: #ff0055;">{{ error }}</p>
+    {% endif %}
+
+    <p id="help" style="font-size: 0.8em; color: #9aa4b2;">
       O código expira em poucos minutos.
     </p>
 
-    <button type="submit">
+    <button type="submit" class="btn">
       Verificar
     </button>
   </form>
 
-  <form method="post" action="/resend-2fa" style="margin-top: 15px; text-align: center;">
-      <button type="submit" style="background: transparent; border: 1px solid #2d3748; color: #9aa4b2; padding: 5px 10px; font-size: 0.9rem;">
-          Reenviar Código
+  <form method="post" action="/resend-2fa" style="margin-top: 20px;">
+      <button type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
+          {{ t.verify_email_resend_button or "Reenviar Código" }}
       </button>
   </form>
 
-  <section>
+  <section style="margin-top: 20px; font-size: 0.9em; color: #64748b;">
     <p>
-      Assistente:
-      Se precisar de ajuda, diga “ajuda” ou “repetir”.
+      Assistente: Se precisar de ajuda, diga “ajuda” ou “repetir”.
     </p>
   </section>
 
-</main>
-
-</body>
-</html>
-
+</section>
+{% endblock %}

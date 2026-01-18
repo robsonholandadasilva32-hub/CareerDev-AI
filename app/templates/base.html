@@ -191,14 +191,16 @@
   <!-- HEADER -->
   <header>
     <h1>
-        <!-- Animated Logo Placeholder -->
-        <div class="logo-container">
-            <svg class="logo-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" stroke="#00f3ff" stroke-width="5" fill="none" class="circuit-circle" />
-                <path d="M30 50 H70 M50 30 V70" stroke="#00ff88" stroke-width="5" class="circuit-plus" />
-            </svg>
-        </div>
-        CareerDev AI
+        <a href="{% if user %}/dashboard{% else %}/login{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+            <!-- Animated Logo Placeholder -->
+            <div class="logo-container">
+                <svg class="logo-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" stroke="#00f3ff" stroke-width="5" fill="none" class="circuit-circle" />
+                    <path d="M30 50 H70 M50 30 V70" stroke="#00ff88" stroke-width="5" class="circuit-plus" />
+                </svg>
+            </div>
+            CareerDev AI
+        </a>
     </h1>
 
     <div style="display: flex; align-items: center; gap: 15px;">
@@ -213,7 +215,7 @@
         </div>
 
         <nav>
-            {% if user_id %}
+            {% if user %}
                 <a href="/dashboard">Dashboard</a>
                 <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
             {% endif %}

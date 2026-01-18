@@ -17,8 +17,16 @@
     <label for="code">{{ t.verify_code_label or "Código" }}</label>
     <input id="code" name="code" required>
 
-    <button type="submit">
+    <button type="submit" class="btn">
       {{ t.verify_button or "Confirmar" }}
+    </button>
+  </form>
+
+  <form method="post" action="/resend-verification" style="margin-top: 20px; text-align: center;">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <button type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
+      {{ t.verify_email_resend_button or "Reenviar Código" }}
     </button>
   </form>
 </section>

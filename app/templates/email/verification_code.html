@@ -1,0 +1,17 @@
+{% extends "email/base.html" %}
+
+{% block content %}
+    <h1>{{ t.email_verification_title }}</h1>
+
+    <p>{{ t.email_greeting.replace('{{name}}', user_name) }}</p>
+
+    <p>{{ t.email_verification_body }}</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <div style="background-color: #0a1020; border: 1px solid #00b4ff; color: #ffffff; font-size: 32px; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 4px; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 0 15px rgba(0, 180, 255, 0.2);">
+            {{ code }}
+        </div>
+    </div>
+
+    <p>{{ t.email_verification_footer }}</p>
+{% endblock %}

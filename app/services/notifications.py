@@ -43,17 +43,23 @@ def create_otp(db: Session, user_id: int, method: str):
 
     phone_number = user_obj.phone_number if user_obj else None # Used as Chat ID
     email = user_obj.email if user_obj else None
+    lang = user_obj.preferred_language or "pt" if user_obj else "pt"
 
     # Add Job to DB (Robust Way)
-    payload = {'code': code}
-    task_type = "send_email"
 
     if method == "email":
-        payload['email'] = email
-        task_type = "send_email"
+        # Use template system for I18n
+        payload = {
+            "email": email,
+            "template": "verification_code",
+            "context": {"code": code},
+            "lang": lang
+        }
+        task_type = "send_email_template"
+
     elif method == "telegram":
-        payload['chat_id'] = phone_number
-        task_type = "send_telegram"
+        payload = {'code': code, 'chat_id': phone_number}
+        task_type = "send_telegram" # Keep using simple telegram for now or switch to template if key added
 
     job = BackgroundJob(task_type=task_type, payload=payload)
     db.add(job)
@@ -85,6 +91,18 @@ def enqueue_email(db: Session, user_id: int, template_name: str, context: dict):
     db.add(job)
     db.commit()
     logger.info(f"JOB ENQUEUED: Email '{template_name}' to {user.email}")
+
+def enqueue_raw_email(db: Session, to_email: str, subject: str, body: str):
+    """Enqueues a raw email (no template) for support/system messages."""
+    payload = {
+        "to_email": to_email,
+        "subject": subject,
+        "body": body
+    }
+    job = BackgroundJob(task_type="send_raw_email", payload=payload)
+    db.add(job)
+    db.commit()
+    logger.info(f"JOB ENQUEUED: Raw Email to {to_email}")
 
 def enqueue_telegram(db: Session, user_id: int, template_key: str, context: dict):
     from app.db.models.user import User
@@ -127,6 +145,29 @@ def get_jinja_env():
         )
     return _jinja_env
 
+# --- ROBUST EMAIL SENDING HELPER ---
+async def _send_smtp_message(message: EmailMessage, to_email: str):
+    """Helper to send email with robust configuration (TLS/SSL/Timeout)."""
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_SERVER,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME,
+            password=settings.SMTP_PASSWORD,
+            use_tls=settings.SMTP_USE_TLS,       # Configurable Implicit TLS
+            start_tls=settings.SMTP_USE_STARTTLS, # Configurable STARTTLS
+            timeout=settings.SMTP_TIMEOUT        # Configurable Timeout
+        )
+        logger.info(f"SUCCESS: Email sent to {to_email}")
+        return True
+    except asyncio.TimeoutError:
+        logger.error(f"TIMEOUT: Failed to send email to {to_email} within {settings.SMTP_TIMEOUT}s")
+        raise # Let worker handle retry
+    except Exception as e:
+        logger.error(f"SMTP ERROR: Failed to send email to {to_email}: {e}")
+        raise
+
 async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
@@ -153,21 +194,36 @@ async def send_email_template(to_email: str, template_name: str, context: dict, 
         message.set_content("Please enable HTML to view this email.")
         message.add_alternative(html_content, subtype='html')
 
-        await aiosmtplib.send(
-            message,
-            hostname=settings.SMTP_SERVER,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
-            use_tls=False,
-            start_tls=True
-        )
-        logger.info(f"SUCCESS: Email '{template_name}' sent to {to_email}")
+        await _send_smtp_message(message, to_email)
 
     except Exception as e:
-        logger.error(f"Failed to send email template '{template_name}': {e}")
+        logger.error(f"Failed to process email template '{template_name}': {e}")
+        # If it's a template error, don't retry. If it's network (from _send), it raised already.
+        if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
+             raise e
+
+async def send_raw_email(to_email: str, subject: str, body: str):
+    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
+        logger.warning("SMTP not configured. Skipping real email.")
+        return
+
+    try:
+        message = EmailMessage()
+        message["From"] = formataddr(("CareerDev AI Support", settings.SMTP_FROM_EMAIL))
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content(body)
+
+        await _send_smtp_message(message, to_email)
+
+    except Exception as e:
+        logger.error(f"Failed to process raw email: {e}")
+        if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
+             raise e
 
 async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
+    # This function is largely deprecated by create_otp using jobs directly,
+    # but kept if used elsewhere.
     if method == "email":
         await send_email(code, email)
     elif method == "telegram" or method == "sms": # Handle 'sms' legacy as telegram
@@ -177,6 +233,8 @@ async def send_notification(method: str, code: str, phone_number: str = None, em
             logger.warning("No Telegram Chat ID found for user.")
 
 async def send_email(code: str, to_email: str):
+    # DEPRECATED: Use send_email_template
+    # Kept for backward compatibility but updated to use robust sender
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return
@@ -192,30 +250,22 @@ async def send_email(code: str, to_email: str):
 
     try:
         template_path = os.path.join(os.getcwd(), "app/templates/email/otp.html")
-        with open(template_path, "r", encoding="utf-8") as f:
-            template_content = f.read()
-
-        template = Template(template_content)
-        html_content = template.render(code=code)
-
-        message.set_content(f"Seu código é: {code}")
-        message.add_alternative(html_content, subtype='html')
+        if os.path.exists(template_path):
+            with open(template_path, "r", encoding="utf-8") as f:
+                template_content = f.read()
+            template = Template(template_content)
+            html_content = template.render(code=code)
+            message.set_content(f"Seu código é: {code}")
+            message.add_alternative(html_content, subtype='html')
+        else:
+             message.set_content(f"Seu código de verificação é: {code}")
 
     except Exception as e:
         logger.warning(f"Failed to load email template: {e}. Sending plain text.")
         message.set_content(f"Seu código de verificação é: {code}")
 
     try:
-        await aiosmtplib.send(
-            message,
-            hostname=settings.SMTP_SERVER,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
-            use_tls=False,
-            start_tls=True
-        )
-        logger.info(f"SUCCESS: Email sent to {to_email}")
+        await _send_smtp_message(message, to_email)
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
 
