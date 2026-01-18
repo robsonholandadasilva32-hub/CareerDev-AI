@@ -184,6 +184,7 @@ def register(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    confirm_password: str = Form(...),
     phone: str = Form(None),
     two_factor_pref: str = Form("email"), # 'email' or 'telegram'
     lang: str = Form("pt"),
@@ -214,6 +215,32 @@ def register(
             }
         )
 
+    # Password Matching Validation
+    if password != confirm_password:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "error": "As senhas não coincidem." # Localization ideally handled via t[]
+            }
+        )
+
+    # Complexity Validation (Backup for frontend)
+    # At least 8 chars, 1 number, 1 special char
+    import re
+    if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "error": "Senha fraca. Use no mínimo 8 caracteres, números e símbolos."
+            }
+        )
+
     hashed_password = hash_password(password)
 
     # ✅ Captura o usuário criado
@@ -237,8 +264,8 @@ def register(
     # =================================================
     verification = create_email_verification(db, user.id)
 
-    # ⚠️ Em dev: apenas loga o código
-    logger.info(f"DEV MODE: Email Verification Code: {verification.code}")
+    # Enqueue Verification Email
+    enqueue_email(db, user.id, "verification_code", {"code": verification.code})
 
     # Enqueue Welcome Email
     enqueue_email(db, user.id, "welcome", {})

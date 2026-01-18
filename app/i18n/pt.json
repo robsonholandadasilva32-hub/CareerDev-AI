@@ -141,5 +141,12 @@
   "telegram_update_password": "Sua senha foi alterada.",
   "telegram_update_profile": "Seu perfil foi atualizado.",
   "telegram_update_2fa": "Configurações de 2FA alteradas.",
-  "telegram_update_account_deleted": "Sua conta foi agendada para exclusão."
+  "telegram_update_account_deleted": "Sua conta foi agendada para exclusão.",
+
+  "email_verification_subject": "Seu código de verificação",
+  "email_verification_title": "Verificação de E-mail",
+  "email_verification_body": "Use o código abaixo para verificar seu e-mail e completar seu cadastro. Válido por 15 minutos.",
+  "email_verification_footer": "Se você não criou esta conta, ignore este e-mail.",
+  "verify_email_resend_button": "Reenviar Código",
+  "verify_email_resend_success": "Novo código enviado com sucesso!"
 }

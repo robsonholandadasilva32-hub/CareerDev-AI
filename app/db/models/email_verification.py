@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime
-from app.db.base import Base
+from app.db.declarative import Base
 
 
 class EmailVerification(Base):
