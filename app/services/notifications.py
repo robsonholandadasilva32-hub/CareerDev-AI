@@ -148,6 +148,9 @@ def get_jinja_env():
 # --- ROBUST EMAIL SENDING HELPER ---
 async def _send_smtp_message(message: EmailMessage, to_email: str):
     """Helper to send email with robust configuration (TLS/SSL/Timeout)."""
+    logger.debug(f"Attempting to send email to {to_email}")
+    logger.debug(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}, User={settings.SMTP_USERNAME}")
+
     try:
         await aiosmtplib.send(
             message,
@@ -166,9 +169,12 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
         raise # Let worker handle retry
     except Exception as e:
         logger.error(f"SMTP ERROR: Failed to send email to {to_email}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise
 
 async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
+    logger.debug(f"Preparing template email '{template_name}' for {to_email}")
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return
@@ -203,6 +209,7 @@ async def send_email_template(to_email: str, template_name: str, context: dict, 
              raise e
 
 async def send_raw_email(to_email: str, subject: str, body: str):
+    logger.debug(f"Preparing raw email for {to_email}")
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return
@@ -220,32 +227,6 @@ async def send_raw_email(to_email: str, subject: str, body: str):
         logger.error(f"Failed to process raw email: {e}")
         if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
              raise e
-
-async def send_raw_email(to_email: str, subject: str, body: str):
-    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
-        logger.warning("SMTP not configured. Skipping real email.")
-        return
-
-    try:
-        message = EmailMessage()
-        message["From"] = formataddr(("CareerDev AI Support", settings.SMTP_FROM_EMAIL))
-        message["To"] = to_email
-        message["Subject"] = subject
-        message.set_content(body)
-
-        await aiosmtplib.send(
-            message,
-            hostname=settings.SMTP_SERVER,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
-            use_tls=False,
-            start_tls=True
-        )
-        logger.info(f"SUCCESS: Raw Email sent to {to_email}")
-
-    except Exception as e:
-        logger.error(f"Failed to send raw email: {e}")
 
 async def send_notification(method: str, code: str, phone_number: str = None, email: str = None):
     # This function is largely deprecated by create_otp using jobs directly,
