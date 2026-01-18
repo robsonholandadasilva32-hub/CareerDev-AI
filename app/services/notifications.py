@@ -145,6 +145,29 @@ def get_jinja_env():
         )
     return _jinja_env
 
+# --- ROBUST EMAIL SENDING HELPER ---
+async def _send_smtp_message(message: EmailMessage, to_email: str):
+    """Helper to send email with robust configuration (TLS/SSL/Timeout)."""
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_SERVER,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME,
+            password=settings.SMTP_PASSWORD,
+            use_tls=settings.SMTP_USE_TLS,       # Configurable Implicit TLS
+            start_tls=settings.SMTP_USE_STARTTLS, # Configurable STARTTLS
+            timeout=settings.SMTP_TIMEOUT        # Configurable Timeout
+        )
+        logger.info(f"SUCCESS: Email sent to {to_email}")
+        return True
+    except asyncio.TimeoutError:
+        logger.error(f"TIMEOUT: Failed to send email to {to_email} within {settings.SMTP_TIMEOUT}s")
+        raise # Let worker handle retry
+    except Exception as e:
+        logger.error(f"SMTP ERROR: Failed to send email to {to_email}: {e}")
+        raise
+
 async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
@@ -171,19 +194,32 @@ async def send_email_template(to_email: str, template_name: str, context: dict, 
         message.set_content("Please enable HTML to view this email.")
         message.add_alternative(html_content, subtype='html')
 
-        await aiosmtplib.send(
-            message,
-            hostname=settings.SMTP_SERVER,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
-            use_tls=False,
-            start_tls=True
-        )
-        logger.info(f"SUCCESS: Email '{template_name}' sent to {to_email}")
+        await _send_smtp_message(message, to_email)
 
     except Exception as e:
-        logger.error(f"Failed to send email template '{template_name}': {e}")
+        logger.error(f"Failed to process email template '{template_name}': {e}")
+        # If it's a template error, don't retry. If it's network (from _send), it raised already.
+        if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
+             raise e
+
+async def send_raw_email(to_email: str, subject: str, body: str):
+    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
+        logger.warning("SMTP not configured. Skipping real email.")
+        return
+
+    try:
+        message = EmailMessage()
+        message["From"] = formataddr(("CareerDev AI Support", settings.SMTP_FROM_EMAIL))
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content(body)
+
+        await _send_smtp_message(message, to_email)
+
+    except Exception as e:
+        logger.error(f"Failed to process raw email: {e}")
+        if "SMTP ERROR" in str(e) or "TIMEOUT" in str(e):
+             raise e
 
 async def send_raw_email(to_email: str, subject: str, body: str):
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
@@ -224,7 +260,10 @@ async def send_notification(method: str, code: str, phone_number: str = None, em
 
 async def send_email(code: str, to_email: str):
     # DEPRECATED: Use send_email_template
+    # Kept for backward compatibility but updated to use robust sender
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
+        logger.warning("SMTP not configured. Skipping real email.")
+        return
         logger.warning("SMTP not configured. Skipping real email.")
         return
 
@@ -255,16 +294,7 @@ async def send_email(code: str, to_email: str):
         message.set_content(f"Seu código de verificação é: {code}")
 
     try:
-        await aiosmtplib.send(
-            message,
-            hostname=settings.SMTP_SERVER,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
-            use_tls=False,
-            start_tls=True
-        )
-        logger.info(f"SUCCESS: Email sent to {to_email}")
+        await _send_smtp_message(message, to_email)
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
 

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, JSON, DateTime, Text
 from sqlalchemy.sql import func
-from app.db.base import Base
+from app.db.declarative import Base
 
 class BackgroundJob(Base):
     __tablename__ = "background_jobs"
