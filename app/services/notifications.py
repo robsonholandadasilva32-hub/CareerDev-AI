@@ -169,6 +169,7 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
         raise
 
 async def send_email_template(to_email: str, template_name: str, context: dict, lang: str = "pt"):
+    logger.debug(f"Preparing to send email template '{template_name}' to {to_email}")
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return
@@ -203,6 +204,7 @@ async def send_email_template(to_email: str, template_name: str, context: dict, 
              raise e
 
 async def send_raw_email(to_email: str, subject: str, body: str):
+    logger.debug(f"Preparing to send raw email to {to_email} | Subject: {subject}")
     if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
         logger.warning("SMTP not configured. Skipping real email.")
         return

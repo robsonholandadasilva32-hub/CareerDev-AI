@@ -18,14 +18,19 @@ def process_jobs():
 
         for job in jobs:
             try:
+                logger.info(f"Processing Job ID {job.id} | Type: {job.task_type}")
+
                 # Dispatch tasks
                 if job.task_type == "send_email":
+                    logger.debug(f"Dispatching send_email for Job {job.id}")
                     asyncio.run(send_email(job.payload['code'], job.payload['email']))
 
                 elif job.task_type == "send_telegram":
+                    logger.debug(f"Dispatching send_telegram for Job {job.id}")
                     asyncio.run(send_telegram(job.payload['code'], job.payload['chat_id']))
 
                 elif job.task_type == "send_email_template":
+                    logger.debug(f"Dispatching send_email_template for Job {job.id}")
                     asyncio.run(send_email_template(
                         to_email=job.payload['email'],
                         template_name=job.payload['template'],
@@ -34,6 +39,7 @@ def process_jobs():
                     ))
 
                 elif job.task_type == "send_raw_email":
+                    logger.debug(f"Dispatching send_raw_email for Job {job.id}")
                     asyncio.run(send_raw_email(
                         to_email=job.payload['to_email'],
                         subject=job.payload['subject'],
@@ -41,6 +47,7 @@ def process_jobs():
                     ))
 
                 elif job.task_type == "send_telegram_template":
+                    logger.debug(f"Dispatching send_telegram_template for Job {job.id}")
                     asyncio.run(send_telegram_template(
                         chat_id=job.payload['chat_id'],
                         template_key=job.payload['template_key'],
@@ -48,6 +55,7 @@ def process_jobs():
                         lang=job.payload.get('lang', 'pt')
                     ))
 
+                logger.info(f"Job ID {job.id} completed successfully.")
                 job.status = "completed"
 
             except Exception as e:
