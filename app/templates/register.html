@@ -261,7 +261,11 @@
       <input id="email" name="email" type="email" required>
 
       <label for="password">{{ t.password_register_label }}</label>
-      <input id="password" name="password" type="password" minlength="8" required>
+      <input id="password" name="password" type="password" minlength="8" required oninput="validatePassword()">
+
+      <label for="confirm_password">Confirmar Senha</label>
+      <input id="confirm_password" name="confirm_password" type="password" minlength="8" required oninput="validatePassword()">
+      <div id="password-error" style="color: #ff0055; font-size: 0.8rem; display: none;"></div>
 
       <!-- 2FA Preference Selection -->
       <label for="two_factor_pref">Método de Autenticação (2FA)</label>
@@ -300,6 +304,40 @@
             } else {
                 phoneContainer.style.display = 'none';
                 phoneInput.required = false;
+            }
+        }
+
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm_password').value;
+            const errorDiv = document.getElementById('password-error');
+            const btn = document.querySelector('button[type="submit"]');
+
+            let error = "";
+
+            // Complexity Check
+            const hasUpper = /[A-Z]/.test(password);
+            const hasLower = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+            if (password.length < 8) {
+                error = "Senha muito curta (mínimo 8 caracteres).";
+            } else if (!hasNumber || !hasSpecial) {
+                error = "A senha deve conter pelo menos um número e um caractere especial.";
+            } else if (password !== confirm && confirm.length > 0) {
+                error = "As senhas não coincidem.";
+            }
+
+            if (error) {
+                errorDiv.innerText = error;
+                errorDiv.style.display = 'block';
+                btn.disabled = true;
+                btn.style.opacity = 0.5;
+            } else {
+                errorDiv.style.display = 'none';
+                btn.disabled = false;
+                btn.style.opacity = 1;
             }
         }
       </script>

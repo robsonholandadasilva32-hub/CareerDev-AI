@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
     ADMIN_EMAIL: str = "robsonholandasilva@yahoo.com.br"
 
+    # Advanced Email Settings
+    SMTP_USE_TLS: bool = False # Implicit TLS (usually port 465)
+    SMTP_USE_STARTTLS: bool = True # Explicit TLS (usually port 587)
+    SMTP_TIMEOUT: int = 10 # Seconds
+
     TELEGRAM_BOT_TOKEN: Optional[str] = None
 
     # AI
