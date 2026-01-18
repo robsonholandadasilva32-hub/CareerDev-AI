@@ -108,10 +108,6 @@ class CareerEngine:
         db.add_all(new_items)
         db.commit()
 
-        # Refresh to get IDs
-        for item in new_items:
-            db.refresh(item)
-
         return new_items
 
 career_engine = CareerEngine()
