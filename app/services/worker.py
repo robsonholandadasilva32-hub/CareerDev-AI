@@ -6,7 +6,7 @@ import logging
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.db.models.job import BackgroundJob
-from app.services.notifications import send_email, send_telegram, send_email_template, send_telegram_template, send_raw_email
+from app.services.notifications import send_telegram, send_email_template, send_telegram_template, send_raw_email
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +21,7 @@ def process_jobs():
                 logger.info(f"Processing Job ID {job.id} | Type: {job.task_type}")
 
                 # Dispatch tasks
-                if job.task_type == "send_email":
-                    logger.debug(f"Dispatching send_email for Job {job.id}")
-                    asyncio.run(send_email(job.payload['code'], job.payload['email']))
-
-                elif job.task_type == "send_telegram":
+                if job.task_type == "send_telegram":
                     logger.debug(f"Dispatching send_telegram for Job {job.id}")
                     asyncio.run(send_telegram(job.payload['code'], job.payload['chat_id']))
 
