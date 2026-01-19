@@ -2,6 +2,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -131,6 +132,8 @@ app.add_middleware(
     https_only=os.getenv("Render", "False") == "True" or os.getenv("DYNO") is not None, # Auto-detect prod envs (Render/Heroku)
     max_age=1800 # 30 minutes session invalidation
 )
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)
 static_dir = BASE_DIR / "static"
