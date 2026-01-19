@@ -17,7 +17,7 @@ def db():
 
 @pytest.mark.asyncio
 async def test_homepage(client):
-    response = await client.get("/")
+    response = await client.get("/", follow_redirects=True)
     assert response.status_code == 200
     assert "CareerDev AI" in response.text
 
