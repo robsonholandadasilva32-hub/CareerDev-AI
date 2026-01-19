@@ -234,50 +234,13 @@ async def send_notification(method: str, code: str, phone_number: str = None, em
     # This function is largely deprecated by create_otp using jobs directly,
     # but kept if used elsewhere.
     if method == "email":
-        await send_email(code, email)
+        # Ensure lang is passed if user context is available, default to 'pt'
+        await send_email_template(to_email=email, template_name="verification_code", context={"code": code})
     elif method == "telegram" or method == "sms": # Handle 'sms' legacy as telegram
         if phone_number:
             await send_telegram(code, phone_number)
         else:
             logger.warning("No Telegram Chat ID found for user.")
-
-async def send_email(code: str, to_email: str):
-    # DEPRECATED: Use send_email_template
-    # Kept for backward compatibility but updated to use robust sender
-    if not settings.SMTP_SERVER or not settings.SMTP_USERNAME:
-        logger.warning("SMTP not configured. Skipping real email.")
-        return
-
-    if not to_email:
-        logger.warning("No target email provided. Skipping.")
-        return
-
-    message = EmailMessage()
-    message["From"] = formataddr(("CareerDev AI Security", settings.SMTP_FROM_EMAIL))
-    message["To"] = to_email
-    message["Subject"] = "Seu código de acesso | CareerDev AI"
-
-    try:
-        # Fallback to old template if exists, or just verify code template
-        template_path = os.path.join(os.getcwd(), "app/templates/email/otp.html")
-        if os.path.exists(template_path):
-            with open(template_path, "r", encoding="utf-8") as f:
-                template_content = f.read()
-            template = Template(template_content)
-            html_content = template.render(code=code)
-            message.set_content(f"Seu código é: {code}")
-            message.add_alternative(html_content, subtype='html')
-        else:
-             message.set_content(f"Seu código de verificação é: {code}")
-
-    except Exception as e:
-        logger.warning(f"Failed to load email template: {e}. Sending plain text.")
-        message.set_content(f"Seu código de verificação é: {code}")
-
-    try:
-        await _send_smtp_message(message, to_email)
-    except Exception as e:
-        logger.error(f"Failed to send email: {e}")
 
 async def send_telegram(code: str, chat_id: str):
     if not settings.TELEGRAM_BOT_TOKEN:
