@@ -107,14 +107,15 @@ def process_resume_upload(db: Session, user_id: int, resume_text: str):
     if not isinstance(missing, list):
         missing = []
 
-    for skill in missing:
-        # Check if plan already exists
-        exists = db.query(LearningPlan).filter(
-            LearningPlan.user_id == user_id,
-            LearningPlan.technology == skill
-        ).first()
+    # N+1 fix: Fetch existing plans in one query
+    existing_plans = db.query(LearningPlan.technology).filter(
+        LearningPlan.user_id == user_id,
+        LearningPlan.technology.in_(missing)
+    ).all()
+    existing_skills = {plan.technology for plan in existing_plans}
 
-        if not exists:
+    for skill in missing:
+        if skill not in existing_skills:
             new_plan = LearningPlan(
                 user_id=user_id,
                 title=f"Dominar {skill}",
