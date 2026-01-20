@@ -45,8 +45,10 @@ def verify_2fa_page(request: Request):
             "request": request,
             "lang": lang,
             "t": t,
-            "target_url": "/verify-2fa",
-            "resend_url": "/resend-2fa"
+            "page_title": "Verificação de Segurança",
+            "instructions": "Este é um passo extra para proteger sua conta. Digite abaixo o código temporário enviado para você.",
+            "form_action": "/verify-2fa",
+            "resend_action": "/resend-2fa"
         }
     )
 
@@ -95,6 +97,10 @@ def verify_2fa(
             "request": request,
             "lang": lang,
             "t": t,
+            "page_title": "Verificação de Segurança",
+            "instructions": "Este é um passo extra para proteger sua conta. Digite abaixo o código temporário enviado para você.",
+            "form_action": "/verify-2fa",
+            "resend_action": "/resend-2fa",
             "error": t.get("error_invalid_code", "Invalid code")
         }
     )

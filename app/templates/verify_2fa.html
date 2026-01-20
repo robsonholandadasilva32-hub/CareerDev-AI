@@ -2,20 +2,21 @@
 
 {% block content %}
 <section class="card" style="max-width: 400px; margin: 40px auto; text-align: center;">
-  <h1>Verificação de Segurança</h1>
+  <h1>{{ page_title }}</h1>
 
   <p>
-    Este é um passo extra para proteger sua conta.
-    Ele só aparece porque você escolheu ativar o 2FA.
+    {{ instructions }}
   </p>
 
-  <p>
-    Digite abaixo o código temporário enviado para você.
-  </p>
+  <form method="post" action="{{ form_action }}" style="display: flex; flex-direction: column; gap: 15px;">
+    {% if extra_hidden_fields %}
+        {% for key, value in extra_hidden_fields.items() %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+    {% endif %}
 
-  <form method="post" action="{{ target_url }}" style="display: flex; flex-direction: column; gap: 15px;">
     <div style="text-align: left;">
-        <label for="code" style="display: block; margin-bottom: 5px;">Código de verificação</label>
+        <label for="code" style="display: block; margin-bottom: 5px;">{{ t.verify_code_label or "Código de verificação" }}</label>
         <input
           id="code"
           name="code"
@@ -40,7 +41,13 @@
     </button>
   </form>
 
-  <form method="post" action="{{ resend_url }}" style="margin-top: 20px;">
+  <form method="post" action="{{ resend_action }}" style="margin-top: 20px;">
+      {% if extra_hidden_fields %}
+        {% for key, value in extra_hidden_fields.items() %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+      {% endif %}
+
       <button id="resend-btn" type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
           {{ t.verify_email_resend_button or "Reenviar Código" }}
       </button>
@@ -52,36 +59,7 @@
     </p>
   </section>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const resendBtn = document.getElementById('resend-btn');
-      if (resendBtn) {
-        const cooldownTime = 30; // seconds
-        let timeLeft = cooldownTime;
-
-        // Disable immediately
-        resendBtn.disabled = true;
-        resendBtn.style.opacity = '0.5';
-        resendBtn.style.cursor = 'not-allowed';
-        const originalText = resendBtn.innerText;
-
-        resendBtn.innerText = originalText + ' (' + timeLeft + 's)';
-
-        const timer = setInterval(function() {
-          timeLeft--;
-          resendBtn.innerText = originalText + ' (' + timeLeft + 's)';
-
-          if (timeLeft <= 0) {
-            clearInterval(timer);
-            resendBtn.disabled = false;
-            resendBtn.innerText = originalText;
-            resendBtn.style.opacity = '1';
-            resendBtn.style.cursor = 'pointer';
-          }
-        }, 1000);
-      }
-    });
-  </script>
+  <script src="/static/js/cooldown.js"></script>
 
 </section>
 {% endblock %}

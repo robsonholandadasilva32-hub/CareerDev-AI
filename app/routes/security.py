@@ -200,8 +200,10 @@ def verify_security_change_page(request: Request, db: Session = Depends(get_db))
             "request": request,
             "lang": lang,
             "t": t,
-            "target_url": "/security/verify-change",
-            "resend_url": "/security/resend-change"
+            "page_title": "Verificação de Alteração",
+            "instructions": "Para sua segurança, confirme a alteração sensível na sua conta.",
+            "form_action": "/security/verify-change",
+            "resend_action": "/security/resend-change"
         }
     )
 
@@ -275,8 +277,10 @@ def verify_security_change(
             "request": request,
             "lang": lang,
             "t": t,
-            "target_url": "/security/verify-change",
-            "resend_url": "/security/resend-change",
+            "page_title": "Verificação de Alteração",
+            "instructions": "Para sua segurança, confirme a alteração sensível na sua conta.",
+            "form_action": "/security/verify-change",
+            "resend_action": "/security/resend-change",
             "error": t.get("error_invalid_code", "Invalid code")
         }
     )
