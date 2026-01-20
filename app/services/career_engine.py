@@ -17,18 +17,17 @@ class CareerEngine:
             "Ethical AI": "Emerging"
         }
 
-    def analyze_profile(self, db: Session, user_id: int) -> Dict:
+    def analyze_profile(self, db: Session, user: User) -> Dict:
         """
         Analyzes the user profile, fetching external data if available,
         and updates/creates the CareerProfile in the DB.
         """
-        user = db.query(User).filter(User.id == user_id).first()
         if not user:
             return {}
 
         profile = user.career_profile
         if not profile:
-            profile = CareerProfile(user_id=user_id)
+            profile = CareerProfile(user_id=user.id)
             db.add(profile)
             db.commit()
             db.refresh(profile)
@@ -56,15 +55,13 @@ class CareerEngine:
             "trends": self.market_trends
         }
 
-    def generate_plan(self, db: Session, user_id: int) -> List[LearningPlan]:
+    def generate_plan(self, db: Session, user: User) -> List[LearningPlan]:
         """
         Generates or retrieves the current learning plan.
         """
-        user = db.query(User).filter(User.id == user_id).first()
-
         # Check existing incomplete items
         existing_plan = db.query(LearningPlan).filter(
-            LearningPlan.user_id == user_id,
+            LearningPlan.user_id == user.id,
             LearningPlan.status != "completed"
         ).all()
 
