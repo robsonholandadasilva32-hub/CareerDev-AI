@@ -168,7 +168,7 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
         logger.error(f"TIMEOUT: Failed to send email to {to_email} within {settings.SMTP_TIMEOUT}s")
         raise # Let worker handle retry
     except Exception as e:
-        logger.error(f"SMTP ERROR: Failed to send email to {to_email}: {e}")
+        logger.error(f"Falha ao enviar email para {to_email} via {settings.SMTP_SERVER}: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         raise
