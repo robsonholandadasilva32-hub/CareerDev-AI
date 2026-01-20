@@ -38,8 +38,7 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
 
 # LinkedIn Config
 secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
-# Log length and first/last chars to detect hidden spaces or quotes
-logger.error(f"DEBUG SOCIAL: Secret loaded? {bool(secret)} | Length: {len(secret)} | Value: {secret[:2]}***{secret[-1:] if secret else ''}")
+logger.debug(f"LinkedIn Client Secret loaded: {bool(secret)}")
 
 if settings.LINKEDIN_CLIENT_ID:
     if not os.environ.get('LINKEDIN_CLIENT_SECRET'):
