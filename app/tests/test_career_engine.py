@@ -47,7 +47,7 @@ def test_generate_plan_avoids_n_plus_one(db_session):
 
     # 2. Action
     # Generate the learning plan
-    learning_plan = career_engine.generate_plan(db_session, test_user.id)
+    learning_plan = career_engine.generate_plan(db_session, test_user)
 
     # 3. Assertion
     # Check that a plan was generated

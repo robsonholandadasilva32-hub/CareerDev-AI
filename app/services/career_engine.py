@@ -76,7 +76,7 @@ class CareerEngine:
         # Gaps Analysis (Heuristic)
         if skills.get("Rust", 0) < 30:
             new_items.append(LearningPlan(
-                user_id=user_id,
+                user_id=user.id,
                 title="Fundamentos de Rust",
                 description="Domine Ownership e Borrowing com o Rust Book.",
                 technology="Rust",
@@ -86,7 +86,7 @@ class CareerEngine:
 
         if skills.get("Go", 0) < 30:
              new_items.append(LearningPlan(
-                user_id=user_id,
+                user_id=user.id,
                 title="Microsserviços com Go",
                 description="Crie uma API RESTful usando Gin ou Echo.",
                 technology="Go",
@@ -95,7 +95,7 @@ class CareerEngine:
 
         # Always add an AI Ethics item
         new_items.append(LearningPlan(
-            user_id=user_id,
+            user_id=user.id,
             title="Introdução à IA Ética",
             description="Entenda os princípios de explicabilidade e viés algorítmico.",
             technology="AI Ethics",
