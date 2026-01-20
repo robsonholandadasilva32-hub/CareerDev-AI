@@ -147,7 +147,11 @@ async def login_linkedin(request: Request):
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        token = await oauth.linkedin.authorize_access_token(request)
+        logger.info("LinkedIn Auth: Skipping nonce validation")
+        token = await oauth.linkedin.authorize_access_token(
+            request,
+            claims_options={'nonce': {'required': False}}
+        )
         user_info = token.get('userinfo')
         if not user_info:
              # Fallback if userinfo not in token
