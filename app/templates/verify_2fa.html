@@ -13,7 +13,7 @@
     Digite abaixo o código temporário enviado para você.
   </p>
 
-  <form method="post" action="/verify-2fa" style="display: flex; flex-direction: column; gap: 15px;">
+  <form method="post" action="{{ target_url }}" style="display: flex; flex-direction: column; gap: 15px;">
     <div style="text-align: left;">
         <label for="code" style="display: block; margin-bottom: 5px;">Código de verificação</label>
         <input
@@ -40,7 +40,7 @@
     </button>
   </form>
 
-  <form method="post" action="/resend-2fa" style="margin-top: 20px;">
+  <form method="post" action="{{ resend_url }}" style="margin-top: 20px;">
       <button id="resend-btn" type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
           {{ t.verify_email_resend_button or "Reenviar Código" }}
       </button>
