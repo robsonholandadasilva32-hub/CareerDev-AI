@@ -127,5 +127,20 @@
   "email_footer_address": "Développé par un particulier - Brésil",
   "email_unsubscribe": "Vous recevez cet e-mail car vous avez un compte sur CareerDev AI.",
 
-  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Bonjour, {{user_name}}!\n\nBienvenue sur CareerDev AI. Votre compte a été créé avec succès.\n\nAccédez à votre tableau de bord : https://careerdev.ai/dashboard"
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Bonjour, {{user_name}}!\n\nBienvenue sur CareerDev AI. Votre compte a été créé avec succès.\n\nAccédez à votre tableau de bord : https://careerdev.ai/dashboard",
+
+  "forgot_password_link": "Mot de passe oublié ?",
+  "forgot_password_title": "Récupération de mot de passe",
+  "forgot_password_desc": "Entrez votre e-mail pour recevoir un code.",
+  "send_code_btn": "Envoyer le code",
+  "reset_password_title": "Réinitialiser le mot de passe",
+  "reset_password_desc": "Entrez le code reçu et votre nouveau mot de passe.",
+  "code_label": "Code de vérification",
+  "new_password_label": "Nouveau mot de passe",
+  "confirm_password_label": "Confirmer le mot de passe",
+  "reset_btn": "Réinitialiser le mot de passe",
+  "success_reset": "Mot de passe modifié avec succès ! Veuillez vous connecter.",
+  "error_code_invalid": "Code invalide ou expiré.",
+  "email_subject_reset": "Votre code de récupération de mot de passe",
+  "telegram_reset_message": "🔐 *CareerDev AI*\n\nVotre code de récupération : `{code}`\n\nValide pendant 10 minutes."
 }

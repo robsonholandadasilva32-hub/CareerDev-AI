@@ -127,5 +127,20 @@
   "email_footer_address": "Desarrollado por persona física - Brasil",
   "email_unsubscribe": "Recibes este correo porque tienes una cuenta en CareerDev AI.",
 
-  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 ¡Hola, {{user_name}}!\n\nBienvenido a CareerDev AI. Tu cuenta ha sido creada con éxito.\n\nAccede a tu panel: https://careerdev.ai/dashboard"
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 ¡Hola, {{user_name}}!\n\nBienvenido a CareerDev AI. Tu cuenta ha sido creada con éxito.\n\nAccede a tu panel: https://careerdev.ai/dashboard",
+
+  "forgot_password_link": "¿Olvidaste tu contraseña?",
+  "forgot_password_title": "Recuperación de contraseña",
+  "forgot_password_desc": "Ingresa tu correo para recibir un código.",
+  "send_code_btn": "Enviar Código",
+  "reset_password_title": "Restablecer Contraseña",
+  "reset_password_desc": "Ingresa el código recibido y tu nueva contraseña.",
+  "code_label": "Código de Verificación",
+  "new_password_label": "Nueva Contraseña",
+  "confirm_password_label": "Confirmar Contraseña",
+  "reset_btn": "Restablecer Contraseña",
+  "success_reset": "¡Contraseña cambiada con éxito! Inicia sesión.",
+  "error_code_invalid": "Código inválido o expirado.",
+  "email_subject_reset": "Tu código de recuperación de contraseña",
+  "telegram_reset_message": "🔐 *CareerDev AI*\n\nTu código de recuperación: `{code}`\n\nVálido por 10 minutos."
 }

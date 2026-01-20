@@ -345,6 +345,28 @@
     .social-btn.github:hover { border-color: #f0f6fc; }
     .social-btn.linkedin:hover { border-color: #0077b5; }
 
+    .error-msg {
+        background: rgba(255, 80, 80, 0.1);
+        border: 1px solid rgba(255, 80, 80, 0.3);
+        color: #ff5050;
+        padding: 0.8rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .success-msg {
+        background: rgba(0, 255, 156, 0.1);
+        border: 1px solid rgba(0, 255, 156, 0.3);
+        color: var(--accent-green);
+        padding: 0.8rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
     /* Integration Info Section */
     .integration-info {
       width: 100%;
@@ -489,6 +511,14 @@
         <p>{{ t.page_description }}</p>
       </div>
 
+      {% if error %}
+      <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      {% if success %}
+      <div class="success-msg">{{ success }}</div>
+      {% endif %}
+
       <form method="post" action="/login" autocomplete="off">
         <input type="hidden" name="lang" value="{{ lang }}">
 
@@ -516,6 +546,10 @@
               </svg>
             </button>
           </div>
+        </div>
+
+        <div style="text-align: right; margin-bottom: 1rem;">
+          <a href="/forgot-password?lang={{ lang }}" style="color: var(--accent-blue); text-decoration: none; font-size: 0.85rem; transition: all 0.2s;">{{ t.forgot_password_link }}</a>
         </div>
 
         <button type="submit" class="login-btn">

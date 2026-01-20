@@ -127,5 +127,20 @@
   "email_footer_address": "Entwickelt von einer Privatperson - Brasilien",
   "email_unsubscribe": "Sie erhalten diese E-Mail, weil Sie ein Konto bei CareerDev AI haben.",
 
-  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Hallo, {{user_name}}!\n\nWillkommen bei CareerDev AI. Ihr Konto wurde erfolgreich erstellt.\n\nZugang zu Ihrem Dashboard: https://careerdev.ai/dashboard"
+  "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Hallo, {{user_name}}!\n\nWillkommen bei CareerDev AI. Ihr Konto wurde erfolgreich erstellt.\n\nZugang zu Ihrem Dashboard: https://careerdev.ai/dashboard",
+
+  "forgot_password_link": "Passwort vergessen?",
+  "forgot_password_title": "Passwort-Wiederherstellung",
+  "forgot_password_desc": "Geben Sie Ihre E-Mail ein, um einen Code zu erhalten.",
+  "send_code_btn": "Code senden",
+  "reset_password_title": "Passwort zurücksetzen",
+  "reset_password_desc": "Geben Sie den Code und Ihr neues Passwort ein.",
+  "code_label": "Verifizierungscode",
+  "new_password_label": "Neues Passwort",
+  "confirm_password_label": "Passwort bestätigen",
+  "reset_btn": "Passwort zurücksetzen",
+  "success_reset": "Passwort erfolgreich geändert! Bitte anmelden.",
+  "error_code_invalid": "Ungültiger oder abgelaufener Code.",
+  "email_subject_reset": "Ihr Passwort-Wiederherstellungscode",
+  "telegram_reset_message": "🔐 *CareerDev AI*\n\nIhr Wiederherstellungscode: `{code}`\n\nGültig für 10 Minuten."
 }

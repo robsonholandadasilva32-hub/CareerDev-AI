@@ -148,5 +148,20 @@
   "email_verification_body": "Use the code below to verify your email and complete your registration. Valid for 15 minutes.",
   "email_verification_footer": "If you did not create this account, ignore this email.",
   "verify_email_resend_button": "Resend Code",
-  "verify_email_resend_success": "New code sent successfully!"
+  "verify_email_resend_success": "New code sent successfully!",
+
+  "forgot_password_link": "Forgot password?",
+  "forgot_password_title": "Password Recovery",
+  "forgot_password_desc": "Enter your email to receive a recovery code.",
+  "send_code_btn": "Send Code",
+  "reset_password_title": "Reset Password",
+  "reset_password_desc": "Enter the received code and your new password.",
+  "code_label": "Verification Code",
+  "new_password_label": "New Password",
+  "confirm_password_label": "Confirm Password",
+  "reset_btn": "Reset Password",
+  "success_reset": "Password changed successfully! Please login.",
+  "error_code_invalid": "Invalid or expired code.",
+  "email_subject_reset": "Your password recovery code",
+  "telegram_reset_message": "🔐 *CareerDev AI*\n\nYour recovery code: `{code}`\n\nValid for 10 minutes."
 }
