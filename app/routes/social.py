@@ -140,6 +140,9 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              # Fallback if userinfo not in token
              user_info = await oauth.linkedin.userinfo(token=token)
 
+        # DEBUG: Log user_info
+        logger.info(f"LinkedIn User Data: {user_info}")
+
         if not user_info:
             logger.error("LinkedIn Error: No user info received")
             return RedirectResponse("/login?error=linkedin_failed")
@@ -166,7 +169,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         if not email:
              logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
-             return RedirectResponse("/login?error=linkedin_no_email")
+             return RedirectResponse("/login?error=missing_linkedin_email")
 
         # 1. Check by ID
         user = get_user_by_linkedin_id(db, linkedin_id)
