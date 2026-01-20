@@ -5,9 +5,13 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email).first()
 
 def get_user_by_github_id(db: Session, github_id: str) -> User | None:
+    if not github_id:
+        return None
     return db.query(User).filter(User.github_id == github_id).first()
 
 def get_user_by_linkedin_id(db: Session, linkedin_id: str) -> User | None:
+    if not linkedin_id:
+        return None
     return db.query(User).filter(User.linkedin_id == linkedin_id).first()
 
 def create_user(

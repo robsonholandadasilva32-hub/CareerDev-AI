@@ -140,12 +140,32 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              # Fallback if userinfo not in token
              user_info = await oauth.linkedin.userinfo(token=token)
 
-        linkedin_id = user_info.get('sub')
+        if not user_info:
+            logger.error("LinkedIn Error: No user info received")
+            return RedirectResponse("/login?error=linkedin_failed")
+
+        # Support OIDC 'sub' and legacy 'id'
+        linkedin_id = user_info.get('sub') or user_info.get('id')
+        if not linkedin_id:
+             logger.error(f"LinkedIn Error: No ID found in user_info. Keys: {list(user_info.keys())}")
+             return RedirectResponse("/login?error=linkedin_failed")
+
         email = user_info.get('email')
-        name = user_info.get('name') or f"{user_info.get('given_name')} {user_info.get('family_name')}"
+
+        # Robust name extraction
+        name = user_info.get('name')
+        if not name:
+             first = user_info.get('given_name')
+             last = user_info.get('family_name')
+             if first and last:
+                 name = f"{first} {last}"
+             else:
+                 name = "LinkedIn User" # Fallback
+
         picture = user_info.get('picture')
 
         if not email:
+             logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
              return RedirectResponse("/login?error=linkedin_no_email")
 
         # 1. Check by ID
