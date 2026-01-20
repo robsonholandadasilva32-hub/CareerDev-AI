@@ -146,7 +146,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              user_info = await oauth.linkedin.userinfo(token=token)
 
         # DEBUG: Log user_info
-        logger.info(f"LinkedIn User Data: {user_info}")
+        logger.debug(f"LinkedIn User Data: {user_info}")
 
         if not user_info:
             logger.error("LinkedIn Error: No user info received")
