@@ -94,6 +94,7 @@ class CareerEngine:
             ))
 
         # Always add an AI Ethics item
+        # Ensure user_id is passed explicitly from user.id
         new_items.append(LearningPlan(
             user_id=user.id,
             title="Introdução à IA Ética",

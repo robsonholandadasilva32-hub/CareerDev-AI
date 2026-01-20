@@ -44,6 +44,7 @@ if settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET:
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
+        # Explicitly pass client_secret to avoid Authlib implicit loading issues
         client_secret=settings.LINKEDIN_CLIENT_SECRET,
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
