@@ -25,12 +25,16 @@ def verify_email_page(
     t = get_texts(lang)
 
     return templates.TemplateResponse(
-        "verify_email.html",
+        "verify_2fa.html",
         {
             "request": request,
-            "user_id": user_id,
             "lang": lang,
-            "t": t
+            "t": t,
+            "page_title": t.get("email_verification_title", "Verificação de E-mail"),
+            "instructions": t.get("email_verification_body", "Use o código enviado para verificar seu e-mail."),
+            "form_action": "/verify-email",
+            "resend_action": "/resend-verification",
+            "extra_hidden_fields": {"user_id": user_id, "lang": lang}
         }
     )
 
@@ -75,12 +79,16 @@ def verify_email(
 
     if not verify_code(db, user_id, code):
         return templates.TemplateResponse(
-            "verify_email.html",
+            "verify_2fa.html",
             {
                 "request": request,
-                "user_id": user_id,
                 "lang": lang,
                 "t": t,
+                "page_title": t.get("email_verification_title", "Verificação de E-mail"),
+                "instructions": t.get("email_verification_body", "Use o código enviado para verificar seu e-mail."),
+                "form_action": "/verify-email",
+                "resend_action": "/resend-verification",
+                "extra_hidden_fields": {"user_id": user_id, "lang": lang},
                 "error": t.get("error_invalid_code", "Código inválido")
             }
         )
