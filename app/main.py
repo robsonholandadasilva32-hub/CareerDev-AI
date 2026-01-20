@@ -63,7 +63,7 @@ from app.services.worker import job_worker
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    email_verification, two_factor, logout, social, billing, career, legal
+    email_verification, two_factor, logout, social, billing, career, legal, debug
 )
 
 # 4. Lifespan (Conexão com Banco)
@@ -84,6 +84,12 @@ async def lifespan(app: FastAPI):
 
         # Start Background Worker
         job_worker.start()
+
+        # SMTP Config Debug
+        if "SMTP_HOST" in os.environ and not settings.SMTP_SERVER:
+            logger.warning("MISCONFIGURATION DETECTED: 'SMTP_HOST' environment variable is set, but 'SMTP_SERVER' is empty. Did you mean to use 'SMTP_SERVER'?")
+
+        logger.info(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, User={settings.SMTP_USERNAME}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}")
 
     except Exception as e:
         logger.error(f"ERRO CRITICO NO BANCO: {e}")
@@ -170,3 +176,4 @@ app.include_router(social.router)
 app.include_router(billing.router)
 app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
+app.include_router(debug.router, prefix="/debug", tags=["Debug"])
