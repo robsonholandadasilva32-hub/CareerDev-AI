@@ -153,15 +153,23 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
     logger.debug(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}, User={settings.SMTP_USERNAME}")
 
     try:
+        # Determine TLS/StartTLS based on port or config
+        use_tls = settings.SMTP_USE_TLS
+        start_tls = settings.SMTP_USE_STARTTLS
+
+        if settings.SMTP_PORT == 465:
+            use_tls = True
+            start_tls = False
+
         await aiosmtplib.send(
             message,
             hostname=settings.SMTP_SERVER,
             port=settings.SMTP_PORT,
             username=settings.SMTP_USERNAME,
             password=settings.SMTP_PASSWORD,
-            use_tls=settings.SMTP_USE_TLS,        # Configurable Implicit TLS
-            start_tls=settings.SMTP_USE_STARTTLS, # Configurable STARTTLS
-            timeout=settings.SMTP_TIMEOUT         # Configurable Timeout
+            use_tls=use_tls,
+            start_tls=start_tls,
+            timeout=settings.SMTP_TIMEOUT
         )
         logger.info(f"SUCCESS: Email sent to {to_email}")
         return True
