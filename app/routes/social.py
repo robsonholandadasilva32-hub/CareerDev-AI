@@ -97,6 +97,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             for e in emails:
                 if e.get('primary') and e.get('verified'):
                     email = e['email']
+                    email = e['email']
                     break
 
         if not email:
@@ -149,14 +150,14 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
     try:
         logger.info("LinkedIn Auth: Skipping nonce validation")
         token = await oauth.linkedin.authorize_access_token(
-            request,
+            request, 
             claims_options={'nonce': {'required': False}}
         )
         user_info = token.get('userinfo')
         if not user_info:
              # Fallback if userinfo not in token
              user_info = await oauth.linkedin.userinfo(token=token)
-
+        
         # DEBUG: Log user_info
         logger.debug(f"LinkedIn User Data: {user_info}")
 
@@ -171,7 +172,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              return RedirectResponse("/login?error=linkedin_failed")
 
         email = user_info.get('email')
-
+        
         # Robust name extraction
         name = user_info.get('name')
         if not name:
