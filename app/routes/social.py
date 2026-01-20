@@ -176,5 +176,5 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
         return login_user_and_redirect(request, user)
 
     except Exception as e:
-        logger.error(f"LinkedIn Error: {e}")
+        logger.exception(f"LinkedIn Error: {e}")
         return RedirectResponse("/login?error=linkedin_failed")
