@@ -44,7 +44,9 @@ def verify_2fa_page(request: Request):
         {
             "request": request,
             "lang": lang,
-            "t": t
+            "t": t,
+            "target_url": "/verify-2fa",
+            "resend_url": "/resend-2fa"
         }
     )
 
