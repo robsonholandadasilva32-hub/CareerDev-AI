@@ -221,7 +221,7 @@
 
         <nav>
             {% if user %}
-                {% if request.url.path not in ['/', '/login', '/register'] %}
+                {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
                 <a href="/dashboard">Dashboard</a>
                 {% endif %}
                 <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
