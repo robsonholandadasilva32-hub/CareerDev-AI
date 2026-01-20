@@ -44,10 +44,10 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
 
     # 3️⃣ Career Data (Real Logic)
     # This will create/update the profile and sync (simulated) external data
-    profile_data = career_engine.analyze_profile(db, user_id)
+    profile_data = career_engine.analyze_profile(db, user)
 
     # Generate/Fetch Plan
-    plan_items = career_engine.generate_plan(db, user_id)
+    plan_items = career_engine.generate_plan(db, user)
 
     # 4️⃣ Load Language
     lang = request.query_params.get("lang")
