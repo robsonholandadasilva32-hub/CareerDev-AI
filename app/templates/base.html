@@ -9,6 +9,11 @@
 
   <!-- PWA MANIFEST -->
   <link rel="manifest" href="/static/favicon/manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon/favicon.svg">
+  <link rel="shortcut icon" href="/static/favicon/favicon.ico">
 
   <!-- THEME COLOR (ANDROID / CHROME / EDGE) -->
   <meta name="theme-color" content="#0a0f1c">
@@ -216,7 +221,9 @@
 
         <nav>
             {% if user %}
+                {% if request.url.path not in ['/', '/login', '/register'] %}
                 <a href="/dashboard">Dashboard</a>
+                {% endif %}
                 <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
             {% endif %}
         </nav>

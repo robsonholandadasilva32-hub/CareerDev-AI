@@ -41,7 +41,7 @@
   </form>
 
   <form method="post" action="/resend-2fa" style="margin-top: 20px;">
-      <button type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
+      <button id="resend-btn" type="submit" class="btn-outline" aria-label="{{ t.verify_email_resend_button or 'Reenviar Código' }}">
           {{ t.verify_email_resend_button or "Reenviar Código" }}
       </button>
   </form>
@@ -51,6 +51,37 @@
       Assistente: Se precisar de ajuda, diga “ajuda” ou “repetir”.
     </p>
   </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const resendBtn = document.getElementById('resend-btn');
+      if (resendBtn) {
+        const cooldownTime = 30; // seconds
+        let timeLeft = cooldownTime;
+
+        // Disable immediately
+        resendBtn.disabled = true;
+        resendBtn.style.opacity = '0.5';
+        resendBtn.style.cursor = 'not-allowed';
+        const originalText = resendBtn.innerText;
+
+        resendBtn.innerText = originalText + ' (' + timeLeft + 's)';
+
+        const timer = setInterval(function() {
+          timeLeft--;
+          resendBtn.innerText = originalText + ' (' + timeLeft + 's)';
+
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            resendBtn.disabled = false;
+            resendBtn.innerText = originalText;
+            resendBtn.style.opacity = '1';
+            resendBtn.style.cursor = 'pointer';
+          }
+        }, 1000);
+      }
+    });
+  </script>
 
 </section>
 {% endblock %}
