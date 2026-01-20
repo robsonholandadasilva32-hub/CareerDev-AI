@@ -14,6 +14,7 @@ from app.core.security import hash_password
 from app.core.jwt import create_access_token
 import secrets
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ if settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET:
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
         # Explicitly pass client_secret to avoid Authlib implicit loading issues
-        client_secret=settings.LINKEDIN_CLIENT_SECRET,
+        client_secret=os.getenv('LINKEDIN_CLIENT_SECRET'),
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
             'scope': 'openid profile email'
