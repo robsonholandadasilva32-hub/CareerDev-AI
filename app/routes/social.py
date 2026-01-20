@@ -37,16 +37,12 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
     )
 
 # LinkedIn Config
-logger.info(f"LinkedIn Secret Loaded? {bool(settings.LINKEDIN_CLIENT_SECRET)}")
-if not settings.LINKEDIN_CLIENT_SECRET:
-    logger.error("CRITICAL: LINKEDIN_CLIENT_SECRET is missing in Settings!")
-
-if settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET:
+if settings.LINKEDIN_CLIENT_ID:
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
         # Explicitly pass client_secret to avoid Authlib implicit loading issues
-        client_secret=os.getenv('LINKEDIN_CLIENT_SECRET'),
+        client_secret=os.environ['LINKEDIN_CLIENT_SECRET'],
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
             'scope': 'openid profile email'

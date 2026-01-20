@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./careerdev.db"
 
     # 2FA / Notifications
-    SMTP_SERVER: Optional[str] = os.getenv("SMTP_HOST")
+    SMTP_SERVER: str = os.environ["SMTP_HOST"]
     SMTP_PORT: int = 587
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
