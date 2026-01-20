@@ -37,21 +37,25 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
     )
 
 # LinkedIn Config
-secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
-logger.debug(f"LinkedIn Client Secret loaded: {bool(secret)}")
+raw_secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+linkedin_secret = raw_secret.strip()
+
+# Log length and first/last chars to detect hidden spaces or quotes
+logger.error(f"DEBUG SOCIAL: Secret loaded? {bool(linkedin_secret)} | Stripped Length: {len(linkedin_secret)} | Value: {linkedin_secret[:2]}***{linkedin_secret[-1:] if linkedin_secret else ''}")
 
 if settings.LINKEDIN_CLIENT_ID:
-    if not os.environ.get('LINKEDIN_CLIENT_SECRET'):
+    if not linkedin_secret:
          raise ValueError("LINKEDIN_CLIENT_SECRET is present but empty!")
 
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
         # Explicitly pass client_secret to avoid Authlib implicit loading issues
-        client_secret=os.environ['LINKEDIN_CLIENT_SECRET'],
+        client_secret=linkedin_secret,
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
-            'scope': 'openid profile email'
+            'scope': 'openid profile email',
+            'token_endpoint_auth_method': 'client_secret_post',
         }
     )
 
@@ -92,6 +96,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             emails = resp_emails.json()
             for e in emails:
                 if e.get('primary') and e.get('verified'):
+                    email = e['email']
                     email = e['email']
                     break
 
@@ -143,12 +148,16 @@ async def login_linkedin(request: Request):
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        token = await oauth.linkedin.authorize_access_token(request)
+        logger.info("LinkedIn Auth: Skipping nonce validation")
+        token = await oauth.linkedin.authorize_access_token(
+            request, 
+            claims_options={'nonce': {'required': False}}
+        )
         user_info = token.get('userinfo')
         if not user_info:
              # Fallback if userinfo not in token
              user_info = await oauth.linkedin.userinfo(token=token)
-
+        
         # DEBUG: Log user_info
         logger.debug(f"LinkedIn User Data: {user_info}")
 
@@ -163,7 +172,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              return RedirectResponse("/login?error=linkedin_failed")
 
         email = user_info.get('email')
-
+        
         # Robust name extraction
         name = user_info.get('name')
         if not name:
