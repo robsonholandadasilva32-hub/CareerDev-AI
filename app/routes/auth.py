@@ -10,7 +10,7 @@ from app.core.jwt import create_access_token
 from app.db.crud.users import get_user_by_email, create_user
 from app.db.crud.email_verification import create_email_verification
 from app.db.session import get_db
-from app.services.notifications import create_otp, enqueue_email, enqueue_telegram
+from app.services.notifications import create_otp, enqueue_email, enqueue_telegram, verify_otp
 from app.core.limiter import limiter
 import logging
 
@@ -152,6 +152,140 @@ async def login(
         samesite="lax"
     )
     return response
+
+# =====================================================
+# FORGOT PASSWORD (GET)
+# =====================================================
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request):
+    lang = request.query_params.get("lang", "pt")
+    if lang not in ("pt", "en", "es", "fr", "de"):
+        lang = "pt"
+
+    t = get_texts(lang)
+    return templates.TemplateResponse(
+        "forgot_password.html",
+        {"request": request, "lang": lang, "t": t}
+    )
+
+# =====================================================
+# FORGOT PASSWORD (POST)
+# =====================================================
+@router.post("/forgot-password", response_class=HTMLResponse)
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    email: str = Form(...),
+    lang: str = Form("pt"),
+    db: Session = Depends(get_db)
+):
+    t = get_texts(lang)
+    user = get_user_by_email(db, email)
+
+    if user:
+        method = user.two_factor_method or "email"
+        create_otp(
+            db=db,
+            user_id=user.id,
+            method=method,
+            template_name="password_reset",
+            telegram_template_key="telegram_reset_message"
+        )
+
+    return RedirectResponse(
+        url=f"/reset-password?email={email}&lang={lang}",
+        status_code=302
+    )
+
+# =====================================================
+# RESET PASSWORD (GET)
+# =====================================================
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request):
+    lang = request.query_params.get("lang", "pt")
+    email = request.query_params.get("email", "")
+
+    if lang not in ("pt", "en", "es", "fr", "de"):
+        lang = "pt"
+
+    t = get_texts(lang)
+    return templates.TemplateResponse(
+        "reset_password.html",
+        {"request": request, "lang": lang, "t": t, "email": email}
+    )
+
+# =====================================================
+# RESET PASSWORD (POST)
+# =====================================================
+@router.post("/reset-password", response_class=HTMLResponse)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    email: str = Form(...),
+    code: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    lang: str = Form("pt"),
+    db: Session = Depends(get_db)
+):
+    t = get_texts(lang)
+
+    # 1. Check passwords match
+    if new_password != confirm_password:
+        return templates.TemplateResponse(
+            "reset_password.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "email": email,
+                "error": "Passwords do not match."
+            }
+        )
+
+    # 2. Check User
+    user = get_user_by_email(db, email)
+    if not user:
+        return templates.TemplateResponse(
+            "reset_password.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "email": email,
+                "error": t.get("error_code_invalid", "Invalid code")
+            }
+        )
+
+    # 3. Verify OTP
+    if not verify_otp(db, user.id, code):
+        return templates.TemplateResponse(
+            "reset_password.html",
+            {
+                "request": request,
+                "lang": lang,
+                "t": t,
+                "email": email,
+                "error": t.get("error_code_invalid", "Invalid code")
+            }
+        )
+
+    # 4. Update Password
+    user.hashed_password = hash_password(new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
+    db.commit()
+
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "lang": lang,
+            "t": t,
+            "success": t.get("success_reset", "Password changed!")
+        }
+    )
 
 # =====================================================
 # REGISTER PAGE (GET)

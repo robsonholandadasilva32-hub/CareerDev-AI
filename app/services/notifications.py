@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def generate_otp_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
-def create_otp(db: Session, user_id: int, method: str):
+def create_otp(db: Session, user_id: int, method: str, template_name: str = "verification_code", telegram_template_key: str = None):
     code = generate_otp_code()
     expires_at = datetime.utcnow() + timedelta(minutes=10)
 
@@ -51,15 +51,24 @@ def create_otp(db: Session, user_id: int, method: str):
         # Use template system for I18n
         payload = {
             "email": email,
-            "template": "verification_code",
-            "context": {"code": code},
+            "template": template_name,
+            "context": {"code": code, "user_name": user_obj.name},
             "lang": lang
         }
         task_type = "send_email_template"
 
     elif method == "telegram":
-        payload = {'code': code, 'chat_id': phone_number}
-        task_type = "send_telegram" # Keep using simple telegram for now or switch to template if key added
+        if telegram_template_key:
+             payload = {
+                "chat_id": phone_number,
+                "template_key": telegram_template_key,
+                "context": {"code": code, "user_name": user_obj.name},
+                "lang": lang
+             }
+             task_type = "send_telegram_template"
+        else:
+             payload = {'code': code, 'chat_id': phone_number}
+             task_type = "send_telegram" # Keep using simple telegram for now
 
     job = BackgroundJob(task_type=task_type, payload=payload)
     db.add(job)

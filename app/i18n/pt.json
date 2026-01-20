@@ -148,5 +148,20 @@
   "email_verification_body": "Use o código abaixo para verificar seu e-mail e completar seu cadastro. Válido por 15 minutos.",
   "email_verification_footer": "Se você não criou esta conta, ignore este e-mail.",
   "verify_email_resend_button": "Reenviar Código",
-  "verify_email_resend_success": "Novo código enviado com sucesso!"
+  "verify_email_resend_success": "Novo código enviado com sucesso!",
+
+  "forgot_password_link": "Esqueci minha senha",
+  "forgot_password_title": "Recuperar Senha",
+  "forgot_password_desc": "Digite seu e-mail para receber um código de recuperação.",
+  "send_code_btn": "Enviar Código",
+  "reset_password_title": "Redefinir Senha",
+  "reset_password_desc": "Digite o código recebido e sua nova senha.",
+  "code_label": "Código de Verificação",
+  "new_password_label": "Nova Senha",
+  "confirm_password_label": "Confirmar Senha",
+  "reset_btn": "Redefinir Senha",
+  "success_reset": "Senha alterada com sucesso! Faça login.",
+  "error_code_invalid": "Código inválido ou expirado.",
+  "email_subject_reset": "Seu código de recuperação de senha",
+  "telegram_reset_message": "🔐 *CareerDev AI*\n\nSeu código de recuperação: `{code}`\n\nVálido por 10 minutos."
 }
