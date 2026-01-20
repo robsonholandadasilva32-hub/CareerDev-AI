@@ -37,22 +37,25 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
     )
 
 # LinkedIn Config
-secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+raw_secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+linkedin_secret = raw_secret.strip()
+
 # Log length and first/last chars to detect hidden spaces or quotes
-logger.error(f"DEBUG SOCIAL: Secret loaded? {bool(secret)} | Length: {len(secret)} | Value: {secret[:2]}***{secret[-1:] if secret else ''}")
+logger.error(f"DEBUG SOCIAL: Secret loaded? {bool(linkedin_secret)} | Stripped Length: {len(linkedin_secret)} | Value: {linkedin_secret[:2]}***{linkedin_secret[-1:] if linkedin_secret else ''}")
 
 if settings.LINKEDIN_CLIENT_ID:
-    if not os.environ.get('LINKEDIN_CLIENT_SECRET'):
+    if not linkedin_secret:
          raise ValueError("LINKEDIN_CLIENT_SECRET is present but empty!")
 
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
         # Explicitly pass client_secret to avoid Authlib implicit loading issues
-        client_secret=os.environ['LINKEDIN_CLIENT_SECRET'],
+        client_secret=linkedin_secret,
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
-            'scope': 'openid profile email'
+            'scope': 'openid profile email',
+            'token_endpoint_auth_method': 'client_secret_post',
         }
     )
 
