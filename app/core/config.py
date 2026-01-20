@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field, AliasChoices
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -13,7 +14,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./careerdev.db"
 
     # 2FA / Notifications
-    SMTP_SERVER: Optional[str] = None
+    # Prioritize SMTP_HOST (Env Var) over SMTP_SERVER (.env default)
+    SMTP_SERVER: Optional[str] = Field(None, validation_alias=AliasChoices('SMTP_HOST', 'SMTP_SERVER'))
     SMTP_PORT: int = 587
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None

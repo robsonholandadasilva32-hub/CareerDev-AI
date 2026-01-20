@@ -148,6 +148,7 @@ def get_jinja_env():
 # --- ROBUST EMAIL SENDING HELPER ---
 async def _send_smtp_message(message: EmailMessage, to_email: str):
     """Helper to send email with robust configuration (TLS/SSL/Timeout)."""
+    logger.info(f"Attempting connection to SMTP Host: {settings.SMTP_SERVER}")
     logger.debug(f"Attempting to send email to {to_email}")
     logger.debug(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}, User={settings.SMTP_USERNAME}")
 
@@ -168,7 +169,7 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
         logger.error(f"TIMEOUT: Failed to send email to {to_email} within {settings.SMTP_TIMEOUT}s")
         raise # Let worker handle retry
     except Exception as e:
-        logger.error(f"SMTP ERROR: Failed to send email to {to_email}: {e}")
+        logger.error(f"Falha ao enviar email para {to_email} via {settings.SMTP_SERVER}: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         raise

@@ -40,15 +40,19 @@ logger.info(f"LinkedIn Secret Loaded? {bool(settings.LINKEDIN_CLIENT_SECRET)}")
 if not settings.LINKEDIN_CLIENT_SECRET:
     logger.error("CRITICAL: LINKEDIN_CLIENT_SECRET is missing in Settings!")
 
-if settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET:
+if settings.LINKEDIN_CLIENT_ID:
+    # Ensure client_secret is forcefully passed, even if conditional logic was weird
+    linkedin_secret = settings.LINKEDIN_CLIENT_SECRET
+    if not linkedin_secret:
+        logger.error("Attempting to register LinkedIn OAuth without a client_secret!")
+
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,
-        # Explicitly pass client_secret to avoid Authlib implicit loading issues
-        client_secret=settings.LINKEDIN_CLIENT_SECRET,
+        client_secret=linkedin_secret,
         server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
         client_kwargs={
-            'scope': 'openid profile email'
+            'scope': 'openid profile email',
         }
     )
 
