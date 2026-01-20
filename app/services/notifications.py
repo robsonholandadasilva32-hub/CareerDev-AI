@@ -153,13 +153,9 @@ async def _send_smtp_message(message: EmailMessage, to_email: str):
     logger.debug(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}, User={settings.SMTP_USERNAME}")
 
     try:
-        # Determine TLS/StartTLS based on port or config
-        use_tls = settings.SMTP_USE_TLS
-        start_tls = settings.SMTP_USE_STARTTLS
-
-        if settings.SMTP_PORT == 465:
-            use_tls = True
-            start_tls = False
+        # Force Implicit SSL for port 465
+        use_tls = (settings.SMTP_PORT == 465)
+        start_tls = not use_tls
 
         await aiosmtplib.send(
             message,
