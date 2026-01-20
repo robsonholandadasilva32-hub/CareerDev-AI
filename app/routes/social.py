@@ -38,6 +38,9 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
 
 # LinkedIn Config
 if settings.LINKEDIN_CLIENT_ID:
+    if not os.environ.get('LINKEDIN_CLIENT_SECRET'):
+         raise ValueError("LINKEDIN_CLIENT_SECRET is present but empty!")
+
     oauth.register(
         name='linkedin',
         client_id=settings.LINKEDIN_CLIENT_ID,

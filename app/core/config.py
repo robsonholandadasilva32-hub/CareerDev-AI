@@ -56,3 +56,7 @@ class Settings(BaseSettings):
         extra = "ignore" # Prevent crash on extra env vars
 
 settings = Settings()
+
+# Post-init validation: Fail-fast if SendGrid default is detected
+if "sendgrid" in settings.SMTP_SERVER.lower():
+    raise ValueError("CRITICAL: Application is trying to use SendGrid default. Check env vars.")
