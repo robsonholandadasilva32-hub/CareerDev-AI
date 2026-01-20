@@ -18,7 +18,7 @@ async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = D
     lang = request.session.get("lang", "pt")
     user_id = get_current_user_from_request(request)
 
-    response = chatbot_service.get_response(
+    response = await chatbot_service.get_response(
         chat_req.message,
         lang,
         user_id=user_id,
