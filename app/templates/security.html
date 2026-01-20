@@ -60,9 +60,11 @@
 
             <label for="language">Idioma</label>
             <select name="language" id="language" style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;">
-                <option value="pt" {% if request.session.get('lang') == 'pt' %}selected{% endif %}>Português (Brasil)</option>
-                <option value="en" {% if request.session.get('lang') == 'en' %}selected{% endif %}>English</option>
-                <option value="es" {% if request.session.get('lang') == 'es' %}selected{% endif %}>Español</option>
+                <option value="pt" {% if lang == 'pt' %}selected{% endif %}>🇧🇷 Português (Brasil)</option>
+                <option value="en" {% if lang == 'en' %}selected{% endif %}>🇺🇸 English</option>
+                <option value="es" {% if lang == 'es' %}selected{% endif %}>🇪🇸 Español</option>
+                <option value="fr" {% if lang == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+                <option value="de" {% if lang == 'de' %}selected{% endif %}>🇩🇪 Deutsch</option>
             </select>
         </div>
 
