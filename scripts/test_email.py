@@ -9,7 +9,7 @@ from app.services.notifications import send_raw_email
 
 async def main():
     print("Attempting to send test email via aiosmtplib (Async)...")
-    target_email = "robsonholandasilva@yahoo.com.br"
+    target_email = "admin@careerdev-ai.online"
     subject = "Teste de Envio Assíncrono - CareerDev AI"
     body = "Este é um teste para validar o envio de e-mail via aiosmtplib."
 

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
-    ADMIN_EMAIL: str = "robsonholandasilva@yahoo.com.br"
+    ADMIN_EMAIL: str = "admin@careerdev-ai.online"
 
     # Advanced Email Settings
     SMTP_USE_TLS: bool = False # Implicit TLS (usually port 465)
