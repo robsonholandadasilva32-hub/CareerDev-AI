@@ -91,12 +91,17 @@ async def login_github(request: Request):
 @router.get("/auth/github/callback")
 async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        # Force strict string casting
+        # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_github_callback'))
-        if "http://" in redirect_uri:
-            redirect_uri = redirect_uri.replace("http://", "https://")
+        if settings.ENVIRONMENT == 'production':
+            redirect_uri = redirect_uri.replace('http:', 'https:')
 
-        token = await oauth.github.authorize_access_token(request, redirect_uri=redirect_uri)
+        # 2. Use fetch_access_token (Bypassing authorize_access_token wrapper)
+        token = await oauth.github.fetch_access_token(
+            redirect_uri=redirect_uri,
+            code=str(request.query_params.get('code')),
+            grant_type='authorization_code'
+        )
         resp = await oauth.github.get('user', token=token)
         profile = resp.json()
 
@@ -168,16 +173,18 @@ async def login_linkedin(request: Request):
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        # Force strict string casting to avoid Proxy/URL object issues
+        # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_linkedin_callback'))
-        if "http://" in redirect_uri:
-            redirect_uri = redirect_uri.replace("http://", "https://")
+        if settings.ENVIRONMENT == 'production':
+            redirect_uri = redirect_uri.replace('http:', 'https:')
 
-        logger.info(f"LinkedIn Auth: Using authorize_access_token with redirect_uri={redirect_uri}")
+        logger.info(f"LinkedIn Auth: Using fetch_access_token with redirect_uri={redirect_uri}")
 
-        token = await oauth.linkedin.authorize_access_token(
-            request,
-            redirect_uri=redirect_uri
+        # 2. Use fetch_access_token (Bypassing authorize_access_token wrapper)
+        token = await oauth.linkedin.fetch_access_token(
+            redirect_uri=redirect_uri,
+            code=str(request.query_params.get('code')),
+            grant_type='authorization_code'
         )
 
         user_info = await oauth.linkedin.userinfo(token=token)
