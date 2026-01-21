@@ -18,9 +18,6 @@ class User(Base):
 
     preferred_language = Column(String, default="pt")
 
-    # two_factor_enabled removed
-    # two_factor_method removed
-
     # Security Lockout
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)

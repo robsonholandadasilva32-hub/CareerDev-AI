@@ -52,8 +52,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
         "security.html",
         {
             "request": request,
-            # two_factor fields removed
-            "user_phone": None, # Removed
             "no_user": False,
             "lang": lang,
             "t": t,
@@ -87,7 +85,6 @@ def update_security(
         if verify_password(current_password, user.hashed_password):
             if new_password == confirm_password:
                 user.hashed_password = hash_password(new_password)
-                # No 2FA verification.
             else:
                 return RedirectResponse("/security?error=password_mismatch", status_code=302)
         else:

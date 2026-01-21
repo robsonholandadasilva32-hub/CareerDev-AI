@@ -18,10 +18,7 @@ def update_schema():
     # Define columns to add: name -> type definition
     new_columns = {
         "failed_login_attempts": "INTEGER DEFAULT 0",
-        "locked_until": "DATETIME",
-        "two_factor_enabled": "BOOLEAN DEFAULT 0 NOT NULL",
-        "two_factor_method": "VARCHAR",
-        "phone_number": "VARCHAR"
+        "locked_until": "DATETIME"
     }
 
     for col_name, col_def in new_columns.items():
@@ -30,23 +27,6 @@ def update_schema():
             cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
         else:
             print(f"Column {col_name} already exists.")
-
-    # Create OTP table if not exists
-    print("Checking otps table...")
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='otps'")
-    if not cursor.fetchone():
-        print("Creating otps table...")
-        cursor.execute("""
-            CREATE TABLE otps (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                code VARCHAR NOT NULL,
-                method VARCHAR NOT NULL,
-                expires_at DATETIME NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id)
-            )
-        """)
 
     conn.commit()
     conn.close()

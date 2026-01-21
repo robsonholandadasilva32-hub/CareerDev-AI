@@ -63,8 +63,7 @@ if settings.LINKEDIN_CLIENT_ID:
 def login_user_and_redirect(request: Request, user):
     token = create_access_token({
         "sub": str(user.id),
-        "email": user.email,
-        "2fa": False # Social login skips 2FA usually
+        "email": user.email
     })
     response = RedirectResponse("/dashboard", status_code=302)
     response.set_cookie(
