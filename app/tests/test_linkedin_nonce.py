@@ -47,6 +47,13 @@ def test_linkedin_login_nonce_is_none():
         assert "nonce" in kwargs
         assert kwargs["nonce"] is None
 
+        # Verify force https and str type for redirect_uri
+        args = mock_linkedin.authorize_redirect.call_args.args
+        if len(args) > 1:
+            redirect_uri = args[1]
+            assert isinstance(redirect_uri, str)
+            assert redirect_uri.startswith("https://")
+
 def test_linkedin_callback_manual_fetch():
     """
     Verifies that /auth/linkedin/callback uses fetch_access_token + userinfo
@@ -94,8 +101,8 @@ def test_linkedin_callback_manual_fetch():
             # If I set them as above, they are primitives.
             mock_create_user.return_value = mock_created_user
 
-            # Trigger callback
-            response = client.get("/auth/linkedin/callback", follow_redirects=False)
+            # Trigger callback (add code param)
+            response = client.get("/auth/linkedin/callback?code=fakecode", follow_redirects=False)
 
         # ASSERTIONS
 
@@ -106,9 +113,9 @@ def test_linkedin_callback_manual_fetch():
         assert mock_linkedin.fetch_access_token.called, "fetch_access_token SHOULD be called"
         fetch_kwargs = mock_linkedin.fetch_access_token.call_args.kwargs
         assert fetch_kwargs.get("grant_type") == "authorization_code"
-        assert "redirect_uri" in fetch_kwargs
-        # Just check it's a string ending in the callback path, as the base URL depends on test client
-        assert str(fetch_kwargs["redirect_uri"]).endswith("/auth/linkedin/callback")
+
+        # Redirect_uri should NOT be passed manually
+        assert "redirect_uri" not in fetch_kwargs
 
         # 3. userinfo SHOULD be called with the token
         assert mock_linkedin.userinfo.called, "userinfo SHOULD be called"

@@ -79,7 +79,12 @@ def login_user_and_redirect(request: Request, user):
 async def login_github(request: Request):
     if not settings.GITHUB_CLIENT_ID:
         return RedirectResponse("/login?error=github_not_configured")
+
+    # Generate redirect_uri and FORCE HTTPS
     redirect_uri = str(request.url_for('auth_github_callback'))
+    if "http://" in redirect_uri:
+        redirect_uri = redirect_uri.replace("http://", "https://")
+
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/github/callback")
@@ -143,10 +148,12 @@ async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
 
-    # FIX: Cast URL object to string immediately
+    # Generate redirect_uri and FORCE HTTPS
     redirect_uri = str(request.url_for('auth_linkedin_callback'))
+    if "http://" in redirect_uri:
+        redirect_uri = redirect_uri.replace("http://", "https://")
 
-    logger.info("LinkedIn Login: Starting flow with nonce=None and sanitized redirect_uri")
+    logger.info(f"LinkedIn Login: Starting flow with nonce=None and sanitized redirect_uri={redirect_uri}")
 
     # Pass the sanitized string
     return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce=None)
