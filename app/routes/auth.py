@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -9,7 +10,7 @@ from app.core.security import verify_password, hash_password
 from app.core.jwt import create_access_token
 from app.db.crud.users import get_user_by_email, create_user
 from app.db.crud.email_verification import create_email_verification
-from app.db.session import get_db
+from app.db.session import get_db, SessionLocal
 from app.services.notifications import create_otp, enqueue_email, enqueue_telegram, verify_otp
 from app.core.limiter import limiter
 import logging
@@ -176,26 +177,31 @@ def forgot_password_page(request: Request):
 async def forgot_password(
     request: Request,
     email: str = Form(...),
-    lang: str = Form("pt"),
-    db: Session = Depends(get_db)
+    lang: str = Form("pt")
 ):
-    t = get_texts(lang)
-    user = get_user_by_email(db, email)
-
-    if user:
-        method = user.two_factor_method or "email"
-        create_otp(
-            db=db,
-            user_id=user.id,
-            method=method,
-            template_name="password_reset",
-            telegram_template_key="telegram_reset_message"
-        )
+    await asyncio.to_thread(_handle_forgot_password_db, email)
 
     return RedirectResponse(
         url=f"/reset-password?email={email}&lang={lang}",
         status_code=302
     )
+
+def _handle_forgot_password_db(email: str):
+    """Synchronous helper to avoid blocking the event loop."""
+    db: Session = SessionLocal()
+    try:
+        user = get_user_by_email(db, email)
+        if user:
+            method = user.two_factor_method or "email"
+            create_otp(
+                db=db,
+                user_id=user.id,
+                method=method,
+                template_name="password_reset",
+                telegram_template_key="telegram_reset_message"
+            )
+    finally:
+        db.close()
 
 # =====================================================
 # RESET PASSWORD (GET)
