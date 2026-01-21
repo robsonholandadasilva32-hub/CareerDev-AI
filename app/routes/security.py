@@ -7,7 +7,6 @@ from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
-from app.core.security import verify_password, hash_password
 from app.core.config import settings
 import logging
 
@@ -63,11 +62,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
 def update_security(
     request: Request,
     language: str = Form("pt"),
-    current_password: str = Form(None),
-    new_password: str = Form(None),
-    confirm_password: str = Form(None),
-    contact_dev: str = Form(None),
-    message_body: str = Form(None),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
@@ -79,21 +73,6 @@ def update_security(
     if user.preferred_language != language:
         user.preferred_language = language
         request.session["lang"] = language # Update session immediately
-
-    # 2. Password Change (Direct)
-    if current_password and new_password:
-        if verify_password(current_password, user.hashed_password):
-            if new_password == confirm_password:
-                user.hashed_password = hash_password(new_password)
-            else:
-                return RedirectResponse("/security?error=password_mismatch", status_code=302)
-        else:
-            return RedirectResponse("/security?error=invalid_password", status_code=302)
-
-    # 3. Contact Developer Feature (Stubbed - Email Removed)
-    if contact_dev == "true" and message_body:
-        # Email service removed, log only
-        logger.info(f"SUPPORT MESSAGE from {user.email}: {message_body}")
 
     db.commit()
 
