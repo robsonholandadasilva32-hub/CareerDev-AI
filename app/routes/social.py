@@ -155,14 +155,22 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
     try:
         logger.info("LinkedIn Auth: Switching to manual fetch_access_token to bypass OIDC validation")
 
-        # 1. Fetch the token directly (bypassing ID Token validation)
-        # Authlib's Starlette client exposes this method
+        # 1. Manually extract the code from the URL
+        code = request.query_params.get('code')
+        if not code:
+            logger.error("LinkedIn Error: No code found in callback URL")
+            return RedirectResponse("/login?error=linkedin_failed")
+
+        # 2. Pass the code explicitly.
+        # DO NOT pass redirect_uri (it's pulled from session).
+        # KEEP grant_type.
         token = await oauth.linkedin.fetch_access_token(
             request,
-            grant_type='authorization_code'
+            grant_type='authorization_code',
+            code=code
         )
 
-        # 2. Manually fetch user info using the valid token
+        # 3. Manually fetch user info using the valid token
         user_info = await oauth.linkedin.userinfo(token=token)
         
         # DEBUG: Log user_info
