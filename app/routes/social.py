@@ -153,22 +153,21 @@ async def login_linkedin(request: Request):
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        logger.info("LinkedIn Auth: Processing callback (nonce validation disabled)")
-        token = await oauth.linkedin.authorize_access_token(
-            request, 
-            claims_options={'nonce': {'required': False}}
-        )
-        user_info = token.get('userinfo')
-        if not user_info:
-             # Fallback if userinfo not in token
-             user_info = await oauth.linkedin.userinfo(token=token)
+        logger.info("LinkedIn Auth: Switching to manual fetch_access_token to bypass OIDC validation")
+
+        # 1. Fetch the token directly (bypassing ID Token validation)
+        # Authlib's Starlette client exposes this method
+        token = await oauth.linkedin.fetch_access_token(request)
+
+        # 2. Manually fetch user info using the valid token
+        user_info = await oauth.linkedin.userinfo(token=token)
         
         # DEBUG: Log user_info
         logger.debug(f"LinkedIn User Data: {user_info}")
 
         if not user_info:
-            logger.error("LinkedIn Error: No user info received")
-            return RedirectResponse("/login?error=linkedin_failed")
+             logger.error("LinkedIn Error: No user info received")
+             return RedirectResponse("/login?error=linkedin_failed")
 
         # Support OIDC 'sub' and legacy 'id'
         linkedin_id = user_info.get('sub') or user_info.get('id')
