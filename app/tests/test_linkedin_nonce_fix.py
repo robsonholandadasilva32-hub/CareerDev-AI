@@ -13,11 +13,10 @@ os.environ["LINKEDIN_CLIENT_ID"] = "dummy_linkedin_id"
 from app.routes.social import login_linkedin
 
 @pytest.mark.asyncio
-async def test_login_linkedin_passes_nonce_none():
+async def test_login_linkedin_passes_static_nonce():
     """
-    Verifies that login_linkedin calls authorize_redirect with nonce=None.
-    This is required to prevent Authlib from generating a nonce and storing it in session,
-    which causes failures when the callback (which disables nonce check) returns.
+    Verifies that login_linkedin calls authorize_redirect with nonce="global_bypass_nonce".
+    This is required to prevent Authlib from generating a random nonce.
     """
     # Mock the request object
     mock_request = MagicMock(spec=Request)
@@ -38,8 +37,9 @@ async def test_login_linkedin_passes_nonce_none():
         call_args = mock_linkedin_client.authorize_redirect.call_args
         _, kwargs = call_args
 
-        # Verify nonce=None is explicitly passed
+        # Verify nonce="global_bypass_nonce" is explicitly passed
         if "nonce" not in kwargs:
             pytest.fail("nonce argument was NOT passed to authorize_redirect")
 
-        assert kwargs["nonce"] is None, f"Expected nonce=None, but got {kwargs['nonce']}"
+        expected = "global_bypass_nonce"
+        assert kwargs["nonce"] == expected, f"Expected nonce='{expected}', but got '{kwargs['nonce']}'"
