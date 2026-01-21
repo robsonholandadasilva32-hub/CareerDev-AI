@@ -1,8 +1,20 @@
+import os
 import pytest
+from unittest.mock import AsyncMock, patch, ANY
+
+# Set env vars required for app startup BEFORE imports
+os.environ.setdefault("SMTP_HOST", "smtp.example.com")
+os.environ.setdefault("SMTP_PORT", "587")
+os.environ.setdefault("SMTP_USER", "user")
+os.environ.setdefault("SMTP_PASSWORD", "password")
+os.environ.setdefault("LINKEDIN_CLIENT_ID", "mock_id")
+os.environ.setdefault("LINKEDIN_CLIENT_SECRET", "mock_secret")
+os.environ.setdefault("GITHUB_CLIENT_ID", "mock_gh_id")
+os.environ.setdefault("GITHUB_CLIENT_SECRET", "mock_gh_secret")
+
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import AsyncMock, patch, ANY
 
 from app.main import app
 from app.db.declarative import Base
