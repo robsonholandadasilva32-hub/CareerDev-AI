@@ -102,8 +102,13 @@ def test_linkedin_callback_manual_fetch():
         # 1. authorize_access_token should NOT be called
         assert not mock_linkedin.authorize_access_token.called, "authorize_access_token should NOT be called"
 
-        # 2. fetch_access_token SHOULD be called
+        # 2. fetch_access_token SHOULD be called with explicit grant_type and redirect_uri
         assert mock_linkedin.fetch_access_token.called, "fetch_access_token SHOULD be called"
+        fetch_kwargs = mock_linkedin.fetch_access_token.call_args.kwargs
+        assert fetch_kwargs.get("grant_type") == "authorization_code"
+        assert "redirect_uri" in fetch_kwargs
+        # Just check it's a string ending in the callback path, as the base URL depends on test client
+        assert str(fetch_kwargs["redirect_uri"]).endswith("/auth/linkedin/callback")
 
         # 3. userinfo SHOULD be called with the token
         assert mock_linkedin.userinfo.called, "userinfo SHOULD be called"

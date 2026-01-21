@@ -157,7 +157,12 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         # 1. Fetch the token directly (bypassing ID Token validation)
         # Authlib's Starlette client exposes this method
-        token = await oauth.linkedin.fetch_access_token(request)
+        redirect_uri = request.url_for('auth_linkedin_callback')
+        token = await oauth.linkedin.fetch_access_token(
+            request,
+            grant_type='authorization_code',
+            redirect_uri=str(redirect_uri)
+        )
 
         # 2. Manually fetch user info using the valid token
         user_info = await oauth.linkedin.userinfo(token=token)
