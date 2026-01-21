@@ -79,7 +79,7 @@ def login_user_and_redirect(request: Request, user):
 async def login_github(request: Request):
     if not settings.GITHUB_CLIENT_ID:
         return RedirectResponse("/login?error=github_not_configured")
-    redirect_uri = request.url_for('auth_github_callback')
+    redirect_uri = str(request.url_for('auth_github_callback'))
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/github/callback")
