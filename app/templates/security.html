@@ -15,29 +15,6 @@
 
     <form method="post" action="/security/update" style="display: flex; flex-direction: column; gap: 20px;">
 
-        <!-- 2FA Method -->
-        <div class="setting-group">
-            <h3>Método de Autenticação (2FA)</h3>
-            <p style="color: #9ca3af; font-size: 0.9rem;">Escolha como deseja receber seus códigos de segurança.</p>
-
-            <div style="display: flex; gap: 20px;">
-                <label style="display: flex; items-center; gap: 8px; cursor: pointer;">
-                    <input type="radio" name="method" value="email" {% if two_factor_method == 'email' or not two_factor_method %}checked{% endif %}>
-                    <span>E-mail</span>
-                </label>
-                <label style="display: flex; items-center; gap: 8px; cursor: pointer;">
-                    <input type="radio" name="method" value="telegram" {% if two_factor_method == 'telegram' %}checked{% endif %}>
-                    <span>Telegram</span>
-                </label>
-            </div>
-        </div>
-
-        <!-- Telegram Update -->
-        <div class="setting-group">
-            <label for="phone">Telegram Chat ID</label>
-            <input type="text" name="phone" id="phone" placeholder="Ex: 123456789" style="width: 100%; padding: 10px; background: #0a1020; border: 1px solid #2d3748; border-radius: 6px; color: white; margin-top: 5px;" value="{{ user_phone or '' }}">
-            <small style="color: #6b7280; display: block; margin-top: 5px;">Abra <strong>@CareerDevBot</strong> e envie /start para obter seu ID.</small>
-        </div>
 
         <!-- Password Change -->
         <div class="setting-group" style="border-top: 1px solid #2d3748; padding-top: 20px; margin-top: 10px;">

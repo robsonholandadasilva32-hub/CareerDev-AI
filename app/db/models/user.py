@@ -12,14 +12,14 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
 
-    phone_number = Column(String, nullable=True) # E.164 format ideally
-
-    email_verified = Column(Boolean, default=False, nullable=False)
+    # phone_number removed
+    # email_verified default changed to True
+    email_verified = Column(Boolean, default=True, nullable=False)
 
     preferred_language = Column(String, default="pt")
 
-    two_factor_enabled = Column(Boolean, default=False, nullable=False)
-    two_factor_method = Column(String, nullable=True) # 'email' or 'sms'
+    # two_factor_enabled removed
+    # two_factor_method removed
 
     # Security Lockout
     failed_login_attempts = Column(Integer, default=0)

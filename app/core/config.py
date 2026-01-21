@@ -13,20 +13,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./careerdev.db"
 
-    # 2FA / Notifications
-    SMTP_SERVER: str = os.environ["SMTP_HOST"]
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    SMTP_FROM_EMAIL: str = "noreply@careerdev.ai"
-    ADMIN_EMAIL: str = "admin@careerdev-ai.online"
-
-    # Advanced Email Settings
-    SMTP_USE_TLS: bool = False # Implicit TLS (usually port 465)
-    SMTP_USE_STARTTLS: bool = True # Explicit TLS (usually port 587)
-    SMTP_TIMEOUT: int = 10 # Seconds
-
-    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    # Notification settings removed
 
     # AI
     OPENAI_API_KEY: Optional[str] = None
@@ -56,7 +43,3 @@ class Settings(BaseSettings):
         extra = "ignore" # Prevent crash on extra env vars
 
 settings = Settings()
-
-# Post-init validation: Fail-fast if SendGrid default is detected
-if "sendgrid" in settings.SMTP_SERVER.lower():
-    raise ValueError("CRITICAL: Application is trying to use SendGrid default. Check env vars.")

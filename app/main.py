@@ -58,12 +58,13 @@ from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.core.config import settings
 from app.services.gamification import init_badges
-from app.services.worker import job_worker
+# Worker removed
 
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    email_verification, two_factor, logout, social, billing, career, legal, debug
+    logout, social, billing, career, legal
+    # email_verification, two_factor, debug removed
 )
 
 # 4. Lifespan (Conexão com Banco)
@@ -82,14 +83,8 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
 
-        # Start Background Worker
-        job_worker.start()
+        # Worker Start removed
 
-        # SMTP Config Debug
-        if "SMTP_HOST" in os.environ and not settings.SMTP_SERVER:
-            logger.warning("MISCONFIGURATION DETECTED: 'SMTP_HOST' environment variable is set, but 'SMTP_SERVER' is empty. Did you mean to use 'SMTP_SERVER'?")
-
-        logger.info(f"SMTP Config: Server={settings.SMTP_SERVER}, Port={settings.SMTP_PORT}, User={settings.SMTP_USERNAME}, TLS={settings.SMTP_USE_TLS}, StartTLS={settings.SMTP_USE_STARTTLS}")
 
     except Exception as e:
         logger.error(f"ERRO CRITICO NO BANCO: {e}")
@@ -97,7 +92,7 @@ async def lifespan(app: FastAPI):
         raise e
     yield
     logger.info("Desligando...")
-    job_worker.stop()
+    # Worker Stop removed
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
@@ -169,11 +164,10 @@ app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(chatbot.router, prefix="/chatbot")
 app.include_router(security.router)
-app.include_router(email_verification.router)
-app.include_router(two_factor.router)
+# email_verification removed
+# two_factor removed
 app.include_router(logout.router)
 app.include_router(social.router)
 app.include_router(billing.router)
 app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
-app.include_router(debug.router, prefix="/debug", tags=["Debug"])

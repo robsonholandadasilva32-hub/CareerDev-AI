@@ -12,6 +12,7 @@ Base.metadata.create_all(bind=engine)
 
 @pytest.fixture
 def client():
+    app.dependency_overrides = {} # Reset overrides from other tests
     transport = ASGITransport(app=app)
     return AsyncClient(transport=transport, base_url="http://test")
 
