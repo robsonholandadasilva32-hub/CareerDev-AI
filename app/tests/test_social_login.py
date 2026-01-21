@@ -76,11 +76,12 @@ async def test_linkedin_callback_success(client, db_session):
         'family_name': 'User'
     }
 
-    # Patch authorize_access_token AND userinfo (NOT fetch_access_token)
-    with patch('app.routes.social.oauth.linkedin.authorize_access_token', new_callable=AsyncMock) as mock_auth, \
+    # Patch fetch_access_token (Bypassing authorize_access_token wrapper)
+    # AND userinfo
+    with patch('app.routes.social.oauth.linkedin.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
          patch('app.routes.social.oauth.linkedin.userinfo', new_callable=AsyncMock) as mock_userinfo:
 
-        mock_auth.return_value = mock_token
+        mock_fetch.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
 
         # Act
@@ -90,17 +91,20 @@ async def test_linkedin_callback_success(client, db_session):
         assert response.status_code == 302
         assert response.headers["location"] == "/dashboard"
 
-        # Verify authorize_access_token was called correctly
-        mock_auth.assert_called_once()
-        call_kwargs = mock_auth.call_args.kwargs
+        # Verify fetch_access_token was called correctly
+        mock_fetch.assert_called_once()
+        call_kwargs = mock_fetch.call_args.kwargs
 
         # The critical check: verify we are passing redirect_uri explicitly as a string
         assert 'redirect_uri' in call_kwargs
         assert isinstance(call_kwargs['redirect_uri'], str)
-        # Assuming the test runner doesn't use 'http://test' which would be replaced by 'https://test'
-        # The client uses base_url="http://test", so request.url_for generates "http://test/..."
-        # And our code replaces "http://" with "https://"
-        assert call_kwargs['redirect_uri'].startswith("https://test/auth/linkedin/callback")
+
+        # Since we are not in production env during tests, it stays http://
+        assert call_kwargs['redirect_uri'].startswith("http://test/auth/linkedin/callback")
+
+        # Verify grant_type and code
+        assert call_kwargs.get('grant_type') == 'authorization_code'
+        assert call_kwargs.get('code') == '123'
 
         # Verify user created in DB
         from app.db.crud.users import get_user_by_email
@@ -134,15 +138,13 @@ async def test_github_callback_success(client, db_session):
         'avatar_url': 'http://avatar.url/gh.jpg'
     }
 
-    # Patch authorize_access_token and get (for user info)
-    with patch('app.routes.social.oauth.github.authorize_access_token', new_callable=AsyncMock) as mock_auth, \
+    # Patch fetch_access_token and get (for user info)
+    with patch('app.routes.social.oauth.github.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
          patch('app.routes.social.oauth.github.get', new_callable=AsyncMock) as mock_get:
 
-        mock_auth.return_value = mock_token
+        mock_fetch.return_value = mock_token
 
         # mock_get is called for 'user' and potentially 'user/emails'
-        # We need to set up the side effect or return value appropriately
-        # The code calls: await oauth.github.get('user', token=token)
         mock_resp = MagicMock()
         mock_resp.json.return_value = mock_user_info
         mock_get.return_value = mock_resp
@@ -154,14 +156,19 @@ async def test_github_callback_success(client, db_session):
         assert response.status_code == 302
         assert response.headers["location"] == "/dashboard"
 
-        # Verify authorize_access_token was called correctly
-        mock_auth.assert_called_once()
-        call_kwargs = mock_auth.call_args.kwargs
+        # Verify fetch_access_token was called correctly
+        mock_fetch.assert_called_once()
+        call_kwargs = mock_fetch.call_args.kwargs
 
         # The critical check: verify we are passing redirect_uri explicitly as a string
         assert 'redirect_uri' in call_kwargs
         assert isinstance(call_kwargs['redirect_uri'], str)
-        assert call_kwargs['redirect_uri'].startswith("https://test/auth/github/callback")
+        # Not production, so http://
+        assert call_kwargs['redirect_uri'].startswith("http://test/auth/github/callback")
+
+        # Verify grant_type and code
+        assert call_kwargs.get('grant_type') == 'authorization_code'
+        assert call_kwargs.get('code') == 'gh_code'
 
         # Verify user created in DB
         from app.db.crud.users import get_user_by_email
