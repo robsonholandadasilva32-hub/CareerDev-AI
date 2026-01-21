@@ -1,6 +1,6 @@
 import os
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Set env vars required for app startup
 os.environ.setdefault("SMTP_HOST", "smtp.example.com")
@@ -76,11 +76,11 @@ async def test_linkedin_callback_success(client, db_session):
         'family_name': 'User'
     }
 
-    # Patch fetch_access_token AND userinfo (NOT authorize_access_token)
-    with patch('app.routes.social.oauth.linkedin.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
+    # Patch authorize_access_token AND userinfo (NOT fetch_access_token)
+    with patch('app.routes.social.oauth.linkedin.authorize_access_token', new_callable=AsyncMock) as mock_auth, \
          patch('app.routes.social.oauth.linkedin.userinfo', new_callable=AsyncMock) as mock_userinfo:
 
-        mock_fetch.return_value = mock_token
+        mock_auth.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
 
         # Act
@@ -90,19 +90,81 @@ async def test_linkedin_callback_success(client, db_session):
         assert response.status_code == 302
         assert response.headers["location"] == "/dashboard"
 
-        # Verify fetch_access_token was called correctly
-        mock_fetch.assert_called_once()
-        call_kwargs = mock_fetch.call_args.kwargs
+        # Verify authorize_access_token was called correctly
+        mock_auth.assert_called_once()
+        call_kwargs = mock_auth.call_args.kwargs
 
-        # The critical check: verify we are manually passing grant_type='authorization_code' and the code
-        assert call_kwargs.get('grant_type') == 'authorization_code'
-        assert call_kwargs.get('code') == '123'
-
-        # Verify we are NOT passing redirect_uri (Authlib pulls it from session, manual passing causes TypeError)
-        assert 'redirect_uri' not in call_kwargs
+        # The critical check: verify we are passing redirect_uri explicitly as a string
+        assert 'redirect_uri' in call_kwargs
+        assert isinstance(call_kwargs['redirect_uri'], str)
+        # Assuming the test runner doesn't use 'http://test' which would be replaced by 'https://test'
+        # The client uses base_url="http://test", so request.url_for generates "http://test/..."
+        # And our code replaces "http://" with "https://"
+        assert call_kwargs['redirect_uri'].startswith("https://test/auth/linkedin/callback")
 
         # Verify user created in DB
         from app.db.crud.users import get_user_by_email
         user = get_user_by_email(db_session, "testuser@linkedin.com")
         assert user is not None
         assert user.linkedin_id == "linkedin-12345"
+
+@pytest.mark.asyncio
+async def test_github_callback_success(client, db_session):
+    # Ensure github client is registered
+    from app.routes.social import oauth
+    if 'github' not in oauth._registry:
+         oauth.register(
+            name='github',
+            client_id='mock_gh_id',
+            client_secret='mock_gh_secret',
+            access_token_url='https://github.com/login/oauth/access_token',
+            authorize_url='https://github.com/login/oauth/authorize',
+            api_base_url='https://api.github.com/',
+            client_kwargs={'scope': 'user:email'},
+        )
+
+    # Mock Token Response and User Info
+    mock_token = {'access_token': 'fake_gh_token', 'token_type': 'bearer'}
+
+    mock_user_info = {
+        'id': 98765,
+        'login': 'githubuser',
+        'email': 'github@example.com',
+        'name': 'GitHub User',
+        'avatar_url': 'http://avatar.url/gh.jpg'
+    }
+
+    # Patch authorize_access_token and get (for user info)
+    with patch('app.routes.social.oauth.github.authorize_access_token', new_callable=AsyncMock) as mock_auth, \
+         patch('app.routes.social.oauth.github.get', new_callable=AsyncMock) as mock_get:
+
+        mock_auth.return_value = mock_token
+
+        # mock_get is called for 'user' and potentially 'user/emails'
+        # We need to set up the side effect or return value appropriately
+        # The code calls: await oauth.github.get('user', token=token)
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = mock_user_info
+        mock_get.return_value = mock_resp
+
+        # Act
+        response = await client.get("/auth/github/callback?code=gh_code&state=gh_state", follow_redirects=False)
+
+        # Assert
+        assert response.status_code == 302
+        assert response.headers["location"] == "/dashboard"
+
+        # Verify authorize_access_token was called correctly
+        mock_auth.assert_called_once()
+        call_kwargs = mock_auth.call_args.kwargs
+
+        # The critical check: verify we are passing redirect_uri explicitly as a string
+        assert 'redirect_uri' in call_kwargs
+        assert isinstance(call_kwargs['redirect_uri'], str)
+        assert call_kwargs['redirect_uri'].startswith("https://test/auth/github/callback")
+
+        # Verify user created in DB
+        from app.db.crud.users import get_user_by_email
+        user = get_user_by_email(db_session, "github@example.com")
+        assert user is not None
+        assert user.github_id == "98765"

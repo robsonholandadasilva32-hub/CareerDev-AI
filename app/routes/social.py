@@ -90,7 +90,12 @@ async def login_github(request: Request):
 @router.get("/auth/github/callback")
 async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        token = await oauth.github.authorize_access_token(request)
+        # Force strict string casting
+        redirect_uri = str(request.url_for('auth_github_callback'))
+        if "http://" in redirect_uri:
+            redirect_uri = redirect_uri.replace("http://", "https://")
+
+        token = await oauth.github.authorize_access_token(request, redirect_uri=redirect_uri)
         resp = await oauth.github.get('user', token=token)
         profile = resp.json()
 
@@ -161,28 +166,19 @@ async def login_linkedin(request: Request):
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        logger.info("LinkedIn Auth: Switching to manual fetch_access_token to bypass OIDC validation")
+        # Force strict string casting to avoid Proxy/URL object issues
+        redirect_uri = str(request.url_for('auth_linkedin_callback'))
+        if "http://" in redirect_uri:
+            redirect_uri = redirect_uri.replace("http://", "https://")
 
-        # 1. Manually extract the code from the URL
-        code = request.query_params.get('code')
-        if not code:
-            logger.error("LinkedIn Error: No code found in callback URL")
-            return RedirectResponse("/login?error=linkedin_failed")
+        logger.info(f"LinkedIn Auth: Using authorize_access_token with redirect_uri={redirect_uri}")
 
-        # 2. Pass the code explicitly.
-        # DO NOT pass redirect_uri (it's pulled from session).
-        # KEEP grant_type.
-        token = await oauth.linkedin.fetch_access_token(
+        token = await oauth.linkedin.authorize_access_token(
             request,
-            grant_type='authorization_code',
-            code=code
+            redirect_uri=redirect_uri
         )
 
-        # 3. Manually fetch user info using the valid token
         user_info = await oauth.linkedin.userinfo(token=token)
-        
-        # DEBUG: Log user_info
-        logger.debug(f"LinkedIn User Data: {user_info}")
 
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
