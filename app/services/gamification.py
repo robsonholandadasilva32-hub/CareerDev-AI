@@ -11,9 +11,11 @@ BADGE_DEFINITIONS = [
 
 def init_badges(db: Session):
     """Ensures all badges exist in DB."""
+    # Fetch all existing badge slugs in a single query to avoid N+1.
+    existing_slugs = {slug for slug, in db.query(Badge.slug).all()}
+
     for b_def in BADGE_DEFINITIONS:
-        existing = db.query(Badge).filter(Badge.slug == b_def["slug"]).first()
-        if not existing:
+        if b_def["slug"] not in existing_slugs:
             new_badge = Badge(
                 slug=b_def["slug"],
                 name=b_def["name"],
