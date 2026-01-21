@@ -143,7 +143,8 @@ async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
     redirect_uri = request.url_for('auth_linkedin_callback')
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+    # FIX: Disable nonce generation
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce=None)
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
