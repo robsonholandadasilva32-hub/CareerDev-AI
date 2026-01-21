@@ -144,16 +144,19 @@ async def login_linkedin(request: Request):
         return RedirectResponse("/login?error=linkedin_not_configured")
     redirect_uri = request.url_for('auth_linkedin_callback')
 
-    # STRATEGY CHANGE: Send a dummy nonce instead of None
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce="global_bypass_nonce")
+    # LOG for verification
+    logger.info("LinkedIn Login: Starting flow with nonce=None")
+
+    # CRITICAL: Pass nonce=None
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce=None)
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
     try:
-        logger.info("LinkedIn Auth: Force bypassing nonce validation")
+        logger.info("LinkedIn Auth: Processing callback (nonce validation disabled)")
         token = await oauth.linkedin.authorize_access_token(
             request, 
-            claims_options={'nonce': {'required': False, 'value': 'global_bypass_nonce'}}
+            claims_options={'nonce': {'required': False}}
         )
         user_info = token.get('userinfo')
         if not user_info:
