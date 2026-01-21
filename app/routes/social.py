@@ -142,12 +142,13 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
 async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
-    redirect_uri = request.url_for('auth_linkedin_callback')
 
-    # LOG for verification
-    logger.info("LinkedIn Login: Starting flow with nonce=None")
+    # FIX: Cast URL object to string immediately
+    redirect_uri = str(request.url_for('auth_linkedin_callback'))
 
-    # CRITICAL: Pass nonce=None
+    logger.info("LinkedIn Login: Starting flow with nonce=None and sanitized redirect_uri")
+
+    # Pass the sanitized string
     return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce=None)
 
 @router.get("/auth/linkedin/callback")
