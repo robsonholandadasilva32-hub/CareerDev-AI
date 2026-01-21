@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.i18n.loader import get_texts
 from app.db.session import get_db
 from app.db.models.user import User
+from app.db.models.gamification import UserBadge
 from app.middleware.subscription import check_subscription_status
 
 router = APIRouter()
@@ -24,7 +25,12 @@ def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
         return None
 
     user_id = int(payload.get("sub"))
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .options(joinedload(User.badges).joinedload(UserBadge.badge))
+        .filter(User.id == user_id)
+        .first()
+    )
     return user
 
 @router.get("/dashboard", response_class=HTMLResponse)
