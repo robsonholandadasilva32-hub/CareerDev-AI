@@ -15,6 +15,7 @@ from app.core.jwt import create_access_token
 import secrets
 import logging
 import os
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +129,12 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
+        hashed_password = await asyncio.to_thread(hash_password, pwd)
         user = create_user(
             db=db,
             name=name,
             email=email,
-            hashed_password=hash_password(pwd),
+            hashed_password=hashed_password,
             github_id=github_id,
             avatar_url=avatar,
             email_verified=True # Trusted provider
@@ -228,11 +230,12 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
+        hashed_password = await asyncio.to_thread(hash_password, pwd)
         user = create_user(
             db=db,
             name=name,
             email=email,
-            hashed_password=hash_password(pwd),
+            hashed_password=hashed_password,
             linkedin_id=linkedin_id,
             avatar_url=picture,
             email_verified=True
