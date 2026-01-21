@@ -1,50 +1,36 @@
 {
   "page_title": "CareerDev AI",
   "page_description": "Gestión inteligente de carrera para desarrolladores",
-
   "project_phrase": "La máquina no reemplaza al humano. Amplifica su potencial.",
-
   "security_status": "Sesión segura · Cifrado activo",
-
   "language_label": "Idioma",
-
   "login_title": "Iniciar sesión",
   "register_title": "Crear cuenta",
-
   "email_label": "Correo electrónico",
   "password_label": "Contraseña",
   "password_register_label": "Contraseña (mín. 8 caracteres)",
   "name_label": "Nombre",
-
   "login_button": "Entrar con seguridad",
   "register_button": "Registrarse",
-
   "about_title": "Sobre la aplicación",
   "about_text": "CareerDev AI ayuda a los desarrolladores a evolucionar profesionalmente con seguridad, ética e inteligencia artificial responsable.",
-
   "quote_turing": "Solo podemos ver un poco hacia adelante, pero vemos mucho por hacer. — Alan Turing",
   "quote_lanier": "La tecnología no es el destino. Nosotros damos forma a nuestras herramientas y luego ellas nos dan forma a nosotros. — Jaron Lanier",
-
   "footer_text": "CareerDev AI · Privacidad por diseño · No se venden datos",
-
   "chatbot_title": "Asistente CareerDev AI",
   "chatbot_welcome": "¡Hola! Estoy aquí para ayudarte a iniciar sesión de forma segura y entender la aplicación.",
   "chatbot_placeholder": "Escribe tu duda o comando",
   "chatbot_input_aria": "Campo para escribir mensajes al asistente",
-
   "chatbot_help_button": "Ayuda",
   "chatbot_repeat_button": "Repetir",
   "chatbot_send_button": "Enviar",
   "chatbot_voice_button": "Hablar",
   "chatbot_voice_aria": "Activar conversación por voz",
-
   "no_account_text": "¿Aún no tienes cuenta?",
   "register_link_text": "Crea tu cuenta con seguridad",
-
   "error_user_not_found": "Usuario no encontrado",
   "error_invalid_password": "Contraseña inválida",
   "error_email_exists": "El correo ya está registrado",
-
   "dash_security_active": "Seguridad Activa",
   "dash_security_detail": "Sesión Cifrada • Monitoreo en Tiempo Real",
   "dash_manage_security": "Gestionar Seguridad",
@@ -60,10 +46,8 @@
   "dash_trend_ethics_desc": "Desarrollo responsable y explicabilidad (XAI).",
   "dash_trend_ethics_strat": "Tendencia Estratégica 👁️",
   "dash_plan_title": "🛠️ Plan de Estudio Personalizado",
-
   "trial_banner": "¡Primer mes gratis! Disfruta tu periodo de prueba.",
   "trial_register_notice": "¡Regístrate y obtén 1 mes gratis! Desbloquea análisis de IA y acelera tu carrera hoy.",
-
   "billing_title": "Suscripción y Facturación",
   "billing_desc": "Para continuar evolucionando tu carrera, activa tu suscripción.",
   "billing_benefit_1": "Acceso total al Dashboard",
@@ -72,22 +56,16 @@
   "billing_recurring_label": "Facturación Recurrente (Suscripción)",
   "billing_pay_button": "Pagar $1.00",
   "month": "mes",
-
   "social_login_title": "O accede vía",
   "social_github_btn": "GitHub",
   "social_linkedin_btn": "LinkedIn",
-
   "integration_title": "Ecosistema de Carrera Inteligente",
   "integration_desc": "Integramos las plataformas que definen el mercado para acelerar tu evolución.",
-
   "int_github_title": "Upskilling Basado en Código Real",
   "int_github_text": "Conecta GitHub para que nuestra IA analice tus repositorios, identifique brechas técnicas y genere planes de estudio con micro-proyectos prácticos.",
-
   "int_linkedin_title": "Alineación de Mercado en Tiempo Real",
   "int_linkedin_text": "Conecta LinkedIn para monitorear tendencias de empleo y recibir sugerencias de networking estratégico.",
-
   "int_impact_text": "Transforma tu experiencia en autoridad. CareerDev AI llena el vacío entre lo que sabes y lo que el mercado necesita.",
-
   "a11y_title": "Inclusión en el Código Fuente",
   "a11y_subtitle": "Tecnología adaptativa para todos los perfiles. Activa en el panel de control.",
   "a11y_card_cognitive_title": "Enfoque Cognitivo",
@@ -101,7 +79,6 @@
   "a11y_spotlight_title": "¿Sabías qué? CareerDev AI se adapta a ti.",
   "a11y_spotlight_text": "Dislexia, Daltonismo, Enfoque y más. Personaliza tu experiencia en el Panel Universal.",
   "a11y_spotlight_btn": "Configurar Accesibilidad",
-
   "security_promise_title": "Compromiso de Seguridad y Privacidad",
   "security_promise_subtitle": "Tu confianza es la base de nuestra arquitectura. Garantías innegociables:",
   "sec_card_selling_title": "Cero Venta de Datos",
@@ -110,7 +87,6 @@
   "sec_card_encrypt_text": "Datos protegidos en reposo y tránsito. Seguridad bancaria para tu carrera.",
   "sec_card_ai_title": "IA Privada",
   "sec_card_ai_text": "Tus datos no entrenan la IA pública. Tus interacciones son aisladas y confidenciales.",
-
   "email_greeting": "Hola, {{name}}",
   "email_welcome_subject": "Bienvenido a CareerDev AI",
   "email_welcome_title": "Comienza tu Jornada Profesional",
@@ -122,25 +98,10 @@
   "email_welcome_feature_2_desc": "Herramientas adaptativas para todos.",
   "email_welcome_feature_3_title": "Seguridad de Datos",
   "email_welcome_feature_3_desc": "Tus datos son tuyos. No vendemos información.",
-
   "email_footer_rights": "Todos los derechos reservados.",
   "email_footer_address": "Desarrollado por persona física - Brasil",
   "email_unsubscribe": "Recibes este correo porque tienes una cuenta en CareerDev AI.",
-
   "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 ¡Hola, {{user_name}}!\n\nBienvenido a CareerDev AI. Tu cuenta ha sido creada con éxito.\n\nAccede a tu panel: https://careerdev.ai/dashboard",
-
-  "forgot_password_link": "¿Olvidaste tu contraseña?",
-  "forgot_password_title": "Recuperación de contraseña",
-  "forgot_password_desc": "Ingresa tu correo para recibir un código.",
-  "send_code_btn": "Enviar Código",
-  "reset_password_title": "Restablecer Contraseña",
-  "reset_password_desc": "Ingresa el código recibido y tu nueva contraseña.",
-  "code_label": "Código de Verificación",
   "new_password_label": "Nueva Contraseña",
-  "confirm_password_label": "Confirmar Contraseña",
-  "reset_btn": "Restablecer Contraseña",
-  "success_reset": "¡Contraseña cambiada con éxito! Inicia sesión.",
-  "error_code_invalid": "Código inválido o expirado.",
-  "email_subject_reset": "Tu código de recuperación de contraseña",
-  "telegram_reset_message": "🔐 *CareerDev AI*\n\nTu código de recuperación: `{code}`\n\nVálido por 10 minutos."
+  "confirm_password_label": "Confirmar Contraseña"
 }

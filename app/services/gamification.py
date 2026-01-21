@@ -3,7 +3,6 @@ from app.db.models.gamification import Badge, UserBadge
 from app.db.models.user import User
 
 BADGE_DEFINITIONS = [
-    {"slug": "security-guardian", "name": "Guardião da Segurança", "desc": "Ativou a Autenticação de Dois Fatores (2FA).", "icon": "🛡️"},
     {"slug": "early-adopter", "name": "Pioneiro", "desc": "Um dos primeiros usuários da plataforma.", "icon": "🚀"},
     {"slug": "polymath", "name": "Polímata", "desc": "Possui habilidades em 3 ou mais tecnologias.", "icon": "🧠"},
     {"slug": "interviewer", "name": "Comunicador", "desc": "Completou uma simulação de entrevista técnica.", "icon": "🎙️"},
@@ -46,5 +45,4 @@ def award_badge(db: Session, user_id: int, badge_slug: str) -> bool:
     return True
 
 def check_and_award_security_badge(db: Session, user: User):
-    if user.two_factor_enabled:
-        award_badge(db, user.id, "security-guardian")
+    pass

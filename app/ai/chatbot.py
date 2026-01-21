@@ -34,7 +34,6 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         **User Context:**
         - Name: {user.name}
         - Premium Status: {user.is_premium}
-        - 2FA Method: {user.two_factor_method} (Enabled: {user.two_factor_enabled})
         - Current Skills: {json.dumps(skills)}
         - Active Learning Plan: {', '.join(active_plans)}
         - Focus: {target_role}

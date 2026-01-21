@@ -5,10 +5,8 @@
 ## 🚀 Features
 
 *   **AI Resume Analysis:** Uses OpenAI to analyze resumes against target roles, identifying skill gaps.
-*   **Automated Notifications:** Professional email and Telegram notifications for account security and updates.
 *   **Security First:**
     *   Secure Session Management (HttpOnly, SameSite).
-    *   2FA Support (Email & Telegram).
     *   Security Headers (CSP, HSTS).
     *   Strict Rate Limiting.
 *   **Accessibility:** WCAG-compliant design with themes for dyslexia, color blindness, and motor impairments.
@@ -33,16 +31,6 @@ Create a `.env` file in the root directory with the following keys:
 SECRET_KEY=your_secure_secret
 SESSION_SECRET_KEY=your_session_secret
 DATABASE_URL=sqlite:///./careerdev.db
-
-# Email (SMTP)
-SMTP_SERVER=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=user@example.com
-SMTP_PASSWORD=your_password
-SMTP_FROM_EMAIL=noreply@careerdev.ai
-
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your_bot_token
 
 # AI (OpenAI)
 OPENAI_API_KEY=sk-...

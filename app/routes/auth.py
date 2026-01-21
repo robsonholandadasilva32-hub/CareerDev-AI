@@ -117,8 +117,7 @@ async def login(
     # DIRECT REDIRECT TO DASHBOARD
     token = create_access_token({
         "sub": str(user.id),
-        "email": user.email,
-        "2fa": False # 2FA is no longer a concept, so False or True doesn't matter, but keeping structure clean
+        "email": user.email
     })
 
     response = RedirectResponse("/dashboard", status_code=302)
@@ -218,8 +217,7 @@ def register(
     # Direct Login
     token = create_access_token({
         "sub": str(user.id),
-        "email": user.email,
-        "2fa": False
+        "email": user.email
     })
 
     response = RedirectResponse("/dashboard", status_code=302)

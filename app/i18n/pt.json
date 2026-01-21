@@ -1,50 +1,36 @@
 {
   "page_title": "CareerDev AI",
   "page_description": "Gerenciamento inteligente de carreira para desenvolvedores",
-
   "project_phrase": "A máquina não substitui o humano. Ela amplia seu potencial.",
-
   "security_status": "Sessão segura · Criptografia ativa",
-
   "language_label": "Idioma",
-
   "login_title": "Entrar",
   "register_title": "Criar conta",
-
   "email_label": "E-mail",
   "password_label": "Senha",
   "password_register_label": "Senha (mín. 8 caracteres)",
   "name_label": "Nome",
-
   "login_button": "Entrar com segurança",
   "register_button": "Cadastrar",
-
   "about_title": "Sobre o aplicativo",
   "about_text": "O CareerDev AI ajuda desenvolvedores a evoluírem profissionalmente com segurança, ética e inteligência artificial responsável.",
-
   "quote_turing": "Só conseguimos enxergar um pouco à frente, mas já vemos muita coisa que precisa ser feita. — Alan Turing",
   "quote_lanier": "A tecnologia não é o destino. Nós moldamos nossas ferramentas e, depois disso, nossas ferramentas nos moldam. — Jaron Lanier",
-
   "footer_text": "CareerDev AI · Privacidade por design · Nenhum dado é vendido",
-
   "chatbot_title": "CareerDev AI Assistant",
   "chatbot_welcome": "Olá! Estou aqui para ajudar você a entrar com segurança e entender o aplicativo.",
   "chatbot_placeholder": "Digite sua dúvida ou comando",
   "chatbot_input_aria": "Campo para digitar mensagens ao assistente",
-
   "chatbot_help_button": "Ajuda",
   "chatbot_repeat_button": "Repetir",
   "chatbot_send_button": "Enviar",
   "chatbot_voice_button": "Falar",
   "chatbot_voice_aria": "Ativar conversa por voz",
-
   "no_account_text": "Ainda não tem uma conta?",
   "register_link_text": "Crie sua conta com segurança",
-
   "error_user_not_found": "Usuário não encontrado",
   "error_invalid_password": "Senha inválida",
   "error_email_exists": "E-mail já cadastrado",
-
   "dash_security_active": "Segurança Ativa",
   "dash_security_detail": "Sessão Criptografada • Monitoramento em Tempo Real",
   "dash_manage_security": "Gerenciar Segurança",
@@ -60,10 +46,8 @@
   "dash_trend_ethics_desc": "Desenvolvimento responsável e explicabilidade (XAI).",
   "dash_trend_ethics_strat": "Tendência Estratégica 👁️",
   "dash_plan_title": "🛠️ Plano de Estudo Personalizado",
-
   "trial_banner": "Primeiro mês grátis! Aproveite seu período de teste.",
   "trial_register_notice": "Cadastre-se e ganhe 1 mês grátis! Desbloqueie análises de IA e acelere sua carreira hoje mesmo.",
-
   "billing_title": "Assinatura e Cobrança",
   "billing_desc": "Para continuar evoluindo sua carreira, ative sua assinatura.",
   "billing_benefit_1": "Acesso total ao Dashboard",
@@ -72,22 +56,16 @@
   "billing_recurring_label": "Cobrança Recorrente (Assinatura)",
   "billing_pay_button": "Pagar $1.00",
   "month": "mês",
-
   "social_login_title": "Ou acesse via",
   "social_github_btn": "GitHub",
   "social_linkedin_btn": "LinkedIn",
-
   "integration_title": "Ecossistema de Carreira Inteligente",
   "integration_desc": "Integramos as plataformas que definem o mercado para acelerar sua evolução.",
-
   "int_github_title": "Upskilling Baseado em Código Real",
   "int_github_text": "Conecte o GitHub para que nossa IA analise seus repositórios, identifique lacunas técnicas e gere planos de estudo com micro-projetos práticos em tecnologias de alta demanda.",
-
   "int_linkedin_title": "Alinhamento de Mercado em Tempo Real",
   "int_linkedin_text": "Conecte o LinkedIn para monitorar tendências de vagas e receber sugestões de networking estratégico, focando em nichos valiosos como IA Ética e Edge Computing.",
-
   "int_impact_text": "Transforme sua experiência em autoridade. O CareerDev AI preenche a lacuna entre o que você sabe e o que o mercado precisa.",
-
   "a11y_title": "Inclusão no Código-Fonte",
   "a11y_subtitle": "Tecnologia adaptativa para todos os perfis. Ative no painel de controle.",
   "a11y_card_cognitive_title": "Foco Cognitivo",
@@ -101,7 +79,6 @@
   "a11y_spotlight_title": "Você sabia? O CareerDev AI se adapta a você.",
   "a11y_spotlight_text": "Dislexia, Daltonismo, Foco e mais. Personalize sua experiência no Painel Universal.",
   "a11y_spotlight_btn": "Configurar Acessibilidade",
-
   "security_promise_title": "Compromisso de Segurança e Privacidade",
   "security_promise_subtitle": "Sua confiança é a base da nossa arquitetura. Garantias inegociáveis:",
   "sec_card_selling_title": "Zero Venda de Dados",
@@ -110,7 +87,6 @@
   "sec_card_encrypt_text": "Dados protegidos em repouso e trânsito. Segurança bancária para sua carreira.",
   "sec_card_ai_title": "IA Privada",
   "sec_card_ai_text": "Seus dados não treinam a IA pública. Suas interações são isoladas e confidenciais.",
-
   "email_greeting": "Olá, {{name}}",
   "email_welcome_subject": "Bem-vindo ao CareerDev AI",
   "email_welcome_title": "Comece sua Jornada de Carreira",
@@ -122,46 +98,21 @@
   "email_welcome_feature_2_desc": "Ferramentas adaptativas para todos.",
   "email_welcome_feature_3_title": "Segurança de Dados",
   "email_welcome_feature_3_desc": "Seus dados são seus. Não vendemos informações.",
-
   "email_update_subject": "Aviso de Segurança: Atualização na Conta",
   "email_update_title": "Alteração na Conta",
   "email_update_body": "Detectamos uma alteração nas configurações da sua conta.",
   "email_update_change_password": "Sua senha foi alterada.",
   "email_update_change_profile": "Seu perfil foi atualizado.",
-  "email_update_change_2fa": "Suas configurações de 2FA foram alteradas.",
   "email_update_account_deleted": "Sua conta foi excluída permanentemente.",
   "email_security_advice": "Se você não realizou esta ação, entre em contato com o suporte imediatamente.",
-
   "email_footer_rights": "Todos os direitos reservados.",
   "email_footer_address": "Desenvolvido por pessoa física - Brasil",
   "email_unsubscribe": "Você está recebendo este e-mail porque possui uma conta no CareerDev AI.",
-
   "telegram_welcome": "🔐 *CareerDev AI*\n\n👋 Olá, {{user_name}}!\n\nBem-vindo ao CareerDev AI. Sua conta foi criada com sucesso.\n\nAgora você tem acesso a:\n🧠 Análise de Currículo com IA\n👁️ Ferramentas de Acessibilidade\n🛡️ Segurança de Dados Avançada\n\nAcesse seu painel: https://careerdev.ai/dashboard",
   "telegram_security_alert": "🔐 *CareerDev AI: Alerta de Segurança*\n\n⚠️ Detectamos uma alteração na sua conta:\n\n*{{change_desc}}*\n\nSe você não reconhece esta ação, acesse https://careerdev.ai/security imediatamente.",
   "telegram_update_password": "Sua senha foi alterada.",
   "telegram_update_profile": "Seu perfil foi atualizado.",
-  "telegram_update_2fa": "Configurações de 2FA alteradas.",
   "telegram_update_account_deleted": "Sua conta foi agendada para exclusão.",
-
-  "email_verification_subject": "Seu código de verificação",
-  "email_verification_title": "Verificação de E-mail",
-  "email_verification_body": "Use o código abaixo para verificar seu e-mail e completar seu cadastro. Válido por 15 minutos.",
-  "email_verification_footer": "Se você não criou esta conta, ignore este e-mail.",
-  "verify_email_resend_button": "Reenviar Código",
-  "verify_email_resend_success": "Novo código enviado com sucesso!",
-
-  "forgot_password_link": "Esqueci minha senha",
-  "forgot_password_title": "Recuperar Senha",
-  "forgot_password_desc": "Digite seu e-mail para receber um código de recuperação.",
-  "send_code_btn": "Enviar Código",
-  "reset_password_title": "Redefinir Senha",
-  "reset_password_desc": "Digite o código recebido e sua nova senha.",
-  "code_label": "Código de Verificação",
   "new_password_label": "Nova Senha",
-  "confirm_password_label": "Confirmar Senha",
-  "reset_btn": "Redefinir Senha",
-  "success_reset": "Senha alterada com sucesso! Faça login.",
-  "error_code_invalid": "Código inválido ou expirado.",
-  "email_subject_reset": "Seu código de recuperação de senha",
-  "telegram_reset_message": "🔐 *CareerDev AI*\n\nSeu código de recuperação: `{code}`\n\nVálido por 10 minutos."
+  "confirm_password_label": "Confirmar Senha"
 }
