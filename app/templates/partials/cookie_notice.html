@@ -9,7 +9,7 @@
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     z-index: 9999;
-    display: none;
+    display: block;
     max-width: 90%;
     width: 600px;
     backdrop-filter: blur(10px);
@@ -38,8 +38,10 @@
     }
 
     (function() {
-        if (localStorage.getItem('cookie_consent_accepted') !== 'true') {
+        if (!localStorage.getItem('cookie_consent_accepted')) {
             document.getElementById('cookie-notice').style.display = 'block';
+        } else {
+            document.getElementById('cookie-notice').style.display = 'none';
         }
     })();
 </script>

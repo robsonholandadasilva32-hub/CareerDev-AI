@@ -145,6 +145,6 @@ async def complete_profile_post(
     user.terms_accepted_at = datetime.utcnow()
     user.is_profile_completed = True
 
-    await asyncio.to_thread(db.commit)
+    db.commit()
 
     return RedirectResponse("/dashboard", status_code=302)

@@ -19,7 +19,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 @router.get("/subscription/upgrade")
 def upgrade_page(request: Request):
-    return templates.TemplateResponse("subscription/upgrade.html", {"request": request, "t": {}, "lang": "pt"})
+    return templates.TemplateResponse("subscription/upgrade_premium.html", {"request": request, "t": {}, "lang": "pt"})
 
 @router.get("/billing/checkout")
 def create_checkout_session(request: Request, db: Session = Depends(get_db)):
