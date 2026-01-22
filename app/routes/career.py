@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -26,7 +27,7 @@ async def analyze_resume(
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # GUARD: Ensure Onboarding is Complete
-    user = db.query(User).filter(User.id == user_id).first()
+    user = await asyncio.to_thread(db.query(User).filter(User.id == user_id).first)
     if resp := validate_onboarding_access(user):
         return resp
 
@@ -44,7 +45,7 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         return RedirectResponse("/login")
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = await asyncio.to_thread(db.query(User).filter(User.id == user_id).first)
     if resp := validate_onboarding_access(user):
         return resp
 
