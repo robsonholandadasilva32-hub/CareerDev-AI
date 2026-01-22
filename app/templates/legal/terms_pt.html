@@ -58,7 +58,7 @@
     <p>Fica eleito o foro da comarca de residência do Desenvolvedor para dirimir quaisquer dúvidas, com renúncia a qualquer outro.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Voltar para o Início</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Voltar</a>
     </div>
 </div>
 {% endblock %}

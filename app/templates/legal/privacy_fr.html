@@ -18,7 +18,7 @@
     <h3>2. Données Collectées</h3>
     <p>Nous collectons uniquement ce qui est nécessaire au fonctionnement du service :</p>
     <ul>
-        <li><strong>Données de Compte :</strong> Nom, E-mail et Mot de passe (chiffré).</li>
+        <li><strong>Données de Compte :</strong> Nom, E-mail, adresse de résidence et/ou de facturation.</li>
         <li><strong>Données de Carrière :</strong> Informations que vous fournissez volontairement au Chatbot ou à l'Analyseur de CV (Compétences, Expérience).</li>
         <li><strong>Données Financières :</strong> Historique des transactions (traité par Stripe ; nous ne stockons pas les détails complets de la carte).</li>
         <li><strong>Données Techniques :</strong> Journaux d'accès et IP strictement à des fins de sécurité et d'audit.</li>
@@ -53,7 +53,7 @@
     <p>Nous adoptons des mesures rigoureuses, y compris le chiffrement au repos et en transit (HTTPS), et exigeons une authentification forte  pour protéger votre compte contre tout accès non autorisé.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Retour à l'Accueil</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Retour</a>
     </div>
 </div>
 {% endblock %}

@@ -18,7 +18,7 @@
     <h3>2. Erhobene Daten</h3>
     <p>Wir erheben nur das, was für den Betrieb des Dienstes notwendig ist:</p>
     <ul>
-        <li><strong>Kontodaten:</strong> Name und E-Mail (über Social Login: LinkedIn/GitHub).</li>
+        <li><strong>Kontodaten:</strong> Name, E-Mail, Wohn- und/oder Rechnungsadresse.</li>
         <li><strong>Karrieredaten:</strong> Informationen, die Sie freiwillig dem Chatbot oder dem Lebenslauf-Analysator zur Verfügung stellen (Fähigkeiten, Erfahrung).</li>
         <li><strong>Finanzdaten:</strong> Transaktionshistorie (verarbeitet von Stripe; wir speichern keine vollständigen Kartendaten).</li>
         <li><strong>Technische Daten:</strong> Zugriffsprotokolle und IP strikt für Sicherheits- und Prüfzwecke.</li>
@@ -52,7 +52,7 @@
     <p>Wir ergreifen strenge Maßnahmen, einschließlich Verschlüsselung im Ruhezustand und während der Übertragung (HTTPS), und verwenden eine strikte OAuth 2.0-Authentifizierung, um Ihr Konto vor unbefugtem Zugriff zu schützen.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Zurück zur Startseite</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Zurück</a>
     </div>
 </div>
 {% endblock %}

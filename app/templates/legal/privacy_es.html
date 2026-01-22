@@ -18,7 +18,7 @@
     <h3>2. Datos Recopilados</h3>
     <p>Recopilamos solo lo necesario para el funcionamiento del servicio:</p>
     <ul>
-        <li><strong>Datos de Cuenta:</strong> Nombre, Correo Electrónico y Contraseña (cifrada).</li>
+        <li><strong>Datos de Cuenta:</strong> Nombre, Correo Electrónico, dirección de residencia y/o facturación.</li>
         <li><strong>Datos de Carrera:</strong> Información que usted proporciona voluntariamente al Chatbot o al Analizador de Currículum (Habilidades, Experiencia).</li>
         <li><strong>Datos Financieros:</strong> Historial de transacciones (procesado por Stripe; no almacenamos detalles completos de la tarjeta).</li>
         <li><strong>Datos Técnicos:</strong> Registros de acceso e IP estrictamente para fines de seguridad y auditoría.</li>
@@ -53,7 +53,7 @@
     <p>Adoptamos medidas rigurosas, incluyendo cifrado en reposo y en tránsito (HTTPS), y exigimos autenticación fuerte  para proteger su cuenta contra acceso no autorizado.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Volver al Inicio</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Volver</a>
     </div>
 </div>
 {% endblock %}

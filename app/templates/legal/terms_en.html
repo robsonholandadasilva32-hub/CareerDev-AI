@@ -58,7 +58,7 @@
     <p>The forum of the Developer's residence district is elected to settle any disputes, waiving any other.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Back to Home</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Back</a>
     </div>
 </div>
 {% endblock %}

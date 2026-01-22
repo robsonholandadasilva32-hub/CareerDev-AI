@@ -59,7 +59,7 @@
     <p>Als Gerichtsstand für alle Streitigkeiten wird der Wohnsitzbezirk des Entwicklers gewählt, unter Verzicht auf jeden anderen.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="/" class="btn">Zurück zur Startseite</a>
+        <a href="/" class="btn" onclick="if(window.history.length > 1){ window.history.back(); return false; }">Zurück</a>
     </div>
 </div>
 {% endblock %}
