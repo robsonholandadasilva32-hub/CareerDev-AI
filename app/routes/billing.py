@@ -6,6 +6,7 @@ import logging
 from app.db.session import get_db
 from app.core.config import settings
 from app.core.auth_guard import get_current_user_from_request
+from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,10 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
 
     user = db.query(User).filter(User.id == user_id).first()
+
+    # GUARD: Ensure Onboarding is Complete
+    if resp := validate_onboarding_access(user):
+        return resp
 
     if not stripe.api_key:
         # Mock Flow for Demo/Dev

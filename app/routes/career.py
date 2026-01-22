@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.auth_guard import get_current_user_from_request
 from app.services.resume import process_resume_upload
+from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
 import logging
 
@@ -22,6 +23,11 @@ def analyze_resume(
     user_id = get_current_user_from_request(request)
     if not user_id:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # GUARD: Ensure Onboarding is Complete
+    user = db.query(User).filter(User.id == user_id).first()
+    if resp := validate_onboarding_access(user):
+        return resp
 
     try:
         result = process_resume_upload(db, user_id, resume_text)
