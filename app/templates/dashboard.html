@@ -42,6 +42,9 @@
             <a href="/security" class="btn-action">
                 <span>🔐</span> Gerenciar segurança da conta
             </a>
+            <a href="/career/analytics" class="btn-action">
+                <span>📊</span> Analytics Avançado
+            </a>
             <a href="#" class="btn-action" onclick="document.getElementById('resume-modal').style.display='flex'">
                 <span>📄</span> Analisar Currículo
             </a>
@@ -87,7 +90,7 @@
                     {% if user.is_premium %}
                         <span style="font-size: 0.6em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; vertical-align: middle;">PREMIUM</span>
                     {% else %}
-                         <a href="/billing/checkout" style="font-size: 0.5em; background: #374151; color: white; padding: 4px 8px; border-radius: 10px; text-decoration: none; vertical-align: middle; border: 1px solid gold;">Assinar Premium</a>
+                         <a href="/subscription/upgrade" style="font-size: 0.5em; background: #374151; color: white; padding: 4px 8px; border-radius: 10px; text-decoration: none; vertical-align: middle; border: 1px solid gold;">Assinar Premium</a>
                     {% endif %}
                 </h2>
                 <div class="stats-row" style="display: flex; gap: 20px; margin-top: 15px;">
@@ -99,6 +102,20 @@
                         <span class="label">{{ t.dash_area }}</span>
                         <span class="value">{{ profile.focus }}</span>
                     </div>
+                    <div class="stat-item">
+                        <span class="label">Tokens IA</span>
+                        {% if user.is_premium %}
+                            <span class="value" style="color: gold;">∞ Ilimitado</span>
+                        {% else %}
+                            <span class="value">10/100</span>
+                        {% endif %}
+                    </div>
+                     {% if user.is_premium %}
+                    <div class="stat-item">
+                        <span class="label">Suporte</span>
+                        <span class="value" style="color: var(--secondary-color);">VIP ★</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

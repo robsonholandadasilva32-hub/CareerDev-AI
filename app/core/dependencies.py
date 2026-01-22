@@ -1,29 +1,14 @@
-from fastapi import Request, Depends, HTTPException, status
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from app.db.session import get_db
-from app.core.jwt import decode_token
-from app.db.models.user import User
+from fastapi import Request, HTTPException, status
+from app.core.exceptions import PremiumRedirect
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    """
-    Decodes the JWT token from cookies and retrieves the user from the database.
-    """
-    token = request.cookies.get("access_token")
-    if not token:
-        # Redirect is usually handled by the route or middleware, but for a dependency,
-        # we raise an exception which can be caught.
-        # However, for simplicity in this project structure:
+async def requires_premium_tier(request: Request):
+    user = getattr(request.state, "user", None)
+    if not user:
+        # If not logged in, we raise 401. The global handler or client should handle it.
+        # Ideally this dependency is used after authentication.
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    user_id = int(payload.get("sub"))
-    user = db.query(User).filter(User.id == user_id).first()
-
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if not user.is_premium:
+        raise PremiumRedirect()
 
     return user
