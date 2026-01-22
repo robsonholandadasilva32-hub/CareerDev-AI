@@ -22,7 +22,7 @@
                 Utilizamos <strong>apenas cookies essenciais</strong> para segurança (login) e suas preferências.
                 <br>
                 <strong>Zero rastreamento. Zero venda de dados.</strong>
-                <a href="/legal/privacy" style="text-decoration: underline; margin-left: 5px;">Saiba mais</a>.
+                <a href="/legal/privacy" target="_blank" style="text-decoration: underline; margin-left: 5px;">Saiba mais</a>.
             </span>
         </div>
         <button onclick="acceptCookies()" class="btn" style="white-space: nowrap; padding: 10px 20px;">
@@ -33,12 +33,12 @@
 
 <script>
     function acceptCookies() {
-        localStorage.setItem('cookie_notice_accepted', 'true');
+        localStorage.setItem('cookie_consent_accepted', 'true');
         document.getElementById('cookie-notice').style.display = 'none';
     }
 
     (function() {
-        if (!localStorage.getItem('cookie_notice_accepted')) {
+        if (localStorage.getItem('cookie_consent_accepted') !== 'true') {
             document.getElementById('cookie-notice').style.display = 'block';
         }
     })();
