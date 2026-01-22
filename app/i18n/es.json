@@ -48,6 +48,8 @@
   "social_login_title": "Accede vía",
   "social_github_btn": "GitHub",
   "social_linkedin_btn": "LinkedIn",
+  "social_unified_btn": "Confirma tu Identidad Profesional",
+  "social_unified_note": "Por su seguridad, solicitaremos la validación a través de LinkedIn y, posteriormente, la conexión con su GitHub.",
   "integration_title": "Ecosistema de Carrera Inteligente",
   "integration_desc": "Integramos las plataformas que definem el mercado para acelerar tu evolución.",
   "int_github_title": "Upskilling Basado en Código Real",
