@@ -52,7 +52,7 @@
     <p>We adopt rigorous measures, including encryption at rest and in transit (HTTPS), and use strict OAuth 2.0 authentication to protect your account against unauthorized access.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="javascript:void(0)" class="btn-secondary" onclick="history.back()">Back</a>
+        <a href="javascript:void(0)" class="btn btn-secondary" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.href='/'; }">Back</a>
     </div>
 </div>
 {% endblock %}

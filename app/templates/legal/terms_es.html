@@ -59,7 +59,7 @@
     <p>Se elige el foro de la comarca de residencia del Desarrollador para dirimir cualquier duda, con renuncia a cualquier otro.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="javascript:void(0)" class="btn-secondary" onclick="history.back()">Volver</a>
+        <a href="javascript:void(0)" class="btn btn-secondary" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.href='/'; }">Volver</a>
     </div>
 </div>
 {% endblock %}
