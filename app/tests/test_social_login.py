@@ -19,6 +19,10 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.db.declarative import Base
 from app.db.session import get_db
+# Ensure all models are loaded for relationships
+from app.db.models.user import User
+from app.db.models.career import CareerProfile, LearningPlan
+from app.db.models.gamification import UserBadge
 
 # Setup In-Memory DB
 DATABASE_URL = "sqlite:///:memory:"
