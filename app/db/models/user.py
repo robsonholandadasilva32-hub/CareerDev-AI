@@ -37,6 +37,29 @@ class User(Base):
     linkedin_id = Column(String, nullable=True, unique=True)
     avatar_url = Column(String, nullable=True)
 
+    # Residential Address
+    address_street = Column(String, nullable=True)
+    address_number = Column(String, nullable=True)
+    address_complement = Column(String, nullable=True)
+    address_city = Column(String, nullable=True)
+    address_state = Column(String, nullable=True)
+    address_zip_code = Column(String, nullable=True)
+    address_country = Column(String, nullable=True)
+
+    # Billing Address
+    billing_address_street = Column(String, nullable=True)
+    billing_address_number = Column(String, nullable=True)
+    billing_address_complement = Column(String, nullable=True)
+    billing_address_city = Column(String, nullable=True)
+    billing_address_state = Column(String, nullable=True)
+    billing_address_zip_code = Column(String, nullable=True)
+    billing_address_country = Column(String, nullable=True)
+
+    # Onboarding Control
+    is_profile_completed = Column(Boolean, default=False)
+    terms_accepted = Column(Boolean, default=False)
+    terms_accepted_at = Column(DateTime, nullable=True)
+
     # Relationships
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")

@@ -192,6 +192,7 @@
 </head>
 
 <body>
+  {% set user = user or request.state.user %}
 
   <!-- HEADER -->
   <header>
@@ -221,10 +222,17 @@
 
         <nav>
             {% if user %}
-                {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
-                <a href="/dashboard">Dashboard</a>
-                {% endif %}
-                <a href="/logout" class="btn-outline" style="margin-left: 1rem; padding: 0.5rem 1rem;">Sair</a>
+                <div style="display: inline-flex; align-items: center; gap: 15px;">
+                     <span style="color: var(--primary-color);">Olá, {{ user.name }}</span>
+                     {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color); object-fit: cover;">
+                     {% endif %}
+
+                    {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
+                    <a href="/dashboard">Dashboard</a>
+                    {% endif %}
+                    <a href="/logout" class="btn-outline" style="padding: 0.5rem 1rem;">Sair</a>
+                </div>
             {% endif %}
         </nav>
     </div>
