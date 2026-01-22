@@ -12,6 +12,7 @@ from app.db.crud.users import (
 )
 from app.core.security import hash_password
 from app.core.jwt import create_access_token
+from app.services.onboarding import get_next_onboarding_step
 import secrets
 import logging
 import os
@@ -65,7 +66,8 @@ def login_user_and_redirect(request: Request, user):
         "sub": str(user.id),
         "email": user.email
     })
-    response = RedirectResponse("/dashboard", status_code=302)
+    next_url = get_next_onboarding_step(user)
+    response = RedirectResponse(next_url, status_code=302)
     response.set_cookie(
         key="access_token",
         value=token,
