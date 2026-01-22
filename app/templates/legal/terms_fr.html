@@ -59,7 +59,7 @@
     <p>Le tribunal du district de résidence du Développeur est élu pour régler tout litige, en renonçant à tout autre.</p>
 
     <div style="margin-top: 30px; text-align: center;">
-        <a href="javascript:void(0)" class="btn-secondary" onclick="history.back()">Retour</a>
+        <a href="javascript:void(0)" class="btn btn-secondary" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.href='/'; }">Retour</a>
     </div>
 </div>
 {% endblock %}
