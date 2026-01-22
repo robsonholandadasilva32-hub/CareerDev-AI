@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import stripe
 import logging
@@ -12,8 +13,13 @@ from app.db.models.user import User
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+@router.get("/subscription/upgrade")
+def upgrade_page(request: Request):
+    return templates.TemplateResponse("subscription/upgrade.html", {"request": request, "t": {}, "lang": "pt"})
 
 @router.get("/billing/checkout")
 def create_checkout_session(request: Request, db: Session = Depends(get_db)):
@@ -54,7 +60,7 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
             ],
             mode='subscription',
             success_url=str(request.base_url) + 'billing/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=str(request.base_url) + 'dashboard',
+            cancel_url=str(request.base_url) + 'subscription/upgrade',
             customer_email=user.email,
         )
         return RedirectResponse(checkout_session.url, status_code=303)

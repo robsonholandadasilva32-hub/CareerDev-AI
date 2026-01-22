@@ -59,6 +59,7 @@ from app.db.session import engine, SessionLocal
 from app.core.config import settings
 from app.services.gamification import init_badges
 from app.middleware.auth import AuthMiddleware
+from app.core.exceptions import PremiumRedirect
 # Worker removed
 
 # Importando suas rotas
@@ -110,6 +111,10 @@ async def custom_404_handler(request: Request, exc):
 @app.exception_handler(500)
 async def custom_500_handler(request: Request, exc):
     return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
+
+@app.exception_handler(PremiumRedirect)
+async def premium_redirect_handler(request: Request, exc: PremiumRedirect):
+    return RedirectResponse(url="/subscription/upgrade?error=premium_required", status_code=303)
 
 # 6. Middlewares
 app.add_middleware(AuthMiddleware)
