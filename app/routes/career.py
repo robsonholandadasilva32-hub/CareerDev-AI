@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.auth_guard import get_current_user_from_request
-from app.services.resume import process_resume_upload
+from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
 import logging
@@ -15,7 +15,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 @router.post("/analyze-resume", response_class=JSONResponse)
-def analyze_resume(
+async def analyze_resume(
     request: Request,
     resume_text: str = Form(...),
     db: Session = Depends(get_db)
@@ -30,7 +30,7 @@ def analyze_resume(
         return resp
 
     try:
-        result = process_resume_upload(db, user_id, resume_text)
+        result = await process_resume_upload_async(db, user_id, resume_text)
         return JSONResponse(result)
     except Exception as e:
         logger.error(f"Error analyzing resume: {e}")
