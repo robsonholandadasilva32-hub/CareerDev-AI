@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import openai
@@ -127,6 +128,43 @@ def process_resume_upload(db: Session, user_id: int, resume_text: str):
             added_plans.append(skill)
 
     db.commit()
+
+    analysis["added_plans"] = added_plans
+    return analysis
+
+async def process_resume_upload_async(db: Session, user_id: int, resume_text: str):
+    user_profile = await asyncio.to_thread(db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first)
+    target = user_profile.target_role if user_profile else "Developer"
+
+    analysis = await asyncio.to_thread(analyze_resume_text, resume_text, target)
+
+    # Auto-link: Add missing skills to Learning Plan
+    added_plans = []
+    # Ensure missing_skills is a list
+    missing = analysis.get("missing_skills", [])
+    if not isinstance(missing, list):
+        missing = []
+
+    # N+1 fix: Fetch existing plans in one query
+    existing_plans = await asyncio.to_thread(db.query(LearningPlan.technology).filter(
+        LearningPlan.user_id == user_id,
+        LearningPlan.technology.in_(missing)
+    ).all)
+    existing_skills = {plan.technology for plan in existing_plans}
+
+    for skill in missing:
+        if skill not in existing_skills:
+            new_plan = LearningPlan(
+                user_id=user_id,
+                title=f"Dominar {skill}",
+                description=f"Identificado pela IA como gap para {target}.",
+                technology=skill,
+                status="pending"
+            )
+            db.add(new_plan)
+            added_plans.append(skill)
+
+    await asyncio.to_thread(db.commit)
 
     analysis["added_plans"] = added_plans
     return analysis

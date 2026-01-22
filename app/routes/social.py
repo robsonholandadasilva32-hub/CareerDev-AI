@@ -8,7 +8,7 @@ from app.db.crud.users import (
     get_user_by_email,
     get_user_by_github_id,
     get_user_by_linkedin_id,
-    create_user
+    create_user_async
 )
 from app.db.models.user import User
 from app.core.security import hash_password
@@ -139,7 +139,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 current_user.github_id = github_id
                 if not current_user.avatar_url:
                     current_user.avatar_url = avatar
-                db.commit()
+                await asyncio.to_thread(db.commit)
 
                 return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
 
@@ -156,13 +156,13 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             user.github_id = github_id
             if not user.avatar_url:
                 user.avatar_url = avatar
-            db.commit()
+            await asyncio.to_thread(db.commit)
             return login_user_and_redirect(request, user)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
-        user = create_user(
+        user = await create_user_async(
             db=db,
             name=name,
             email=email,
@@ -250,13 +250,13 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             user.linkedin_id = linkedin_id
             if not user.avatar_url:
                 user.avatar_url = picture
-            db.commit()
+            await asyncio.to_thread(db.commit)
             return login_user_and_redirect(request, user)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
-        user = create_user(
+        user = await create_user_async(
             db=db,
             name=name,
             email=email,

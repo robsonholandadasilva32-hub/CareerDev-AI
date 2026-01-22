@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -144,6 +145,6 @@ async def complete_profile_post(
     user.terms_accepted_at = datetime.utcnow()
     user.is_profile_completed = True
 
-    db.commit()
+    await asyncio.to_thread(db.commit)
 
     return RedirectResponse("/dashboard", status_code=302)
