@@ -89,7 +89,8 @@ async def test_linkedin_callback_success(client, db_session):
 
         # Assert
         assert response.status_code == 302
-        assert response.headers["location"] == "/dashboard"
+        # Updated to expect redirection to GitHub connection step (Progressive Onboarding)
+        assert response.headers["location"] == "/onboarding/connect-github"
 
         # Verify fetch_access_token was called correctly
         mock_fetch.assert_called_once()
@@ -154,7 +155,8 @@ async def test_github_callback_success(client, db_session):
 
         # Assert
         assert response.status_code == 302
-        assert response.headers["location"] == "/dashboard"
+        # Updated to expect redirection to LinkedIn login if LinkedIn is missing
+        assert response.headers["location"] == "/login/linkedin"
 
         # Verify fetch_access_token was called correctly
         mock_fetch.assert_called_once()
