@@ -197,7 +197,7 @@
   <!-- HEADER -->
   <header>
     <h1>
-        <a href="{% if user %}/dashboard{% else %}/login{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+        <a href="{% if user and user.is_profile_completed %}/dashboard{% else %}/{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
             <!-- Animated Logo Placeholder -->
             <div class="logo-container">
                 <svg class="logo-svg" viewBox="0 0 100 100">
@@ -228,8 +228,10 @@
                         <img src="{{ user.avatar_url }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color); object-fit: cover;">
                      {% endif %}
 
-                    {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
-                    <a href="/dashboard">Dashboard</a>
+                    {% if user.is_profile_completed %}
+                        {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
+                        <a href="/dashboard">Dashboard</a>
+                        {% endif %}
                     {% endif %}
                     <a href="/logout" class="btn-outline" style="padding: 0.5rem 1rem;">Sair</a>
                 </div>

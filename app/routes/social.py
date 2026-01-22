@@ -10,6 +10,7 @@ from app.db.crud.users import (
     get_user_by_linkedin_id,
     create_user
 )
+from app.db.models.user import User
 from app.core.security import hash_password
 from app.core.jwt import create_access_token
 from app.services.onboarding import get_next_onboarding_step
@@ -114,7 +115,6 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             for e in emails:
                 if e.get('primary') and e.get('verified'):
                     email = e['email']
-                    email = e['email']
                     break
 
         if not email:
@@ -123,6 +123,27 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         github_id = str(profile.get('id'))
         name = profile.get('name') or profile.get('login')
         avatar = profile.get('avatar_url')
+
+        # --- LINKING LOGIC (The Loop Fix) ---
+        current_user_state = getattr(request.state, "user", None)
+        if current_user_state:
+            # Re-fetch user attached to current session
+            current_user = db.query(User).filter(User.id == current_user_state.id).first()
+            if current_user:
+                # Check for conflict
+                existing_user = get_user_by_github_id(db, github_id)
+                if existing_user and existing_user.id != current_user.id:
+                    return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
+
+                # Update User
+                current_user.github_id = github_id
+                if not current_user.avatar_url:
+                    current_user.avatar_url = avatar
+                db.commit()
+
+                return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
+
+        # --- EXISTING LOGIN/REGISTER LOGIC ---
 
         # 1. Check by ID
         user = get_user_by_github_id(db, github_id)

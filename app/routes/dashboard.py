@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
+from app.services.onboarding import validate_onboarding_access
 from app.i18n.loader import get_texts
 from app.db.session import get_db
 from app.db.models.user import User
@@ -38,6 +39,10 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # 1️⃣ Secure Auth Dependency Check
     if not user:
         return RedirectResponse("/login", status_code=302)
+
+    # GUARD: Ensure Onboarding is Complete
+    if resp := validate_onboarding_access(user):
+        return resp
 
     user_id = user.id
     email = user.email

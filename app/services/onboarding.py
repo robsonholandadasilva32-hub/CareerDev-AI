@@ -1,4 +1,5 @@
 from app.db.models.user import User
+from fastapi.responses import RedirectResponse
 
 def get_next_onboarding_step(user: User) -> str:
     """
@@ -17,3 +18,14 @@ def get_next_onboarding_step(user: User) -> str:
         return "/onboarding/complete-profile"
 
     return "/dashboard"
+
+def validate_onboarding_access(user: User):
+    """
+    Checks if the user has completed onboarding.
+    Returns a RedirectResponse to the next step if not complete.
+    Returns None if complete.
+    """
+    step = get_next_onboarding_step(user)
+    if step != "/dashboard":
+        return RedirectResponse(step, status_code=302)
+    return None

@@ -7,6 +7,7 @@ from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
+from app.services.onboarding import validate_onboarding_access
 from app.core.config import settings
 import logging
 
@@ -43,6 +44,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse("/login", status_code=302)
 
+    # GUARD: Ensure Onboarding is Complete
+    if resp := validate_onboarding_access(user):
+        return resp
+
     # Load Language
     lang = request.session.get("lang", user.preferred_language or "pt")
     t = get_texts(lang)
@@ -68,6 +73,10 @@ def update_security(
 
     if not user:
          return RedirectResponse("/login", status_code=302)
+
+    # GUARD: Ensure Onboarding is Complete
+    if resp := validate_onboarding_access(user):
+        return resp
 
     # 1. Update Preferences
     if user.preferred_language != language:
