@@ -19,6 +19,8 @@ import secrets
 import logging
 import os
 import asyncio
+from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,10 @@ if settings.LINKEDIN_CLIENT_ID:
     )
 
 def login_user_and_redirect(request: Request, user, db: Session):
+    # Update last_login
+    user.last_login = datetime.utcnow()
+    db.commit()
+
     # Security: Create Session
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "unknown")
@@ -176,18 +182,34 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             await asyncio.to_thread(db.commit)
             return login_user_and_redirect(request, user, db)
 
-        # 3. Create User
+        # 3. Create User (with Idempotency Check)
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
-        user = await create_user_async(
-            db=db,
-            name=name,
-            email=email,
-            hashed_password=hashed_password,
-            github_id=github_id,
-            avatar_url=avatar,
-            email_verified=True # Trusted provider
-        )
+        try:
+            user = await create_user_async(
+                db=db,
+                name=name,
+                email=email,
+                hashed_password=hashed_password,
+                github_id=github_id,
+                avatar_url=avatar,
+                email_verified=True # Trusted provider
+            )
+        except IntegrityError:
+            # Race condition: User created in parallel
+            db.rollback()
+            logger.warning(f"GitHub Race Condition: User {email} already exists. Fetching...")
+            user = get_user_by_email(db, email)
+            if not user:
+                 user = get_user_by_github_id(db, github_id)
+            if not user:
+                 raise Exception("IntegrityError caught but user not found on retry.")
+
+            # Update missing ID if needed
+            if not user.github_id:
+                user.github_id = github_id
+                db.commit()
+
         return login_user_and_redirect(request, user, db)
 
     except Exception as e:
@@ -275,18 +297,34 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             await asyncio.to_thread(db.commit)
             return login_user_and_redirect(request, user, db)
 
-        # 3. Create User
+        # 3. Create User (with Idempotency Check)
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
-        user = await create_user_async(
-            db=db,
-            name=name,
-            email=email,
-            hashed_password=hashed_password,
-            linkedin_id=linkedin_id,
-            avatar_url=picture,
-            email_verified=True
-        )
+        try:
+            user = await create_user_async(
+                db=db,
+                name=name,
+                email=email,
+                hashed_password=hashed_password,
+                linkedin_id=linkedin_id,
+                avatar_url=picture,
+                email_verified=True
+            )
+        except IntegrityError:
+            # Race condition: User created in parallel
+            db.rollback()
+            logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
+            user = get_user_by_email(db, email)
+            if not user:
+                 user = get_user_by_linkedin_id(db, linkedin_id)
+            if not user:
+                 raise Exception("IntegrityError caught but user not found on retry.")
+
+            # Update missing ID if needed
+            if not user.linkedin_id:
+                user.linkedin_id = linkedin_id
+                db.commit()
+
         return login_user_and_redirect(request, user, db)
 
     except Exception as e:

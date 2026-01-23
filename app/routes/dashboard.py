@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
@@ -124,6 +124,94 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
         log_audit(db, user.id, "REVOKE_SESSION", request.client.host, f"Revoked session {session_id}")
 
     return RedirectResponse("/dashboard/security", status_code=303)
+
+# ==========================================
+# PROFILE ROUTES
+# ==========================================
+
+@router.get("/dashboard/profile", response_class=HTMLResponse)
+def dashboard_profile(request: Request, user: User = Depends(get_current_user_secure)):
+    if not user:
+        return RedirectResponse("/login")
+
+    return templates.TemplateResponse("dashboard/profile.html", {
+        "request": request,
+        "user": user,
+        "lang": request.session.get("lang", "pt"),
+        "t": get_texts(request.session.get("lang", "pt"))
+    })
+
+@router.post("/dashboard/profile", response_class=HTMLResponse)
+def update_profile(
+    request: Request,
+    name: str = Form(...),
+    address_street: str = Form(None),
+    address_number: str = Form(None),
+    address_complement: str = Form(None),
+    address_city: str = Form(None),
+    address_state: str = Form(None),
+    address_zip_code: str = Form(None),
+    address_country: str = Form(None),
+
+    billing_same_as_residential: bool = Form(False),
+
+    billing_address_street: str = Form(None),
+    billing_address_number: str = Form(None),
+    billing_address_complement: str = Form(None),
+    billing_address_city: str = Form(None),
+    billing_address_state: str = Form(None),
+    billing_address_zip_code: str = Form(None),
+    billing_address_country: str = Form(None),
+
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_secure)
+):
+    if not user:
+        return RedirectResponse("/login")
+
+    try:
+        user.name = name
+        user.address_street = address_street
+        user.address_number = address_number
+        user.address_complement = address_complement
+        user.address_city = address_city
+        user.address_state = address_state
+        user.address_zip_code = address_zip_code
+        user.address_country = address_country
+
+        if billing_same_as_residential:
+            user.billing_address_street = address_street
+            user.billing_address_number = address_number
+            user.billing_address_complement = address_complement
+            user.billing_address_city = address_city
+            user.billing_address_state = address_state
+            user.billing_address_zip_code = address_zip_code
+            user.billing_address_country = address_country
+        else:
+            user.billing_address_street = billing_address_street
+            user.billing_address_number = billing_address_number
+            user.billing_address_complement = billing_address_complement
+            user.billing_address_city = billing_address_city
+            user.billing_address_state = billing_address_state
+            user.billing_address_zip_code = billing_address_zip_code
+            user.billing_address_country = billing_address_country
+
+        db.commit()
+        success = True
+        error = None
+    except Exception as e:
+        db.rollback()
+        success = False
+        error = f"Erro ao atualizar perfil: {str(e)}"
+
+    return templates.TemplateResponse("dashboard/profile.html", {
+        "request": request,
+        "user": user,
+        "lang": request.session.get("lang", "pt"),
+        "t": get_texts(request.session.get("lang", "pt")),
+        "success": success,
+        "error": error
+    })
 
 # ==========================================
 # NOVAS ROTAS LEGAIS (Da Main Branch)
