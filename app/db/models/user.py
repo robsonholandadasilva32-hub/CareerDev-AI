@@ -64,3 +64,7 @@ class User(Base):
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
+
+    # Security Relationships
+    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")

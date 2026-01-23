@@ -10,19 +10,17 @@ from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.i18n.loader import get_texts
 from app.services.onboarding import get_next_onboarding_step
+from app.services.security_service import log_audit
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 def get_current_user_onboarding(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("access_token")
-    if not token:
+    # 🛡️ Relies on AuthMiddleware for session validation
+    if not getattr(request.state, "user", None):
         return None
-    payload = decode_token(token)
-    if not payload:
-        return None
-    user_id = int(payload.get("sub"))
-    return db.query(User).filter(User.id == user_id).first()
+    # Re-query to attach to current db session
+    return db.query(User).filter(User.id == request.state.user.id).first()
 
 @router.get("/onboarding/connect-github", response_class=HTMLResponse)
 async def connect_github(request: Request, user: User = Depends(get_current_user_onboarding)):
@@ -144,6 +142,8 @@ async def complete_profile_post(
     user.terms_accepted = True
     user.terms_accepted_at = datetime.utcnow()
     user.is_profile_completed = True
+
+    log_audit(db, user.id, "PROFILE_UPDATE", request.client.host, "Profile Completed via Onboarding")
 
     db.commit()
 

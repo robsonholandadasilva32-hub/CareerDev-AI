@@ -1,35 +1,22 @@
 from fastapi import Request
 from fastapi.responses import RedirectResponse
-from app.core.jwt import decode_token
-
 
 def require_auth(request: Request):
-    token = request.cookies.get("access_token")
+    """
+    Guards a route by checking if request.state.user is populated.
+    This relies on AuthMiddleware having run and validated the session.
+    """
+    if getattr(request.state, "user", None):
+        return None
 
-    if not token:
-        return RedirectResponse("/login", status_code=302)
-
-    payload = decode_token(token)
-
-    if not payload:
-        return RedirectResponse("/login", status_code=302)
-
-    # opcional: anexar user_id ao request
-    request.state.user_id = payload.get("sub")
-
-    return None
+    return RedirectResponse("/login", status_code=302)
 
 def get_current_user_from_request(request: Request):
     """
-    Helper to extract user_id from token without redirecting.
+    Helper to extract user_id from request.state.user.
     Returns None if invalid.
     """
-    token = request.cookies.get("access_token")
-    if not token:
-        return None
-
-    payload = decode_token(token)
-    if not payload:
-        return None
-
-    return int(payload.get("sub"))
+    user = getattr(request.state, "user", None)
+    if user:
+        return user.id
+    return None

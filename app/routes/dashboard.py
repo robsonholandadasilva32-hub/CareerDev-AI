@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.services.onboarding import validate_onboarding_access
+from app.services.security_service import get_active_sessions, revoke_session, log_audit
 from app.i18n.loader import get_texts
 from app.db.session import get_db
 from app.db.models.user import User
+from app.db.models.security import UserSession
 from app.db.models.gamification import UserBadge
 from app.middleware.subscription import check_subscription_status
 
@@ -17,15 +19,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("access_token")
-    if not token:
+    # 🛡️ Relies on AuthMiddleware for session validation
+    if not getattr(request.state, "user", None):
         return None
 
-    payload = decode_token(token)
-    if not payload:
-        return None
-
-    user_id = int(payload.get("sub"))
+    user_id = request.state.user.id
     user = (
         db.query(User)
         .options(joinedload(User.badges).joinedload(UserBadge.badge))
@@ -82,3 +80,43 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "lang": lang
         }
     )
+
+@router.get("/dashboard/security", response_class=HTMLResponse)
+def dashboard_security(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
+    if not user:
+        return RedirectResponse("/login")
+
+    sessions = get_active_sessions(db, user.id)
+
+    # Identify current session
+    token = request.cookies.get("access_token")
+    current_sid = None
+    if token:
+        payload = decode_token(token)
+        if payload:
+            current_sid = payload.get("sid")
+
+    lang = request.query_params.get("lang") or request.session.get("lang", "pt")
+    t = get_texts(lang)
+
+    return templates.TemplateResponse("dashboard/security.html", {
+        "request": request,
+        "user": user,
+        "sessions": sessions,
+        "current_sid": current_sid,
+        "t": t,
+        "lang": lang
+    })
+
+@router.post("/dashboard/security/revoke/{session_id}")
+def revoke_user_session_route(session_id: str, request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
+    if not user:
+        return RedirectResponse("/login")
+
+    # Security: Ensure session belongs to user
+    session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
+    if session_to_revoke:
+        revoke_session(db, session_id)
+        log_audit(db, user.id, "REVOKE_SESSION", request.client.host, f"Revoked session {session_id}")
+
+    return RedirectResponse("/dashboard/security", status_code=303)
