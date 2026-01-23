@@ -4,7 +4,7 @@ import time
 import random
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.session import SessionLocal
 from app.db.models.user import User
 
@@ -30,7 +30,7 @@ def setup_verified_user(db):
         subscription_status='free',
         linkedin_id=f"li_{timestamp}_{rand}",
         github_id=f"gh_{timestamp}_{rand}",
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     db.add(user)
     db.commit()
@@ -53,12 +53,22 @@ def setup_incomplete_user(db):
         subscription_status='free',
         linkedin_id=f"li_{timestamp}_{rand}",
         github_id=f"gh_{timestamp}_{rand}",
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
+
+def test_billing_access_redirect(page: Page):
+    """
+    Verifies that accessing the billing page without login redirects to login.
+    """
+    # Access billing directly
+    page.goto("http://localhost:8000/subscription/checkout")
+
+    # Should redirect to login
+    expect(page).to_have_url(re.compile(".*login"))
 
 def test_user_flow(page: Page):
     """
@@ -75,7 +85,7 @@ def test_user_flow(page: Page):
             user_id=user.id,
             ip_address="127.0.0.1",
             user_agent="Playwright Test Runner",
-            last_active_at=datetime.utcnow(),
+            last_active_at=datetime.now(timezone.utc),
             is_active=True
         )
         db.add(session)
@@ -138,7 +148,7 @@ def test_onboarding_flow(page: Page):
             user_id=user.id,
             ip_address="127.0.0.1",
             user_agent="Playwright Test Runner",
-            last_active_at=datetime.utcnow(),
+            last_active_at=datetime.now(timezone.utc),
             is_active=True
         )
         db.add(session)
@@ -167,22 +177,12 @@ def test_onboarding_flow(page: Page):
         page.goto("http://localhost:8000/dashboard")
 
         # Assert: Deve redirecionar para complete-profile (pois já tem social IDs)
-        # Se pedisse verificação de e-mail, falharia aqui ou iria para outra URL.
         expect(page).to_have_url(re.compile(".*onboarding/complete-profile"))
 
         # 6. Preencher Formulário
         page.fill('input[name="name"]', "New User Test")
 
-        # Residential Address
-        page.fill('input[name="address_street"]', "123 Tech Lane")
-        page.fill('input[name="address_number"]', "42")
-        page.fill('input[name="address_city"]', "Silicon Valley")
-        page.fill('input[name="address_state"]', "CA")
-        page.fill('input[name="address_zip_code"]', "94000")
-        page.fill('input[name="address_country"]', "USA")
-
-        # Billing (Same as Residential)
-        page.check('input[name="billing_same_as_residential"]')
+        # Address fields removed as they are no longer in the UI
 
         # Terms
         page.check('input[name="terms_accepted"]')
