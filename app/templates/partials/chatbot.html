@@ -34,6 +34,7 @@
 
     <div class="chatbot-input">
         <input type="text" id="chat-input" placeholder="Pergunte algo..." onkeypress="handleEnter(event)" aria-label="Digite sua mensagem">
+        <button id="btn-mic" onclick="startVoiceInput()" aria-label="Falar mensagem" title="Falar mensagem" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); margin-right: 5px;">🎙️</button>
         <button onclick="sendMessage()" aria-label="Enviar mensagem">➤</button>
     </div>
 </div>
@@ -277,6 +278,26 @@
         50% { opacity: 0.4; transform: scale(0.8); }
         100% { opacity: 1; transform: scale(1); }
     }
+
+    .chatbot-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(255, 0, 85, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        pointer-events: none;
+    }
+    .chatbot-toast.show {
+        opacity: 1;
+    }
 </style>
 
 <script>
@@ -293,6 +314,21 @@
 
     // Fallback to PT if lang not found
     const t = i18n[currentLang] || i18n.pt;
+
+    function showToast(message) {
+        let toast = document.getElementById('chatbot-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'chatbot-toast';
+            toast.className = 'chatbot-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 
     function toggleChat() {
         const widget = document.getElementById('chatbot-widget');
@@ -329,6 +365,58 @@
 
     function handleEnter(e) {
         if (e.key === 'Enter') sendMessage();
+    }
+
+    function startVoiceInput() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast("Seu navegador não suporta reconhecimento de voz.");
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.lang = currentLang === 'en' ? 'en-US' : (currentLang === 'es' ? 'es-ES' : 'pt-BR');
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        const btnMic = document.getElementById('btn-mic');
+        // Visual indicator
+        btnMic.style.color = 'var(--error-color)';
+        btnMic.style.borderColor = 'var(--error-color)';
+        showToast("Ouvindo...");
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+            const speechResult = event.results[0][0].transcript;
+            const input = document.getElementById('chat-input');
+            input.value = speechResult;
+
+            btnMic.style.color = 'var(--primary-color)';
+            btnMic.style.borderColor = 'var(--primary-color)';
+
+            // Auto-send
+            sendMessage();
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
+            btnMic.style.color = 'var(--primary-color)';
+            btnMic.style.borderColor = 'var(--primary-color)';
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech Recognition Error:", event.error);
+            btnMic.style.color = 'var(--primary-color)';
+            btnMic.style.borderColor = 'var(--primary-color)';
+
+            if (event.error === 'not-allowed') {
+                 showToast("Microphone access required for voice mode.");
+            } else {
+                 showToast("Erro no reconhecimento de voz: " + event.error);
+            }
+        };
     }
 
     async function sendMessage() {
@@ -368,6 +456,11 @@
                     mode: isInterviewMode ? 'interview' : 'standard'
                 })
             });
+
+            if (!response.ok) {
+                throw new Error(`Server Error: ${response.status}`);
+            }
+
             const data = await response.json();
 
             status.style.display = 'none';
@@ -384,6 +477,8 @@
 
         } catch (error) {
             status.style.display = 'none';
+            console.error("Chatbot Error:", error);
+            showToast("Connection Error: AI Unavailable");
             addMessage("Erro ao conectar com a IA.", 'bot');
             if (isVoiceEnabled) speakText("Erro de conexão.");
         }

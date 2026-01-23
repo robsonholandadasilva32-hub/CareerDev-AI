@@ -94,6 +94,23 @@ class ChatbotService:
             return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'. Tente o modo Entrevista!"
         return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
 
+    async def verify_connection(self):
+        """
+        Forces a test call to OpenAI to verify the API Key.
+        Raises an exception if verification fails.
+        """
+        if self.simulated:
+             print("WARNING: Chatbot is in simulated mode (No API Key).")
+             return
+
+        try:
+            # Simple list models call to verify auth
+            await self.async_client.models.list()
+            print("SUCCESS: OpenAI Connection Verified.")
+        except Exception as e:
+            # Re-raise to let caller handle critical alert
+            raise Exception(f"OpenAI Connection Failed: {e}")
+
     async def _llm_response(self, message: str, lang: str, context: str, system_prompt: str) -> str:
         lang_instruction = f"Reply in {lang}."
         messages = [

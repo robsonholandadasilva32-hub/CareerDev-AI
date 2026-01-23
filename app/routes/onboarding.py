@@ -24,6 +24,11 @@ def get_current_user_onboarding(request: Request, db: Session = Depends(get_db))
 
 @router.get("/onboarding/connect-github", response_class=HTMLResponse)
 async def connect_github(request: Request, user: User = Depends(get_current_user_onboarding)):
+    # FORCE CHECK: If profile is completed, DO NOT allow access to onboarding routes
+    if user.is_profile_completed:
+        print(f"DEBUG: User {user.id} is completed. Forcing redirect to Dashboard.")
+        return RedirectResponse(url="/dashboard", status_code=303)
+
     if not user:
         return RedirectResponse("/login")
 
@@ -36,6 +41,11 @@ async def connect_github(request: Request, user: User = Depends(get_current_user
 
 @router.get("/onboarding/complete-profile", response_class=HTMLResponse)
 async def complete_profile(request: Request, user: User = Depends(get_current_user_onboarding)):
+    # FORCE CHECK: If profile is completed, DO NOT allow access to onboarding routes
+    if user.is_profile_completed:
+        print(f"DEBUG: User {user.id} is completed. Forcing redirect to Dashboard.")
+        return RedirectResponse(url="/dashboard", status_code=303)
+
     if not user:
         return RedirectResponse("/login")
 
@@ -87,6 +97,11 @@ async def complete_profile_post(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_onboarding)
 ):
+    # FORCE CHECK: If profile is completed, DO NOT allow access to onboarding routes
+    if user.is_profile_completed:
+        print(f"DEBUG: User {user.id} is completed. Forcing redirect to Dashboard.")
+        return RedirectResponse(url="/dashboard", status_code=303)
+
     if not user:
         return RedirectResponse("/login")
 

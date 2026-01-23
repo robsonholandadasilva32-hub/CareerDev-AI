@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "dashboard_layout.html" %}
 
-{% block content %}
+{% block dashboard_content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
 
 <div class="dashboard-grid">
@@ -12,7 +12,7 @@
                 <p style="color: #00ff88; font-size: 0.9em;">{{ t.dash_security_detail }}</p>
             </div>
             <div>
-                <a href="/security" class="btn-outline">{{ t.dash_manage_security }}</a>
+                <a href="/dashboard/security" class="btn-outline">{{ t.dash_manage_security }}</a>
             </div>
         </div>
     </div>
@@ -29,7 +29,7 @@
                     {{ t.a11y_spotlight_text }}
                 </p>
             </div>
-            <a href="/security" class="btn-outline a11y-btn">
+            <a href="/dashboard/accessibility" class="btn-outline a11y-btn">
                 {{ t.a11y_spotlight_btn }}
             </a>
         </div>
@@ -39,7 +39,7 @@
     <div class="card actions" style="margin-top: 20px;">
         <h3>⚡ Ações Rápidas</h3>
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
-            <a href="/security" class="btn-action">
+            <a href="/dashboard/security" class="btn-action">
                 <span>🔐</span> Gerenciar segurança da conta
             </a>
             <a href="/career/analytics" class="btn-action">

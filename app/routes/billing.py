@@ -73,6 +73,11 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
         log_audit(db, user_id, "CHECKOUT_ERROR", request.client.host, f"Stripe Exception: {e}")
         return RedirectResponse("/dashboard?error=payment_failed")
 
+# Add alias POST route for the form in upgrade_premium.html
+@router.post("/subscription/checkout")
+def create_checkout_session_post(request: Request, db: Session = Depends(get_db)):
+    return create_checkout_session(request, db)
+
 @router.get("/billing/success")
 def billing_success(session_id: str, request: Request, db: Session = Depends(get_db)):
     user_id = get_current_user_from_request(request)
