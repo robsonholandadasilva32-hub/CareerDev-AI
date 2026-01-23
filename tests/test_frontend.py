@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime
 from app.db.session import SessionLocal
 from app.db.models.user import User
+
+# Imports abaixo são necessários para o registro do SQLAlchemy resolver os relacionamentos de User
 from app.db.models.security import UserSession, AuditLog
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.gamification import UserBadge
@@ -45,7 +47,7 @@ def setup_incomplete_user(db):
         name="", # Nome vazio para simular início
         email=email,
         hashed_password="mock_hash_bypass",
-        email_verified=True, # Padrão do sistema
+        email_verified=True, # Padrão do sistema agora (bypass)
         is_profile_completed=False, # Força fluxo de onboarding
         terms_accepted=False,
         subscription_status='free',

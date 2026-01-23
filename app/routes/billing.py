@@ -19,6 +19,41 @@ templates = Jinja2Templates(directory="app/templates")
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+def get_or_create_premium_price():
+    """
+    Ensures that the Premium Product and Price exist in Stripe.
+    Returns the Price object.
+    """
+    try:
+        # 1. Search for Product
+        products = stripe.Product.search(query="name:'CareerDev AI Premium'", limit=1)
+        if products.data:
+            product = products.data[0]
+        else:
+            product = stripe.Product.create(
+                name='CareerDev AI Premium',
+                description='Unlimited AI Access & Career Insights'
+            )
+            logger.info(f"Created new Stripe Product: {product.id}")
+
+        # 2. Search for Price
+        # List prices for this product
+        prices = stripe.Price.list(product=product.id, limit=1, active=True)
+        if prices.data:
+            return prices.data[0]
+        else:
+            price = stripe.Price.create(
+                product=product.id,
+                unit_amount=999, # $9.99
+                currency='usd',
+                recurring={'interval': 'month'}
+            )
+            logger.info(f"Created new Stripe Price: {price.id}")
+            return price
+    except Exception as e:
+        logger.error(f"Error fetching/creating Stripe Price: {e}")
+        raise e
+
 @router.get("/subscription/upgrade")
 @router.get("/subscription/checkout")
 def upgrade_page(request: Request, db: Session = Depends(get_db)):
@@ -93,21 +128,14 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
                  client_secret = None
 
         if not client_secret:
+            # Get valid Price ID
+            price = get_or_create_premium_price()
+
             # Create NEW Subscription
             subscription = stripe.Subscription.create(
                 customer=user.stripe_customer_id,
                 items=[{
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': 'CareerDev AI Premium',
-                            'description': 'Unlimited AI Access & Career Insights'
-                        },
-                        'unit_amount': 999, # $9.99
-                        'recurring': {
-                            'interval': 'month',
-                        },
-                    },
+                    'price': price.id, # Fixed: Passing Price ID
                 }],
                 payment_behavior='default_incomplete',
                 payment_settings={'save_default_payment_method': 'on_subscription'},
@@ -127,7 +155,7 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
         logger.error("Stripe Authentication Error: Invalid API Keys")
         return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
-            "error": "Erro de Configuração: Chaves do Stripe não encontradas ou inválidas.",
+            "error": "Configuration Error: Stripe Keys invalid.",
             "user": user,
             "publishable_key": None,
             "client_secret": None
@@ -136,7 +164,7 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
          logger.error(f"Stripe API Error: {e}")
          return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
-            "error": "Erro no processamento do pagamento. Tente novamente.",
+            "error": "Payment processing error. Please try again.",
             "user": user,
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             "client_secret": None,
@@ -147,7 +175,7 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
         log_audit(db, user_id, "CHECKOUT_ERROR", get_client_ip(request), f"Exception: {e}")
         return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
-            "error": "Sistema de pagamento temporariamente indisponível.",
+            "error": "Payment system temporarily unavailable.",
             "user": user,
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             "client_secret": None
@@ -184,12 +212,25 @@ def billing_success(
         if not payment_intent:
              return RedirectResponse("/dashboard?error=missing_payment_intent")
 
-        intent = stripe.PaymentIntent.retrieve(payment_intent)
+        # Retrieve PaymentIntent AND PaymentMethod to sync address
+        intent = stripe.PaymentIntent.retrieve(payment_intent, expand=['payment_method'])
 
         if intent.status == 'succeeded':
             user = db.query(User).filter(User.id == user_id).first()
             user.is_premium = True
             user.subscription_status = "active"
+
+            # Sync Billing Address
+            if intent.payment_method and intent.payment_method.billing_details and intent.payment_method.billing_details.address:
+                address = intent.payment_method.billing_details.address
+                user.billing_address_street = address.line1
+                user.billing_address_complement = address.line2
+                user.billing_address_city = address.city
+                user.billing_address_state = address.state
+                user.billing_address_zip_code = address.postal_code
+                user.billing_address_country = address.country
+                # We don't have separate number field from Stripe usually (it's in line1), so we leave it as is or empty.
+
             db.commit()
 
             log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", ip, f"Stripe Intent: {payment_intent}")

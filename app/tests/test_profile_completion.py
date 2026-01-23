@@ -89,14 +89,6 @@ async def test_complete_profile_flow(client, db_session):
     # 2. Form Data
     data = {
         "name": "Updated Name",
-        "address_street": "Main St",
-        "address_number": "123",
-        "address_complement": "Apt 1",
-        "address_city": "Tech City",
-        "address_state": "CA",
-        "address_zip_code": "90000",
-        "address_country": "USA",
-        "billing_same_as_residential": "true",
         "terms_accepted": "true"
     }
 
@@ -120,10 +112,6 @@ async def test_complete_profile_flow(client, db_session):
     assert user.is_profile_completed is True
     assert user.terms_accepted is True
     assert user.name == "Updated Name"
-    assert user.address_street == "Main St"
-    assert user.address_city == "Tech City"
-    # Check billing copied from residential
-    assert user.billing_address_street == "Main St"
 
     # 6. Verify Audit Log
     # We need to query the AuditLog table

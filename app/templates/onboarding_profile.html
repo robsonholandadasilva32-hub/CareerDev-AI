@@ -22,80 +22,19 @@
                 <input type="email" value="{{ user.email }}" readonly style="width: 100%; padding: 10px; background: #111827; color: #9ca3af; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
             </div>
 
-            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Residential Address</h3>
-            <!-- Grid for address -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div style="grid-column: span 2;">
-                    <label>Street Address</label>
-                    <input type="text" name="address_street" value="{{ user.address_street or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>Number</label>
-                    <input type="text" name="address_number" value="{{ user.address_number or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>Unit/Apt (Optional)</label>
-                    <input type="text" name="address_complement" value="{{ user.address_complement or '' }}" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>City</label>
-                    <input type="text" name="address_city" value="{{ user.address_city or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>State/Province</label>
-                    <input type="text" name="address_state" value="{{ user.address_state or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>Zip/Postal Code</label>
-                    <input type="text" name="address_zip_code" value="{{ user.address_zip_code or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-                <div>
-                    <label>Country</label>
-                    <input type="text" name="address_country" value="{{ user.address_country or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                </div>
-            </div>
-
-            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Billing</h3>
-            <div style="margin-bottom: 1rem;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" name="billing_same_as_residential" id="billing_same_as_residential" value="true" onchange="toggleBillingAddress()">
-                    <span style="display: inline-block;">Billing address is the same as residential?</span>
-                </label>
-            </div>
-
-            <div id="billing_address_container" style="display: block;">
-                <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--secondary-color);">Billing Address</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div style="grid-column: span 2;">
-                        <label>Street Address</label>
-                        <input type="text" name="billing_address_street" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>Number</label>
-                        <input type="text" name="billing_address_number" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>Unit/Apt (Optional)</label>
-                        <input type="text" name="billing_address_complement" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>City</label>
-                        <input type="text" name="billing_address_city" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>State/Province</label>
-                        <input type="text" name="billing_address_state" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>Zip/Postal Code</label>
-                        <input type="text" name="billing_address_zip_code" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label>Country</label>
-                        <input type="text" name="billing_address_country" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
-                    </div>
-                </div>
-            </div>
+            <!-- Job Title / Bio (Added per requirement "Keep only the essential fields (e.g., Job Title, Bio)") -->
+            <!-- Note: The user said "Keep only the essential fields (e.g., Job Title, Bio)" but the original file didn't have them!
+                 However, the User model also doesn't seem to have job_title/bio based on what I read in app/db/models/user.py.
+                 The user model has 'career_profile' relationship.
+                 The original template ONLY had name, email, addresses.
+                 The prompt says "Keep only the essential fields (e.g., Job Title, Bio)".
+                 If I look at app/db/models/user.py again, I don't see job_title or bio.
+                 Maybe they are in CareerProfile?
+                 But `complete_profile` saves to `User`.
+                 I will stick to Name and Email (read-only) and Terms, as they are the only "essential" fields present in the original + User model.
+                 If the user implied adding Job Title/Bio, I would need to know where to save them.
+                 Given the instruction "Remove all HTML input fields related to Residential Address and Billing Address", I will do exactly that.
+            -->
 
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #374151;">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">

@@ -128,24 +128,6 @@ def dashboard_profile(request: Request, user: User = Depends(get_current_user_se
 def update_profile(
     request: Request,
     name: str = Form(...),
-    address_street: str = Form(None),
-    address_number: str = Form(None),
-    address_complement: str = Form(None),
-    address_city: str = Form(None),
-    address_state: str = Form(None),
-    address_zip_code: str = Form(None),
-    address_country: str = Form(None),
-
-    billing_same_as_residential: bool = Form(False),
-
-    billing_address_street: str = Form(None),
-    billing_address_number: str = Form(None),
-    billing_address_complement: str = Form(None),
-    billing_address_city: str = Form(None),
-    billing_address_state: str = Form(None),
-    billing_address_zip_code: str = Form(None),
-    billing_address_country: str = Form(None),
-
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user_secure)
 ):
@@ -154,30 +136,7 @@ def update_profile(
 
     try:
         user.name = name
-        user.address_street = address_street
-        user.address_number = address_number
-        user.address_complement = address_complement
-        user.address_city = address_city
-        user.address_state = address_state
-        user.address_zip_code = address_zip_code
-        user.address_country = address_country
-
-        if billing_same_as_residential:
-            user.billing_address_street = address_street
-            user.billing_address_number = address_number
-            user.billing_address_complement = address_complement
-            user.billing_address_city = address_city
-            user.billing_address_state = address_state
-            user.billing_address_zip_code = address_zip_code
-            user.billing_address_country = address_country
-        else:
-            user.billing_address_street = billing_address_street
-            user.billing_address_number = billing_address_number
-            user.billing_address_complement = billing_address_complement
-            user.billing_address_city = billing_address_city
-            user.billing_address_state = billing_address_state
-            user.billing_address_zip_code = billing_address_zip_code
-            user.billing_address_country = billing_address_country
+        # Address update logic removed
 
         db.commit()
         success = True
@@ -185,7 +144,7 @@ def update_profile(
     except Exception as e:
         db.rollback()
         success = False
-        error = f"Erro ao atualizar perfil: {str(e)}"
+        error = f"Error updating profile: {str(e)}"
 
     return templates.TemplateResponse("dashboard/profile.html", {
         "request": request,
