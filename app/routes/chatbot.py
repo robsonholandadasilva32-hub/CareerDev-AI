@@ -15,7 +15,7 @@ class ChatRequest(BaseModel):
 @router.post("/message")
 @limiter.limit("10/minute")
 async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
-    lang = request.session.get("lang", "pt")
+    lang = "en" # Force English
     user_id = get_current_user_from_request(request)
 
     response = await chatbot_service.get_response(

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="{{ t.page_description }}">
+  <meta name="description" content="Accelerate your career with AI-driven insights and tools.">
 
-  <title>{{ t.page_title }}</title>
+  <title>Welcome Back</title>
 
   <!-- =====================================================
        FAVICON & APP ICONS
@@ -140,16 +140,6 @@
       fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
-    }
-
-    .lang-select {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border-soft);
-      padding: 0.4rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      cursor: pointer;
     }
 
     /* ===== MAIN ===== */
@@ -529,7 +519,7 @@
       </div>
       <div class="brand-text">
         <h1>CareerDev AI</h1>
-        <p>{{ t.project_phrase }}</p>
+        <p>AI Career Assistant</p>
       </div>
     </a>
 
@@ -540,17 +530,7 @@
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
-        <span>{{ t.security_status }}</span>
-      </div>
-
-      <div class="lang-selector">
-          <select class="lang-select" onchange="window.location.href='?lang='+this.value">
-              <option value="pt" {% if lang == 'pt' %}selected{% endif %}>🇵🇹 PT</option>
-              <option value="en" {% if lang == 'en' %}selected{% endif %}>🇺🇸 EN</option>
-              <option value="es" {% if lang == 'es' %}selected{% endif %}>🇪🇸 ES</option>
-              <option value="fr" {% if lang == 'fr' %}selected{% endif %}>🇫🇷 FR</option>
-              <option value="de" {% if lang == 'de' %}selected{% endif %}>🇩🇪 DE</option>
-          </select>
+        <span>Secure</span>
       </div>
     </div>
   </header>
@@ -559,8 +539,8 @@
   <main>
     <div class="login-container">
       <div class="login-header">
-        <h2>{{ t.login_title }}</h2>
-        <p>{{ t.page_description }}</p>
+        <h2>Welcome Back</h2>
+        <p>Accelerate your career with AI-driven insights and tools.</p>
       </div>
 
       {% if error or request.query_params.get('error') %}
@@ -572,7 +552,7 @@
       {% endif %}
 
       <div class="social-divider">
-        <span>{{ t.social_login_title }}</span>
+        <span>Or sign in with</span>
       </div>
 
       <div class="social-buttons" style="flex-direction: column;">
@@ -587,10 +567,10 @@
                   </svg>
               </div>
               <div class="unified-divider"></div>
-              <span class="unified-text">{{ t.social_unified_btn }}</span>
+              <span class="unified-text">Continue with LinkedIn / GitHub</span>
           </a>
           <p class="microcopy" style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.8rem; line-height: 1.5;">
-              {{ t.social_unified_note }}
+              We use LinkedIn for professional identity and GitHub for code analysis.
           </p>
       </div>
     </div>
@@ -600,26 +580,26 @@
         <div class="info-card github">
             <h3>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                {{ t.int_github_title }}
+                GitHub Integration
             </h3>
-            <p>{{ t.int_github_text }}</p>
+            <p>Analyze your repositories to match job requirements.</p>
         </div>
         <div class="info-card linkedin">
             <h3>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                {{ t.int_linkedin_title }}
+                LinkedIn Integration
             </h3>
-            <p>{{ t.int_linkedin_text }}</p>
+            <p>Import your professional profile seamlessly.</p>
         </div>
         <div class="impact-statement">
-            <p>{{ t.int_impact_text }}</p>
+            <p>AI-powered analysis to boost your career.</p>
         </div>
     </div>
 
     <!-- SECURITY PROMISE -->
     <div class="accessibility-showcase" style="margin-bottom: 2rem;">
-        <h3 class="a11y-title" style="color: var(--accent-green);">🔐 {{ t.security_promise_title }}</h3>
-        <p class="a11y-subtitle">{{ t.security_promise_subtitle }}</p>
+        <h3 class="a11y-title" style="color: var(--accent-green);">🔐 Security Promise</h3>
+        <p class="a11y-subtitle">Your data is safe with us.</p>
 
         <div class="a11y-grid">
             <!-- Card 1: No Selling -->
@@ -627,8 +607,8 @@
                 <div class="icon-wrapper" style="color: var(--accent-green);">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
                 </div>
-                <h4>{{ t.sec_card_selling_title }}</h4>
-                <p>{{ t.sec_card_selling_text }}</p>
+                <h4>No Data Selling</h4>
+                <p>We do not sell your personal data.</p>
             </div>
 
             <!-- Card 2: Encryption -->
@@ -636,8 +616,8 @@
                 <div class="icon-wrapper" style="color: var(--accent-green);">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" fill="none"/></svg>
                 </div>
-                <h4>{{ t.sec_card_encrypt_title }}</h4>
-                <p>{{ t.sec_card_encrypt_text }}</p>
+                <h4>Encrypted</h4>
+                <p>All data is encrypted at rest and in transit.</p>
             </div>
 
             <!-- Card 3: No AI Training -->
@@ -645,16 +625,16 @@
                 <div class="icon-wrapper" style="color: var(--accent-green);">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 6v6l4 2.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
                 </div>
-                <h4>{{ t.sec_card_ai_title }}</h4>
-                <p>{{ t.sec_card_ai_text }}</p>
+                <h4>Private AI</h4>
+                <p>Your data is not used to train public models.</p>
             </div>
         </div>
     </div>
 
     <!-- ACCESSIBILITY SHOWCASE -->
     <div class="accessibility-showcase">
-        <h3 class="a11y-title">{{ t.a11y_title }}</h3>
-        <p class="a11y-subtitle">{{ t.a11y_subtitle }}</p>
+        <h3 class="a11y-title">Accessibility</h3>
+        <p class="a11y-subtitle">Inclusive for everyone.</p>
 
         <div class="a11y-grid">
             <!-- Card 1: Cognitive -->
@@ -662,8 +642,8 @@
                 <div class="icon-wrapper">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8m0 2v4l3.5 2-3.5 2v4" fill="currentColor" fill-opacity="0.2"/><path d="M12 6v6l4 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </div>
-                <h4>{{ t.a11y_card_cognitive_title }}</h4>
-                <p>{{ t.a11y_card_cognitive_text }}</p>
+                <h4>Cognitive</h4>
+                <p>Designed for focus and clarity.</p>
             </div>
 
             <!-- Card 2: Vision -->
@@ -671,8 +651,8 @@
                 <div class="icon-wrapper">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </div>
-                <h4>{{ t.a11y_card_vision_title }}</h4>
-                <p>{{ t.a11y_card_vision_text }}</p>
+                <h4>Vision</h4>
+                <p>High contrast and screen reader friendly.</p>
             </div>
 
             <!-- Card 3: Hearing -->
@@ -680,8 +660,8 @@
                  <div class="icon-wrapper">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
                  </div>
-                <h4>{{ t.a11y_card_hearing_title }}</h4>
-                <p>{{ t.a11y_card_hearing_text }}</p>
+                <h4>Hearing</h4>
+                <p>Visual cues for all notifications.</p>
             </div>
 
             <!-- Card 4: Motor -->
@@ -689,8 +669,8 @@
                  <div class="icon-wrapper">
                     <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                  </div>
-                <h4>{{ t.a11y_card_motor_title }}</h4>
-                <p>{{ t.a11y_card_motor_text }}</p>
+                <h4>Motor</h4>
+                <p>Keyboard navigable and large targets.</p>
             </div>
         </div>
     </div>
@@ -701,11 +681,11 @@
 
   <!-- FOOTER -->
   <footer>
-    <p>{{ t.footer_text }}</p>
+    <p>Version: 1.2.0 (Stable) | Developed with ❤️ and ☕. © 2026 CareerDev AI. All rights reserved.</p>
     <div style="margin: 10px 0; font-size: 0.9em;">
-        <a href="/legal/privacy?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Política de Privacidade</a>
+        <a href="/legal/privacy" style="color: #64748b; margin: 0 10px;">Privacy Policy</a>
         |
-        <a href="/legal/terms?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Termos de Uso</a>
+        <a href="/legal/terms" style="color: #64748b; margin: 0 10px;">Terms of Use</a>
     </div>
   </footer>
 </body>

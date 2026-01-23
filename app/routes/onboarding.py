@@ -8,7 +8,6 @@ from datetime import datetime
 from app.db.session import get_db
 from app.db.models.user import User
 from app.core.jwt import decode_token
-from app.i18n.loader import get_texts
 from app.services.onboarding import get_next_onboarding_step
 from app.services.security_service import log_audit
 
@@ -36,8 +35,7 @@ async def connect_github(request: Request, user: User = Depends(get_current_user
     if user.github_id:
         return RedirectResponse(get_next_onboarding_step(user))
 
-    t = get_texts(request.session.get("lang", "pt"))
-    return templates.TemplateResponse("onboarding_github.html", {"request": request, "user": user, "t": t})
+    return templates.TemplateResponse("onboarding_github.html", {"request": request, "user": user})
 
 @router.get("/onboarding/complete-profile", response_class=HTMLResponse)
 async def complete_profile(request: Request, user: User = Depends(get_current_user_onboarding)):
@@ -50,9 +48,6 @@ async def complete_profile(request: Request, user: User = Depends(get_current_us
         return RedirectResponse("/login")
 
     next_step = get_next_onboarding_step(user)
-    # If user tries to access complete-profile but hasn't done github (and needs to), redirect back.
-    # Exception: if next_step is dashboard, it means they are done, but maybe they want to edit?
-    # For now, strict flow: if next_step is BEFORE this one, redirect.
 
     # Simple check:
     if not user.linkedin_id:
@@ -60,15 +55,10 @@ async def complete_profile(request: Request, user: User = Depends(get_current_us
     if not user.github_id:
          return RedirectResponse("/onboarding/connect-github")
 
-    # If they are already completed, we redirect to dashboard?
-    # Or allow them to see the form?
-    # The prompt implies this is a "Registration Screen".
-    # Usually registration screens are one-time.
     if user.is_profile_completed:
          return RedirectResponse("/dashboard")
 
-    t = get_texts(request.session.get("lang", "pt"))
-    return templates.TemplateResponse("onboarding_profile.html", {"request": request, "user": user, "t": t})
+    return templates.TemplateResponse("onboarding_profile.html", {"request": request, "user": user})
 
 @router.post("/onboarding/complete-profile")
 async def complete_profile_post(
@@ -105,14 +95,11 @@ async def complete_profile_post(
     if not user:
         return RedirectResponse("/login")
 
-    t = get_texts(request.session.get("lang", "pt"))
-
     if not terms_accepted:
         return templates.TemplateResponse("onboarding_profile.html", {
             "request": request,
             "user": user,
-            "t": t,
-            "error": "Você deve ler e aceitar os Termos de Uso."
+            "error": "You must read and accept the Terms of Use."
         })
 
     # Update User
@@ -142,8 +129,7 @@ async def complete_profile_post(
              return templates.TemplateResponse("onboarding_profile.html", {
                 "request": request,
                 "user": user,
-                "t": t,
-                "error": "Por favor, preencha todos os campos do endereço de cobrança ou marque 'O mesmo da residência'."
+                "error": "Please fill in all billing address fields or check 'Same as residential'."
             })
 
         user.billing_address_street = billing_address_street

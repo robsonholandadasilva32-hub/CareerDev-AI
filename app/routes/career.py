@@ -70,6 +70,4 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user": user,
         "data": analytics_data,
-        "t": {},
-        "lang": user.preferred_language or "pt"
     })

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import stripe
@@ -19,11 +19,7 @@ templates = Jinja2Templates(directory="app/templates")
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 @router.get("/subscription/upgrade")
-def upgrade_page(request: Request):
-    return templates.TemplateResponse("subscription/upgrade_premium.html", {"request": request, "t": {}, "lang": "pt"})
-
-@router.get("/billing/checkout")
-def create_checkout_session(request: Request, db: Session = Depends(get_db)):
+def upgrade_page(request: Request, db: Session = Depends(get_db)):
     user_id = get_current_user_from_request(request)
     if not user_id:
         return RedirectResponse("/login")
@@ -34,57 +30,85 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
-    log_audit(db, user_id, "CHECKOUT_START", request.client.host, "Initiated Premium Checkout")
-
+    # Mock Flow for Dev/Test (if no Stripe Key)
     if not stripe.api_key:
-        # Mock Flow for Demo/Dev
-        user.is_premium = True
-        user.subscription_status = "active"
-        db.commit()
-        log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, "Mocked Payment Success")
-        return RedirectResponse("/dashboard?success=premium_mocked")
+        logger.warning("Stripe API Key missing. Using Mock Mode.")
+        return templates.TemplateResponse("subscription/checkout.html", {
+            "request": request,
+            "client_secret": "mock_secret",
+            "publishable_key": "pk_test_mock",
+            "user": user
+        })
 
     try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[
-                {
-                    'price_data': {
-                        'currency': 'brl',
-                        'product_data': {
-                            'name': 'CareerDev AI Premium',
-                        },
-                        'unit_amount': 2990, # R$ 29,90
-                        'recurring': {
-                            'interval': 'month',
-                        },
+        # 1. Create Customer if missing
+        if not user.stripe_customer_id:
+            customer = stripe.Customer.create(
+                email=user.email,
+                name=user.name,
+                metadata={'user_id': str(user.id)}
+            )
+            user.stripe_customer_id = customer.id
+            db.commit()
+
+        # 2. Create Subscription
+        # We use ad-hoc price_data for simplicity in this pivot.
+        # In a real app, you'd likely use a fixed Price ID from config.
+        subscription = stripe.Subscription.create(
+            customer=user.stripe_customer_id,
+            items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'CareerDev AI Premium',
+                        'description': 'Unlimited AI Access & Career Insights'
                     },
-                    'quantity': 1,
+                    'unit_amount': 999, # $9.99
+                    'recurring': {
+                        'interval': 'month',
+                    },
                 },
-            ],
-            mode='subscription',
-            success_url=str(request.base_url) + 'billing/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=str(request.base_url) + 'subscription/upgrade',
-            customer_email=user.email,
+            }],
+            payment_behavior='default_incomplete',
+            payment_settings={'save_default_payment_method': 'on_subscription'},
+            expand=['latest_invoice.payment_intent'],
         )
-        return RedirectResponse(checkout_session.url, status_code=303)
+
+        # 3. Extract Client Secret
+        client_secret = subscription.latest_invoice.payment_intent.client_secret
+
+        log_audit(db, user_id, "CHECKOUT_INIT", request.client.host, f"Sub ID: {subscription.id}")
+
+        return templates.TemplateResponse("subscription/checkout.html", {
+            "request": request,
+            "client_secret": client_secret,
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            "user": user
+        })
+
     except Exception as e:
         logger.error(f"Stripe Error: {e}")
         log_audit(db, user_id, "CHECKOUT_ERROR", request.client.host, f"Stripe Exception: {e}")
         return RedirectResponse("/dashboard?error=payment_failed")
 
-# Add alias POST route for the form in upgrade_premium.html
-@router.post("/subscription/checkout")
-def create_checkout_session_post(request: Request, db: Session = Depends(get_db)):
-    return create_checkout_session(request, db)
 
 @router.get("/billing/success")
-def billing_success(session_id: str, request: Request, db: Session = Depends(get_db)):
+def billing_success(
+    request: Request,
+    payment_intent: str = None,
+    payment_intent_client_secret: str = None,
+    redirect_status: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Stripe redirects here after Elements payment.
+    We verify the PaymentIntent status.
+    """
     user_id = get_current_user_from_request(request)
     if not user_id:
         return RedirectResponse("/login")
 
-    # If keys are missing (Mock/Dev), allow bypass
+    # Mock Bypass
     if not stripe.api_key:
          user = db.query(User).filter(User.id == user_id).first()
          user.is_premium = True
@@ -92,22 +116,27 @@ def billing_success(session_id: str, request: Request, db: Session = Depends(get
          db.commit()
          return RedirectResponse("/dashboard?success=premium_activated")
 
-    # Secure Verification
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        if session.payment_status == 'paid':
+        if not payment_intent:
+             return RedirectResponse("/dashboard?error=missing_payment_intent")
+
+        intent = stripe.PaymentIntent.retrieve(payment_intent)
+
+        if intent.status == 'succeeded':
             user = db.query(User).filter(User.id == user_id).first()
             user.is_premium = True
             user.subscription_status = "active"
-            user.stripe_customer_id = session.customer
             db.commit()
 
-            log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, f"Stripe Verified ID: {session_id}")
-
+            log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, f"Stripe Intent: {payment_intent}")
             return RedirectResponse("/dashboard?success=premium_activated")
+        elif intent.status == 'processing':
+            log_audit(db, user_id, "SUBSCRIPTION_PROCESSING", request.client.host, f"Stripe Intent: {payment_intent}")
+            return RedirectResponse("/dashboard?info=payment_processing")
         else:
-            log_audit(db, user_id, "SUBSCRIPTION_PENDING", request.client.host, f"Stripe ID: {session_id} Pending")
-            return RedirectResponse("/dashboard?error=payment_pending")
+            log_audit(db, user_id, "SUBSCRIPTION_FAIL", request.client.host, f"Status: {intent.status}")
+            return RedirectResponse("/dashboard?error=payment_failed")
+
     except Exception as e:
         logger.error(f"Stripe Verification Error: {e}")
         log_audit(db, user_id, "SUBSCRIPTION_VERIFY_FAIL", request.client.host, f"Stripe Exception: {e}")

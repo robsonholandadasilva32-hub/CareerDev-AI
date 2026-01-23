@@ -3,7 +3,7 @@
 {% block content %}
 <div style="max-width: 800px; margin: 2rem auto;">
     <div class="card">
-        <h2 style="color: var(--primary-color); text-align: center; margin-bottom: 2rem;">Complete seu Perfil</h2>
+        <h2 style="color: var(--primary-color); text-align: center; margin-bottom: 2rem;">Complete your Profile</h2>
 
         {% if error %}
         <div style="background: rgba(255, 0, 85, 0.1); border: 1px solid var(--error-color); color: var(--error-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
@@ -12,86 +12,86 @@
         {% endif %}
 
         <form method="post" action="/onboarding/complete-profile">
-            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Dados Pessoais</h3>
+            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Personal Data</h3>
             <div style="margin-bottom: 1rem;">
-                <label>Nome Completo</label>
+                <label>Full Name</label>
                 <input type="text" name="name" value="{{ user.name }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
             </div>
             <div style="margin-bottom: 1rem;">
-                <label>Email (Somente Leitura)</label>
+                <label>Email (Read Only)</label>
                 <input type="email" value="{{ user.email }}" readonly style="width: 100%; padding: 10px; background: #111827; color: #9ca3af; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
             </div>
 
-            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Endereço Residencial</h3>
+            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Residential Address</h3>
             <!-- Grid for address -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div style="grid-column: span 2;">
-                    <label>Logradouro</label>
+                    <label>Street Address</label>
                     <input type="text" name="address_street" value="{{ user.address_street or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>Número</label>
+                    <label>Number</label>
                     <input type="text" name="address_number" value="{{ user.address_number or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>Complemento</label>
+                    <label>Unit/Apt (Optional)</label>
                     <input type="text" name="address_complement" value="{{ user.address_complement or '' }}" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>Cidade</label>
+                    <label>City</label>
                     <input type="text" name="address_city" value="{{ user.address_city or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>Estado</label>
+                    <label>State/Province</label>
                     <input type="text" name="address_state" value="{{ user.address_state or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>CEP</label>
+                    <label>Zip/Postal Code</label>
                     <input type="text" name="address_zip_code" value="{{ user.address_zip_code or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div>
-                    <label>País</label>
+                    <label>Country</label>
                     <input type="text" name="address_country" value="{{ user.address_country or '' }}" required style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                 </div>
             </div>
 
-            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Cobrança</h3>
+            <h3 style="border-bottom: 1px solid var(--accent-color); padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 2rem;">Billing</h3>
             <div style="margin-bottom: 1rem;">
                 <label style="display: flex; align-items: center; gap: 10px;">
                     <input type="checkbox" name="billing_same_as_residential" id="billing_same_as_residential" value="true" onchange="toggleBillingAddress()">
-                    <span style="display: inline-block;">Endereço de cobrança é o mesmo da residência?</span>
+                    <span style="display: inline-block;">Billing address is the same as residential?</span>
                 </label>
             </div>
 
             <div id="billing_address_container" style="display: block;">
-                <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--secondary-color);">Endereço de Cobrança</h4>
+                <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--secondary-color);">Billing Address</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div style="grid-column: span 2;">
-                        <label>Logradouro</label>
+                        <label>Street Address</label>
                         <input type="text" name="billing_address_street" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>Número</label>
+                        <label>Number</label>
                         <input type="text" name="billing_address_number" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>Complemento</label>
+                        <label>Unit/Apt (Optional)</label>
                         <input type="text" name="billing_address_complement" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>Cidade</label>
+                        <label>City</label>
                         <input type="text" name="billing_address_city" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>Estado</label>
+                        <label>State/Province</label>
                         <input type="text" name="billing_address_state" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>CEP</label>
+                        <label>Zip/Postal Code</label>
                         <input type="text" name="billing_address_zip_code" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                     <div>
-                        <label>País</label>
+                        <label>Country</label>
                         <input type="text" name="billing_address_country" class="billing-field" style="width: 100%; padding: 10px; background: #1f2937; color: white; border: 1px solid #374151; border-radius: 4px; box-sizing: border-box;">
                     </div>
                 </div>
@@ -100,12 +100,12 @@
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #374151;">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                     <input type="checkbox" name="terms_accepted" value="true" required style="width: 20px; height: 20px;">
-                    <span>Li e aceito os <a href="/legal/terms" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/legal/privacy" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.</span>
+                    <span>I have read and accept the <a href="/legal/terms" target="_blank" rel="noopener noreferrer">Terms of Use</a> and <a href="/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span>
                 </label>
             </div>
 
             <div style="margin-top: 2rem; text-align: center;">
-                <button type="submit" class="btn" style="width: 100%; max-width: 300px;">Concluir Cadastro</button>
+                <button type="submit" class="btn" style="width: 100%; max-width: 300px;">Complete Registration</button>
             </div>
         </form>
     </div>

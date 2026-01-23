@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{{ t.page_title }}</title>
+  <title>CareerDev AI</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="{{ t.page_description }}">
+  <meta name="description" content="Accelerate your career with AI-driven insights and tools.">
 
   <!-- PWA MANIFEST -->
   <link rel="manifest" href="/static/favicon/manifest.json">
@@ -63,15 +63,6 @@
     header h1 { margin: 0; font-size: 1.5rem; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
 
     .logo-anim { width: 30px; height: 30px; }
-
-    .lang-selector select {
-        background: #121a2f;
-        color: #e0e6ed;
-        border: 1px solid var(--accent-color);
-        padding: 5px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
 
     main {
         flex: 1;
@@ -219,20 +210,10 @@
     </h1>
 
     <div style="display: flex; align-items: center; gap: 15px;">
-        <div class="lang-selector">
-            <select onchange="window.location.href='?lang='+this.value">
-                <option value="pt" {% if lang == 'pt' %}selected{% endif %}>🇵🇹 PT</option>
-                <option value="en" {% if lang == 'en' %}selected{% endif %}>🇺🇸 EN</option>
-                <option value="es" {% if lang == 'es' %}selected{% endif %}>🇪🇸 ES</option>
-                <option value="fr" {% if lang == 'fr' %}selected{% endif %}>🇫🇷 FR</option>
-                <option value="de" {% if lang == 'de' %}selected{% endif %}>🇩🇪 DE</option>
-            </select>
-        </div>
-
         <nav>
             {% if user %}
                 <div style="display: inline-flex; align-items: center; gap: 15px;">
-                     <span style="color: var(--primary-color);">Olá, {{ user.name }}</span>
+                     <span style="color: var(--primary-color);">Hello, {{ user.name }}</span>
                      {% if user.avatar_url %}
                         <img src="{{ user.avatar_url }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color); object-fit: cover;">
                      {% endif %}
@@ -242,7 +223,7 @@
                         <a href="/dashboard">Dashboard</a>
                         {% endif %}
                     {% endif %}
-                    <a href="/logout" class="btn-outline" style="padding: 0.5rem 1rem;">Sair</a>
+                    <a href="/logout" class="btn-outline" style="padding: 0.5rem 1rem;">Logout</a>
                 </div>
             {% endif %}
         </nav>
@@ -254,7 +235,7 @@
     <!-- Trial Banner -->
     {% if user and user.subscription_status == 'free' %}
     <div style="background-color: #fbbf24; color: #111827; text-align: center; padding: 10px; font-weight: bold; margin-bottom: 20px; border-radius: 5px;">
-        {{ t.trial_banner | default('Algumas funcionalidades são disponibilizadas gratuitamente.') }}
+        Some features are available for free.
     </div>
     {% endif %}
 
@@ -269,11 +250,11 @@
 
   <!-- FOOTER -->
   <footer>
-    <p>{{ t.footer_text }}</p>
+    <p>Version: 1.2.0 (Stable) | Developed with ❤️ and ☕. © 2026 CareerDev AI. All rights reserved.</p>
     <div style="margin: 10px 0; font-size: 0.9em;">
-        <a href="/legal/privacy?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Política de Privacidade</a>
+        <a href="/legal/privacy" style="color: #64748b; margin: 0 10px;">Privacy Policy</a>
         |
-        <a href="/legal/terms?lang={{ lang }}" style="color: #64748b; margin: 0 10px;">Termos de Uso</a>
+        <a href="/legal/terms" style="color: #64748b; margin: 0 10px;">Terms of Use</a>
     </div>
     <p style="font-size: 0.8em; margin-top: 10px;">
         "We can only see a short distance ahead, but we can see plenty there that needs to be done." — Alan Turing
