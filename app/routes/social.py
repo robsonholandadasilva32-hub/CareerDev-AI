@@ -15,6 +15,7 @@ from app.core.security import hash_password
 from app.core.jwt import create_access_token
 from app.services.onboarding import get_next_onboarding_step
 from app.services.security_service import create_user_session, log_audit
+from app.core.utils import get_client_ip
 import secrets
 import logging
 import os
@@ -71,7 +72,7 @@ def login_user_and_redirect(request: Request, user, db: Session):
     db.commit()
 
     # Security: Create Session
-    ip = request.client.host if request.client else "0.0.0.0"
+    ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent", "unknown")
     logger.info(f"Creating session for user {user.id} | IP: {ip} | UA: {user_agent[:30]}...")
     sid = create_user_session(db, user.id, ip, user_agent)
@@ -110,7 +111,7 @@ async def login_github(request: Request):
 
 @router.get("/auth/github/callback")
 async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
-    ip = request.client.host
+    ip = get_client_ip(request)
     try:
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_github_callback'))
@@ -239,7 +240,7 @@ async def login_linkedin(request: Request):
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
-    ip = request.client.host
+    ip = get_client_ip(request)
     try:
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_linkedin_callback'))
