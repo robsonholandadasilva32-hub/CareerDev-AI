@@ -82,3 +82,26 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "lang": lang
         }
     )
+
+@router.get("/dashboard/legal", response_class=HTMLResponse)
+def dashboard_legal(request: Request, user: User = Depends(get_current_user_secure)):
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    # GUARD
+    if resp := validate_onboarding_access(user):
+        return resp
+
+    # Load Language
+    lang = request.session.get("lang", user.preferred_language or "pt")
+    t = get_texts(lang)
+
+    return templates.TemplateResponse(
+        "legal_menu.html",
+        {
+            "request": request,
+            "user": user,
+            "lang": lang,
+            "t": t
+        }
+    )

@@ -1,19 +1,54 @@
-{% extends "base.html" %}
+{% extends "dashboard_layout.html" %}
 
-{% block content %}
+{% block dashboard_content %}
 <div class="card security-panel">
     <h2>🔐 Central de Segurança e Preferências</h2>
 
-    {% if success %}
+    {% if success or request.query_params.get('success') %}
     <div style="background: rgba(0, 255, 136, 0.2); color: #00ff88; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
         Configurações atualizadas com sucesso!
     </div>
     {% endif %}
 
-    <!-- INCLUDE ACCESSIBILITY PANEL -->
-    {% include 'partials/accessibility_panel.html' %}
+    <!-- ACTIVE SESSIONS (NEW) -->
+    <div class="setting-group" style="margin-bottom: 30px;">
+        <h3>📱 Sessões Ativas</h3>
+        <p style="color: #9ca3af; font-size: 0.9rem;">Dispositivos onde você está conectado atualmente.</p>
 
-    <form method="post" action="/security/update" style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--accent-color); border-radius: 8px; overflow: hidden; margin-top: 15px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                        <th style="padding: 12px; color: var(--text-color);">Dispositivo / Navegador</th>
+                        <th style="padding: 12px; color: var(--text-color);">IP</th>
+                        <th style="padding: 12px; color: var(--text-color);">Último Acesso</th>
+                        <th style="padding: 12px; color: var(--text-color);">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-top: 1px solid var(--accent-color);">
+                        <td style="padding: 12px; color: #d1d5db;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>💻</span>
+                                {{ current_session.user_agent }}
+                            </div>
+                        </td>
+                        <td style="padding: 12px; color: #9ca3af;">{{ current_session.ip }}</td>
+                        <td style="padding: 12px; color: #9ca3af;">
+                            {{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Agora' }}
+                        </td>
+                        <td style="padding: 12px;">
+                            <span style="background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">
+                                Sessão Atual
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <form method="post" action="/dashboard/security/update" style="display: flex; flex-direction: column; gap: 20px;">
 
         <!-- Global Preferences -->
         <div class="setting-group" style="border-top: 1px solid #2d3748; padding-top: 20px; margin-top: 10px;">
@@ -37,7 +72,7 @@
         <h3 style="color: #ff0055;">☠️ Zona de Perigo</h3>
         <p style="color: #9ca3af; font-size: 0.9rem;">Essas ações são irreversíveis.</p>
 
-        <form method="post" action="/security/delete-account" onsubmit="return confirm('Tem certeza absoluta? Esta ação não pode ser desfeita e todos os seus dados serão perdidos.');">
+        <form method="post" action="/dashboard/security/delete-account" onsubmit="return confirm('Tem certeza absoluta? Esta ação não pode ser desfeita e todos os seus dados serão perdidos.');">
             <button type="submit" class="btn" style="background: rgba(255, 0, 85, 0.1); border: 1px solid #ff0055; color: #ff0055; width: auto; margin-top: 10px;">
                 Excluir minha conta permanentemente
             </button>
