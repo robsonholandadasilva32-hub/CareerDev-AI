@@ -1,28 +1,12 @@
-<div id="cookie-notice" style="
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(10, 15, 28, 0.95);
-    border: 1px solid var(--secondary-color);
-    padding: 15px 25px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    z-index: 9999;
-    display: block;
-    max-width: 90%;
-    width: 600px;
-    backdrop-filter: blur(10px);
-    text-align: center;
-">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+<div id="cookie-notice" style="display: block !important; z-index: 99999; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 25px;">
         <div style="text-align: left; flex: 1;">
             <strong style="color: var(--secondary-color); display: block; margin-bottom: 5px;">🍪 Transparência Total</strong>
             <span style="font-size: 0.9rem; color: #cbd5e1;">
                 Utilizamos <strong>apenas cookies essenciais</strong> para segurança (login) e suas preferências.
                 <br>
                 <strong>Zero rastreamento. Zero venda de dados.</strong>
-                <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; margin-left: 5px;">Saiba mais</a>.
+                <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; margin-left: 5px; color: white;">Saiba mais</a>.
             </span>
         </div>
         <button onclick="acceptCookies()" class="btn" style="white-space: nowrap; padding: 10px 20px;">
@@ -33,15 +17,28 @@
 
 <script>
     function acceptCookies() {
-        localStorage.setItem('cookie_consent_accepted', 'true');
-        document.getElementById('cookie-notice').style.display = 'none';
+        try {
+            localStorage.setItem('cookie_consent_accepted', 'true');
+            document.getElementById('cookie-notice').style.display = 'none';
+        } catch (e) {
+            console.error('Cookie Notice Error (Accept):', e);
+        }
     }
 
     (function() {
-        if (!localStorage.getItem('cookie_consent_accepted')) {
-            document.getElementById('cookie-notice').style.display = 'block';
-        } else {
-            document.getElementById('cookie-notice').style.display = 'none';
+        try {
+            // Force display block first via CSS, then hide if needed logic
+            // But we rely on JS to hide.
+            if (localStorage.getItem('cookie_consent_accepted') === 'true') {
+                 document.getElementById('cookie-notice').style.display = 'none';
+            } else {
+                 // Already block !important via CSS, but good to ensure
+                 document.getElementById('cookie-notice').style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Cookie Notice Error (Init):', e);
+            // Fallback: ensure visibility if we can't access localStorage?
+            // or just log it.
         }
     })();
 </script>

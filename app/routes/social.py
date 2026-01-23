@@ -73,9 +73,9 @@ def login_user_and_redirect(request: Request, user):
         key="access_token",
         value=token,
         httponly=True,
-        secure=request.url.scheme == "https", # Auto-detect HTTPS
+        secure=(settings.ENVIRONMENT == "production"),
         samesite="lax",
-        max_age=60 * 60 * 24 * 7  # 7 days
+        max_age=604800
     )
     return response
 

@@ -22,6 +22,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     try:
                         user = db.query(User).filter(User.id == user_id).first()
                         if user:
+                            logger.info(f"DEBUG: Checking Token: {token} | User Completed? {user.is_profile_completed}")
                             request.state.user = user
                     finally:
                         db.close()
