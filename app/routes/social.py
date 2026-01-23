@@ -15,6 +15,7 @@ from app.core.security import hash_password
 from app.core.jwt import create_access_token
 from app.services.onboarding import get_next_onboarding_step
 from app.services.security_service import create_user_session, log_audit
+from app.services.gamification import check_and_award_security_badge
 from app.core.utils import get_client_ip
 import secrets
 import logging
@@ -166,6 +167,10 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 db.commit() # Sync commit
 
                 log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
+
+                # Check Security Badge
+                check_and_award_security_badge(db, current_user)
+
                 return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
 
         # --- EXISTING LOGIN/REGISTER LOGIC ---
@@ -180,6 +185,10 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 if not user.avatar_url:
                     user.avatar_url = avatar
                 db.commit() # Fix: Sync commit
+
+                # Check Security Badge
+                check_and_award_security_badge(db, user)
+
             return login_user_and_redirect(request, user, db)
 
         # 2. Check by ID (Legacy/Fallback)
@@ -215,6 +224,8 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             if not user.github_id:
                 user.github_id = github_id
                 db.commit()
+                # Check Security Badge
+                check_and_award_security_badge(db, user)
 
         return login_user_and_redirect(request, user, db)
 
@@ -299,6 +310,10 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 if not user.avatar_url:
                     user.avatar_url = picture
                 db.commit() # Fix: Sync commit
+
+                # Check Security Badge
+                check_and_award_security_badge(db, user)
+
             return login_user_and_redirect(request, user, db)
 
         # 2. Check by ID (Legacy/Fallback)
@@ -334,6 +349,8 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             if not user.linkedin_id:
                 user.linkedin_id = linkedin_id
                 db.commit()
+                # Check Security Badge
+                check_and_award_security_badge(db, user)
 
         return login_user_and_redirect(request, user, db)
 
