@@ -161,28 +161,32 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 current_user.github_id = github_id
                 if not current_user.avatar_url:
                     current_user.avatar_url = avatar
-                await asyncio.to_thread(db.commit)
+                db.commit() # Sync commit
 
                 log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
                 return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
 
         # --- EXISTING LOGIN/REGISTER LOGIC ---
 
-        # 1. Check by ID
+        # 1. Check by Email (Fix: Prioritize Email to prevent loop)
+        user = get_user_by_email(db, email)
+        if user:
+            logger.info(f"DEBUG: Found existing user: {user.id}")
+            # Update ID if missing
+            if user.github_id != github_id:
+                user.github_id = github_id
+                if not user.avatar_url:
+                    user.avatar_url = avatar
+                db.commit() # Fix: Sync commit
+            return login_user_and_redirect(request, user, db)
+
+        # 2. Check by ID (Legacy/Fallback)
         user = get_user_by_github_id(db, github_id)
         if user:
             return login_user_and_redirect(request, user, db)
 
-        # 2. Check by Email
-        user = get_user_by_email(db, email)
-        if user:
-            user.github_id = github_id
-            if not user.avatar_url:
-                user.avatar_url = avatar
-            await asyncio.to_thread(db.commit)
-            return login_user_and_redirect(request, user, db)
-
         # 3. Create User (with Idempotency Check)
+        logger.info("DEBUG: Creating new user")
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
         try:
@@ -283,21 +287,25 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
              log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No email found")
              return RedirectResponse("/login?error=missing_linkedin_email")
 
-        # 1. Check by ID
+        # 1. Check by Email (Fix: Prioritize Email to prevent loop)
+        user = get_user_by_email(db, email)
+        if user:
+            logger.info(f"DEBUG: Found existing user: {user.id}")
+            # Update ID if missing
+            if user.linkedin_id != linkedin_id:
+                user.linkedin_id = linkedin_id
+                if not user.avatar_url:
+                    user.avatar_url = picture
+                db.commit() # Fix: Sync commit
+            return login_user_and_redirect(request, user, db)
+
+        # 2. Check by ID (Legacy/Fallback)
         user = get_user_by_linkedin_id(db, linkedin_id)
         if user:
             return login_user_and_redirect(request, user, db)
 
-        # 2. Check by Email
-        user = get_user_by_email(db, email)
-        if user:
-            user.linkedin_id = linkedin_id
-            if not user.avatar_url:
-                user.avatar_url = picture
-            await asyncio.to_thread(db.commit)
-            return login_user_and_redirect(request, user, db)
-
         # 3. Create User (with Idempotency Check)
+        logger.info("DEBUG: Creating new user")
         pwd = secrets.token_urlsafe(16)
         hashed_password = await asyncio.to_thread(hash_password, pwd)
         try:

@@ -19,6 +19,7 @@ templates = Jinja2Templates(directory="app/templates")
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 @router.get("/subscription/upgrade")
+@router.get("/subscription/checkout")
 def upgrade_page(request: Request, db: Session = Depends(get_db)):
     user_id = get_current_user_from_request(request)
     if not user_id:
