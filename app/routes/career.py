@@ -27,7 +27,7 @@ async def analyze_resume(
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # GUARD: Ensure Onboarding is Complete
-    user = await asyncio.to_thread(db.query(User).filter(User.id == user_id).first)
+    user = request.state.user
     if resp := validate_onboarding_access(user):
         return resp
 
@@ -45,15 +45,11 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user_id:
         return RedirectResponse("/login")
 
-    user = await asyncio.to_thread(db.query(User).filter(User.id == user_id).first)
+    user = request.state.user
     if resp := validate_onboarding_access(user):
         return resp
 
     # 2. Premium Guard
-    # We must ensure request.state.user is set for the dependency to work
-    if not hasattr(request.state, "user") or not request.state.user:
-        request.state.user = user # Populate if middleware didn't (e.g. testing or weird edge case)
-
     await requires_premium_tier(request)
 
     # 3. Data Preparation (Mock Data for MVP)
