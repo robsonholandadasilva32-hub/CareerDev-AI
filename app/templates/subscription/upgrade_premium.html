@@ -2,72 +2,34 @@
 
 {% block content %}
 <div class="container" style="max-width: 800px; margin: 50px auto; text-align: center;">
-    <div class="card" style="background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden;">
-        <div class="card-header" style="background: linear-gradient(135deg, #00b4ff, #00ff9c); padding: 30px; color: white;">
-            <h2 style="margin: 0; font-size: 2rem;">Desbloqueie seu Potencial</h2>
+    <div class="card" style="background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; border: none;">
+        <div class="card-header" style="background: linear-gradient(135deg, #00b4ff, #00ff9c); padding: 40px; color: white;">
+            <h2 style="margin: 0; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">Desbloqueie seu Potencial</h2>
+            <p style="margin-top: 10px; opacity: 0.9;">Acesse recursos exclusivos para acelerar sua carreira.</p>
         </div>
-        <div class="card-body" style="padding: 40px; text-align: left; color: #333;">
 
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h3 style="margin-bottom: 10px; color: #333;">Premium</h3>
-                <div class="price" style="font-size: 3.5rem; font-weight: bold; color: #111;">
-                    R$ 29,90 <span style="font-size: 1rem; color: #666; font-weight: normal;">/mês</span>
-                </div>
-            </div>
-
-            <ul style="list-style: none; padding: 0; margin: 0 auto; max-width: 500px;">
-                <li style="margin-bottom: 20px; display: flex; align-items: start; gap: 15px; font-size: 1.1rem;">
-                    <span style="color: #00b4ff; font-size: 1.5rem; line-height: 1;">✔</span>
-                    <span>
-                        <strong style="color: #000;">Advanced Analytics Dashboard</strong><br>
-                        <span style="font-size: 0.9rem; color: #666;">Gráficos de tendências e análise de gaps de habilidades.</span>
-                    </span>
+        <div class="card-body" style="padding: 40px; text-align: left;">
+            <ul style="list-style: none; padding: 0; font-size: 1.1rem; color: #333;">
+                <li style="margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="color: #00b4ff; margin-right: 10px; font-weight: bold;">✓</span> Análises de Currículo Ilimitadas com IA
                 </li>
-                <li style="margin-bottom: 20px; display: flex; align-items: start; gap: 15px; font-size: 1.1rem;">
-                    <span style="color: #00b4ff; font-size: 1.5rem; line-height: 1;">✔</span>
-                    <span>
-                        <strong style="color: #000;">Unlimited AI Tokens</strong><br>
-                        <span style="font-size: 0.9rem; color: #666;">Uso ilimitado do Assistente de Carreira IA.</span>
-                    </span>
+                <li style="margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="color: #00b4ff; margin-right: 10px; font-weight: bold;">✓</span> Acesso antecipado a vagas (Early Bird)
                 </li>
-                <li style="margin-bottom: 20px; display: flex; align-items: start; gap: 15px; font-size: 1.1rem;">
-                    <span style="color: #00b4ff; font-size: 1.5rem; line-height: 1;">✔</span>
-                    <span>
-                        <strong style="color: #000;">Priority Support</strong><br>
-                        <span style="font-size: 0.9rem; color: #666;">Canal exclusivo e distintivo VIP.</span>
-                    </span>
+                <li style="margin-bottom: 15px; display: flex; align-items: center;">
+                    <span style="color: #00b4ff; margin-right: 10px; font-weight: bold;">✓</span> Suporte Prioritário
                 </li>
             </ul>
-
         </div>
-        <div class="card-footer" style="padding: 30px; background: #f9fafb; border-top: 1px solid #eee;">
-            <a href="/billing/checkout" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 50px; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; display: inline-block;">
-                Proceed to Checkout
-            </a>
-            <p style="margin-top: 15px; font-size: 0.9rem; color: #6b7280;">
-                Cancele a qualquer momento. Satisfação garantida.
-            </p>
+
+        <div class="card-footer" style="padding: 30px; background-color: #f8f9fa; border-top: 1px solid #eee;">
+            <form action="/subscription/checkout" method="POST">
+                <button type="submit" class="btn" style="background: linear-gradient(135deg, #00b4ff, #0090cc); color: white; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: bold; border: none; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,180,255,0.3);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    Assinar Premium
+                </button>
+            </form>
+            <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">Cancelamento a qualquer momento.</p>
         </div>
     </div>
 </div>
-
-{% if request.query_params.get('error') == 'premium_required' %}
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const div = document.createElement('div');
-        div.style.position = 'fixed';
-        div.style.bottom = '20px';
-        div.style.right = '20px';
-        div.style.background = '#fbbf24';
-        div.style.color = '#000';
-        div.style.padding = '15px 25px';
-        div.style.borderRadius = '8px';
-        div.style.fontWeight = 'bold';
-        div.style.zIndex = '10000';
-        div.innerText = '🔒 Recurso exclusivo para membros Premium. Atualize agora!';
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 5000);
-    });
-</script>
-{% endif %}
 {% endblock %}
