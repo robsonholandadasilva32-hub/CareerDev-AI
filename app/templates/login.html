@@ -480,6 +480,55 @@
       .integration-info { grid-template-columns: 1fr; }
     }
 
+    /* ===== BRANDING SECTION ===== */
+    .branding-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .branding-section .logo-container {
+      width: 72px; /* Increased size */
+      height: 72px;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .branding-section h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tagline {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+      line-height: 1.6;
+      max-width: 600px;
+      word-wrap: break-word;
+    }
+
+    @media (max-width: 600px) {
+      .branding-section h1 {
+        font-size: 1.8rem;
+      }
+      .brand-tagline {
+        font-size: 1rem;
+        padding: 0 1rem;
+      }
+    }
+
     /* ===== FOOTER ===== */
     footer {
       text-align: center;
@@ -508,20 +557,8 @@
 
   <!-- HEADER -->
   <header>
-    <a href="/login" class="brand" style="text-decoration: none;">
-      <div class="logo-container">
-        <!-- Using inline SVG for immediate render -->
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="44" stroke="#00b4ff" stroke-width="4"/>
-          <path d="M30 50h40M50 30v40" stroke="#00ff9c" stroke-width="4"/>
-          <circle cx="50" cy="50" r="8" fill="#00b4ff" class="pulse"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <h1>CareerDev AI</h1>
-        <p>AI Career Assistant</p>
-      </div>
-    </a>
+    <!-- Brand moved to main body -->
+    <div style="width: 40px;"></div>
 
     <div class="header-controls">
       <div class="security-badge" title="Security Status: Active">
@@ -537,6 +574,18 @@
 
   <!-- LOGIN CONTENT -->
   <main>
+    <div class="branding-section">
+      <div class="logo-container">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="44" stroke="#00b4ff" stroke-width="4"/>
+          <path d="M30 50h40M50 30v40" stroke="#00ff9c" stroke-width="4"/>
+          <circle cx="50" cy="50" r="8" fill="#00b4ff" class="pulse"/>
+        </svg>
+      </div>
+      <h1>CareerDev AI</h1>
+      <p class="brand-tagline">The machine does not replace the human being. It expands their potential.</p>
+    </div>
+
     <div class="login-container">
       <div class="login-header">
         <h2>Welcome Back</h2>
