@@ -7,7 +7,9 @@ import uuid
 from datetime import datetime
 from app.db.session import SessionLocal
 from app.db.models.user import User
-from app.db.models.security import UserSession
+from app.db.models.security import UserSession, AuditLog
+from app.db.models.career import CareerProfile, LearningPlan
+from app.db.models.gamification import UserBadge
 from app.core.jwt import create_access_token
 
 # Função auxiliar para criar usuário verificado no DB
@@ -23,6 +25,29 @@ def setup_verified_user(db):
         email_verified=True,
         is_profile_completed=True, # Crítico para evitar redirect loop
         terms_accepted=True,
+        subscription_status='free',
+        linkedin_id=f"li_{timestamp}_{rand}",
+        github_id=f"gh_{timestamp}_{rand}",
+        created_at=datetime.utcnow()
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+# Nova função para usuário incompleto (Onboarding)
+def setup_incomplete_user(db):
+    timestamp = int(time.time())
+    rand = random.randint(1000, 9999)
+    email = f"new_{timestamp}_{rand}@example.com"
+
+    user = User(
+        name="", # Nome vazio para simular início
+        email=email,
+        hashed_password="mock_hash_bypass",
+        email_verified=True, # Padrão do sistema
+        is_profile_completed=False, # Força fluxo de onboarding
+        terms_accepted=False,
         subscription_status='free',
         linkedin_id=f"li_{timestamp}_{rand}",
         github_id=f"gh_{timestamp}_{rand}",
@@ -89,6 +114,85 @@ def test_user_flow(page: Page):
         # Assert: Verifica se o container do Stripe Elements carregou
         # Isso confirma que a PaymentIntent/Subscription foi criada no backend
         expect(page.locator("#payment-element")).to_be_visible()
+
+    finally:
+        db.close()
+
+def test_onboarding_flow(page: Page):
+    """
+    Testa o fluxo de Onboarding:
+    Login (Incompleto) -> Redirect Onboarding -> Preencher Form -> Redirect Dashboard
+    Isso substitui a verificação de e-mail antiga, garantindo que o usuário vai direto ao Dashboard
+    após completar o perfil.
+    """
+    db = SessionLocal()
+
+    try:
+        # 1. Setup Incomplete User
+        user = setup_incomplete_user(db)
+
+        # 2. Create Session
+        session = UserSession(
+            user_id=user.id,
+            ip_address="127.0.0.1",
+            user_agent="Playwright Test Runner",
+            last_active_at=datetime.utcnow(),
+            is_active=True
+        )
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+
+        # 3. Generate Token
+        token = create_access_token({
+            "sub": str(user.id),
+            "email": user.email,
+            "sid": str(session.id)
+        })
+
+        # 4. Inject Cookie
+        page.context.add_cookies([{
+            "name": "access_token",
+            "value": token,
+            "domain": "localhost",
+            "path": "/",
+            "httpOnly": True,
+            "secure": False,
+            "sameSite": "Lax"
+        }])
+
+        # 5. Tentar acessar Dashboard
+        page.goto("http://localhost:8000/dashboard")
+
+        # Assert: Deve redirecionar para complete-profile (pois já tem social IDs)
+        # Se pedisse verificação de e-mail, falharia aqui ou iria para outra URL.
+        expect(page).to_have_url(re.compile(".*onboarding/complete-profile"))
+
+        # 6. Preencher Formulário
+        page.fill('input[name="name"]', "New User Test")
+
+        # Residential Address
+        page.fill('input[name="address_street"]', "123 Tech Lane")
+        page.fill('input[name="address_number"]', "42")
+        page.fill('input[name="address_city"]', "Silicon Valley")
+        page.fill('input[name="address_state"]', "CA")
+        page.fill('input[name="address_zip_code"]', "94000")
+        page.fill('input[name="address_country"]', "USA")
+
+        # Billing (Same as Residential)
+        page.check('input[name="billing_same_as_residential"]')
+
+        # Terms
+        page.check('input[name="terms_accepted"]')
+
+        # Submit
+        page.click('button[type="submit"]')
+
+        # 7. Assert: Redirect to Dashboard
+        expect(page).to_have_url(re.compile(".*dashboard"))
+
+        # Verify content to ensure full access
+        expect(page.locator("body")).to_contain_text("Some features are available for free")
 
     finally:
         db.close()
