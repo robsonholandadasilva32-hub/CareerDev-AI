@@ -6,7 +6,8 @@ BADGE_DEFINITIONS = [
     {"slug": "early-adopter", "name": "Pioneiro", "desc": "Um dos primeiros usuários da plataforma.", "icon": "🚀"},
     {"slug": "polymath", "name": "Polímata", "desc": "Possui habilidades em 3 ou mais tecnologias.", "icon": "🧠"},
     {"slug": "interviewer", "name": "Comunicador", "desc": "Completou uma simulação de entrevista técnica.", "icon": "🎙️"},
-    {"slug": "planner", "name": "Estrategista", "desc": "Criou seu primeiro plano de estudos.", "icon": "🗺️"}
+    {"slug": "planner", "name": "Estrategista", "desc": "Criou seu primeiro plano de estudos.", "icon": "🗺️"},
+    {"slug": "guardian", "name": "Guardião da Identidade", "desc": "Conectou contas do GitHub e LinkedIn para máxima segurança.", "icon": "🛡️"}
 ]
 
 def init_badges(db: Session):
@@ -46,5 +47,8 @@ def award_badge(db: Session, user_id: int, badge_slug: str) -> bool:
     db.commit()
     return True
 
-def check_and_award_security_badge(db: Session, user: User):
-    pass
+def check_and_award_security_badge(db: Session, user: User) -> bool:
+    """Checks if user has both GitHub and LinkedIn linked and awards the Guardian badge."""
+    if user.github_id and user.linkedin_id:
+        return award_badge(db, user.id, "guardian")
+    return False
