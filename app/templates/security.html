@@ -26,23 +26,33 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% for session in sessions %}
                     <tr style="border-top: 1px solid var(--accent-color);">
                         <td style="padding: 12px; color: #d1d5db;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;" title="{{ session.user_agent }}">
                                 <span>💻</span>
-                                {{ current_session.user_agent }}
+                                {{ session.user_agent[:40] }}{% if session.user_agent|length > 40 %}...{% endif %}
                             </div>
                         </td>
-                        <td style="padding: 12px; color: #9ca3af;">{{ current_session.ip }}</td>
+                        <td style="padding: 12px; color: #9ca3af;">{{ session.ip_address }}</td>
                         <td style="padding: 12px; color: #9ca3af;">
-                            {{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Agora' }}
+                            {{ session.last_active_at.strftime('%d/%m/%Y %H:%M') if session.last_active_at else 'Unknown' }}
                         </td>
                         <td style="padding: 12px;">
+                            {% if session.id == current_sid %}
                             <span style="background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">
                                 Sessão Atual
                             </span>
+                            {% else %}
+                            <span style="color: #6b7280; font-size: 0.8rem;">Ativa</span>
+                            {% endif %}
                         </td>
                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="padding: 20px; text-align: center; color: #6b7280;">Nenhuma sessão ativa encontrada.</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

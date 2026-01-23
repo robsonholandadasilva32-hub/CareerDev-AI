@@ -89,8 +89,15 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
 
     except Exception as e:
         logger.error(f"Stripe Error: {e}")
+        print(f"STRIPE ERROR: {e}")
         log_audit(db, user_id, "CHECKOUT_ERROR", request.client.host, f"Stripe Exception: {e}")
-        return RedirectResponse("/dashboard?error=payment_failed")
+        return templates.TemplateResponse("subscription/checkout.html", {
+            "request": request,
+            "error": "Payment system unavailable. Please try again later.",
+            "user": user,
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            "client_secret": None
+        })
 
 
 @router.get("/billing/success")
