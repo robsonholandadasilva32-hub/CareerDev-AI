@@ -8,17 +8,23 @@ logger = logging.getLogger(__name__)
 
 def create_user_session(db: Session, user_id: int, ip_address: str, user_agent: str) -> str:
     """Creates a persistent session and returns the session ID."""
-    session = UserSession(
-        user_id=user_id,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        last_active_at=datetime.utcnow(),
-        is_active=True
-    )
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-    return session.id
+    try:
+        session = UserSession(
+            user_id=user_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            last_active_at=datetime.utcnow(),
+            is_active=True
+        )
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+        logger.info(f"✅ SESSION CREATED: ID={session.id} User={user_id} IP={ip_address}")
+        return session.id
+    except Exception as e:
+        logger.error(f"❌ SESSION CREATION FAILED: {e}")
+        db.rollback()
+        raise e
 
 def revoke_session(db: Session, session_id: str):
     """Revokes a session by ID."""

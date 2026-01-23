@@ -87,6 +87,16 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
             "user": user
         })
 
+    except stripe.error.AuthenticationError:
+        logger.error("Stripe Authentication Error: Invalid API Keys")
+        return templates.TemplateResponse("subscription/checkout.html", {
+            "request": request,
+            "error": "Erro de Configuração: Chaves do Stripe não encontradas.",
+            "user": user,
+            "publishable_key": None,
+            "client_secret": None
+        })
+
     except Exception as e:
         logger.error(f"Stripe Error: {e}")
         print(f"STRIPE ERROR: {e}")
