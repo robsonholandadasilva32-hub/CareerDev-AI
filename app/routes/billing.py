@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.core.config import settings
 from app.core.auth_guard import get_current_user_from_request
 from app.services.onboarding import validate_onboarding_access
+from app.services.security_service import log_audit
 from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -33,11 +34,14 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
+    log_audit(db, user_id, "CHECKOUT_START", request.client.host, "Initiated Premium Checkout")
+
     if not stripe.api_key:
         # Mock Flow for Demo/Dev
         user.is_premium = True
         user.subscription_status = "active"
         db.commit()
+        log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, "Mocked Payment Success")
         return RedirectResponse("/dashboard?success=premium_mocked")
 
     try:
@@ -66,6 +70,7 @@ def create_checkout_session(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(checkout_session.url, status_code=303)
     except Exception as e:
         logger.error(f"Stripe Error: {e}")
+        log_audit(db, user_id, "CHECKOUT_ERROR", request.client.host, f"Stripe Exception: {e}")
         return RedirectResponse("/dashboard?error=payment_failed")
 
 # Add alias POST route for the form in upgrade_premium.html
@@ -96,9 +101,14 @@ def billing_success(session_id: str, request: Request, db: Session = Depends(get
             user.subscription_status = "active"
             user.stripe_customer_id = session.customer
             db.commit()
+
+            log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, f"Stripe Verified ID: {session_id}")
+
             return RedirectResponse("/dashboard?success=premium_activated")
         else:
+            log_audit(db, user_id, "SUBSCRIPTION_PENDING", request.client.host, f"Stripe ID: {session_id} Pending")
             return RedirectResponse("/dashboard?error=payment_pending")
     except Exception as e:
         logger.error(f"Stripe Verification Error: {e}")
+        log_audit(db, user_id, "SUBSCRIPTION_VERIFY_FAIL", request.client.host, f"Stripe Exception: {e}")
         return RedirectResponse("/dashboard?error=verification_failed")

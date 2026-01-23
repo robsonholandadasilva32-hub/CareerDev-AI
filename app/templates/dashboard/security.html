@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card security-dashboard">
+    <h2>🔒 {{ t.dash_manage_security | default("Gerenciar Segurança") }}</h2>
+    <p>{{ t.dash_security_detail | default("Gerencie seus dispositivos ativos e sessões.") }}</p>
+
+    <div style="margin-top: 30px;">
+        <h3>{{ t.active_sessions | default("Sessões Ativas") }}</h3>
+
+        <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;">
+            {% for session in sessions %}
+            <div class="session-item" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid {% if session.id == current_sid %}var(--primary-color){% else %}var(--accent-color){% endif %}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <div style="font-weight: bold; color: {% if session.id == current_sid %}var(--primary-color){% else %}white{% endif %};">
+                        {% if session.id == current_sid %}
+                            Este Dispositivo
+                        {% else %}
+                            {{ session.ip_address }}
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.9em; color: #aaa;">
+                        {{ session.user_agent }}
+                    </div>
+                    <div style="font-size: 0.8em; color: #666;">
+                        Ativo em: {{ session.last_active_at.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                </div>
+
+                {% if session.id != current_sid %}
+                <form action="/dashboard/security/revoke/{{ session.id }}" method="post" onsubmit="return confirm('Tem certeza que deseja desconectar este dispositivo?');">
+                    <button type="submit" class="btn-outline" style="color: var(--error-color); border-color: var(--error-color);">
+                        Desconectar
+                    </button>
+                </form>
+                {% else %}
+                <span style="color: var(--primary-color); font-size: 0.9em; border: 1px solid var(--primary-color); padding: 2px 8px; border-radius: 4px;">Atual</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        <h3>Proteção da Conta</h3>
+        <ul style="color: #ccc; padding-left: 20px; margin-top: 10px;">
+            <li>Login social ativo (GitHub/LinkedIn).</li>
+            <li>Monitoramento de IP em tempo real.</li>
+            <li>Revogação remota de acesso disponível.</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="/dashboard" class="btn-outline">← Voltar ao Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -8,3 +8,4 @@ from app.db.models.career import CareerProfile, LearningPlan
 # TwoFactorMethod removed
 from app.db.models.gamification import Badge, UserBadge
 # BackgroundJob removed
+from app.db.models.security import AuditLog, UserSession

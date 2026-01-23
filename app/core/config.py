@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: Optional[str] = None
     STRIPE_PUBLISHABLE_KEY: Optional[str] = None
 
+    # Analytics (PostHog)
+    POSTHOG_API_KEY: Optional[str] = None
+    POSTHOG_HOST: str = "https://app.posthog.com"
+
     # Feature Flags
     FEATURES: dict = {
         "ENABLE_CHATBOT": True,

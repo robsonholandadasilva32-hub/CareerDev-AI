@@ -107,6 +107,8 @@ async def lifespan(app: FastAPI):
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
 app.state.limiter = limiter
+app.state.posthog_key = settings.POSTHOG_API_KEY
+app.state.posthog_host = settings.POSTHOG_HOST
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5.5 Exception Handlers

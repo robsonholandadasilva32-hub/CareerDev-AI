@@ -14,6 +14,7 @@ from app.db.models.user import User
 from app.core.security import hash_password
 from app.core.jwt import create_access_token
 from app.services.onboarding import get_next_onboarding_step
+from app.services.security_service import create_user_session, log_audit
 import secrets
 import logging
 import os
@@ -62,10 +63,19 @@ if settings.LINKEDIN_CLIENT_ID:
         }
     )
 
-def login_user_and_redirect(request: Request, user):
+def login_user_and_redirect(request: Request, user, db: Session):
+    # Security: Create Session
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "unknown")
+    sid = create_user_session(db, user.id, ip, user_agent)
+
+    # Security: Audit Log
+    log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
+
     token = create_access_token({
         "sub": str(user.id),
-        "email": user.email
+        "email": user.email,
+        "sid": sid
     })
     next_url = get_next_onboarding_step(user)
     response = RedirectResponse(next_url, status_code=302)
@@ -93,6 +103,7 @@ async def login_github(request: Request):
 
 @router.get("/auth/github/callback")
 async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host
     try:
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_github_callback'))
@@ -121,6 +132,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                     break
 
         if not email:
+             log_audit(db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
              return RedirectResponse("/login?error=github_no_email")
 
         github_id = str(profile.get('id'))
@@ -136,6 +148,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 # Check for conflict
                 existing_user = get_user_by_github_id(db, github_id)
                 if existing_user and existing_user.id != current_user.id:
+                    log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
                     return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
 
                 # Update User
@@ -144,6 +157,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                     current_user.avatar_url = avatar
                 await asyncio.to_thread(db.commit)
 
+                log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
                 return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
 
         # --- EXISTING LOGIN/REGISTER LOGIC ---
@@ -151,7 +165,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         # 1. Check by ID
         user = get_user_by_github_id(db, github_id)
         if user:
-            return login_user_and_redirect(request, user)
+            return login_user_and_redirect(request, user, db)
 
         # 2. Check by Email
         user = get_user_by_email(db, email)
@@ -160,7 +174,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             if not user.avatar_url:
                 user.avatar_url = avatar
             await asyncio.to_thread(db.commit)
-            return login_user_and_redirect(request, user)
+            return login_user_and_redirect(request, user, db)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
@@ -174,10 +188,11 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             avatar_url=avatar,
             email_verified=True # Trusted provider
         )
-        return login_user_and_redirect(request, user)
+        return login_user_and_redirect(request, user, db)
 
     except Exception as e:
         logger.error(f"GitHub Error: {e}")
+        log_audit(db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
         return RedirectResponse("/login?error=github_failed")
 
 @router.get("/login/linkedin")
@@ -197,6 +212,7 @@ async def login_linkedin(request: Request):
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host
     try:
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_linkedin_callback'))
@@ -216,12 +232,14 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
              return RedirectResponse("/login?error=linkedin_failed")
 
         # Support OIDC 'sub' and legacy 'id'
         linkedin_id = user_info.get('sub') or user_info.get('id')
         if not linkedin_id:
              logger.error(f"LinkedIn Error: No ID found in user_info. Keys: {list(user_info.keys())}")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No ID found")
              return RedirectResponse("/login?error=linkedin_failed")
 
         email = user_info.get('email')
@@ -240,12 +258,13 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         if not email:
              logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No email found")
              return RedirectResponse("/login?error=missing_linkedin_email")
 
         # 1. Check by ID
         user = get_user_by_linkedin_id(db, linkedin_id)
         if user:
-            return login_user_and_redirect(request, user)
+            return login_user_and_redirect(request, user, db)
 
         # 2. Check by Email
         user = get_user_by_email(db, email)
@@ -254,7 +273,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             if not user.avatar_url:
                 user.avatar_url = picture
             await asyncio.to_thread(db.commit)
-            return login_user_and_redirect(request, user)
+            return login_user_and_redirect(request, user, db)
 
         # 3. Create User
         pwd = secrets.token_urlsafe(16)
@@ -268,8 +287,9 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             avatar_url=picture,
             email_verified=True
         )
-        return login_user_and_redirect(request, user)
+        return login_user_and_redirect(request, user, db)
 
     except Exception as e:
         logger.exception(f"LinkedIn Error: {e}")
+        log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
         return RedirectResponse("/login?error=linkedin_failed")
