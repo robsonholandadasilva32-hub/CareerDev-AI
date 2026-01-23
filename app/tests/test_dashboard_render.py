@@ -12,12 +12,18 @@ client = TestClient(app)
 class MockUser:
     id = 1
     email = "test@example.com"
+    name = "Test User"
     badges = []
     is_premium = False
     subscription_status = "active"
     subscription_end_date = datetime(2030, 1, 1)
     is_recurring = True
     created_at = datetime.now()
+    linkedin_id = "test_linkedin"
+    github_id = "test_github"
+    is_profile_completed = True
+    preferred_language = "pt"
+    avatar_url = "http://example.com/avatar.jpg"
 
 def mock_get_current_user_secure():
     return MockUser()

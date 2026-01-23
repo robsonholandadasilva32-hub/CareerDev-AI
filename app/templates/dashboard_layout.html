@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .dashboard-layout {
+        display: flex;
+        gap: 30px;
+        min-height: calc(100vh - 200px); /* Adjust based on header/footer */
+    }
+
+    .dashboard-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: #111827;
+        border: 1px solid var(--accent-color);
+        border-radius: 12px;
+        padding: 20px;
+        height: fit-content;
+    }
+
+    .sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sidebar-item {
+        margin-bottom: 10px;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--accent-color);
+        text-decoration: none;
+    }
+
+    .sidebar-link.active {
+        background: rgba(0, 243, 255, 0.1);
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .sidebar-icon {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+    }
+
+    .dashboard-content-area {
+        flex-grow: 1;
+        width: 100%; /* Ensure it takes available space */
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-layout {
+            flex-direction: column;
+        }
+        .dashboard-sidebar {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <nav>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="/dashboard" class="sidebar-link {% if request.url.path == '/dashboard' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="/dashboard/security" class="sidebar-link {% if request.url.path == '/dashboard/security' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        Segurança
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="/dashboard/accessibility" class="sidebar-link {% if request.url.path == '/dashboard/accessibility' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Acessibilidade
+                    </a>
+                </li>
+                 <li class="sidebar-item">
+                    <a href="/dashboard/legal" class="sidebar-link {% if request.url.path == '/dashboard/legal' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Legal & Sobre
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar Footer Info -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--accent-color); font-size: 0.8rem; color: #6b7280; text-align: center;">
+            <p>CareerDev AI v1.2</p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="dashboard-content-area">
+        {% block dashboard_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

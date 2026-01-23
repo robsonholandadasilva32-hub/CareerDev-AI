@@ -65,7 +65,7 @@ from app.core.exceptions import PremiumRedirect
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    logout, social, billing, career, legal, onboarding
+    logout, social, billing, career, legal, onboarding, accessibility
     # email_verification, two_factor, debug removed
 )
 
@@ -179,3 +179,4 @@ app.include_router(billing.router)
 app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
 app.include_router(onboarding.router)
+app.include_router(accessibility.router)

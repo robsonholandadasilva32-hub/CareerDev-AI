@@ -36,7 +36,7 @@ def get_current_user(request: Request, db: Session) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-@router.get("/security", response_class=HTMLResponse)
+@router.get("/dashboard/security", response_class=HTMLResponse)
 def security_panel(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
 
@@ -52,6 +52,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     lang = request.session.get("lang", user.preferred_language or "pt")
     t = get_texts(lang)
 
+    # Session Info
+    user_agent = request.headers.get('user-agent', 'Unknown Device')
+    client_ip = request.client.host if request.client else 'Unknown IP'
+
     return templates.TemplateResponse(
         "security.html",
         {
@@ -59,11 +63,15 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
             "no_user": False,
             "lang": lang,
             "t": t,
-            "user": user
+            "user": user,
+            "current_session": {
+                "user_agent": user_agent,
+                "ip": client_ip
+            }
         }
     )
 
-@router.post("/security/update")
+@router.post("/dashboard/security/update")
 def update_security(
     request: Request,
     language: str = Form("pt"),
@@ -85,9 +93,9 @@ def update_security(
 
     db.commit()
 
-    return RedirectResponse("/security?success=true", status_code=302)
+    return RedirectResponse("/dashboard/security?success=true", status_code=302)
 
-@router.post("/security/delete-account")
+@router.post("/dashboard/security/delete-account")
 def delete_account(
     request: Request,
     db: Session = Depends(get_db)
