@@ -61,7 +61,7 @@ async def complete_profile(request: Request, user: User = Depends(get_current_us
     return templates.TemplateResponse("onboarding_profile.html", {"request": request, "user": user})
 
 @router.post("/onboarding/complete-profile")
-async def complete_profile_post(
+def complete_profile_post(
     request: Request,
     name: str = Form(...),
     address_street: str = Form(...),
