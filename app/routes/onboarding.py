@@ -67,7 +67,7 @@ async def complete_profile(request: Request, user: User = Depends(get_current_us
     return templates.TemplateResponse("onboarding_profile.html", {"request": request, "user": user})
 
 @router.post("/onboarding/complete-profile")
-def complete_profile_post(
+async def complete_profile_post(
     request: Request,
     name: str = Form(...),
     address_street: str = Form(...),
@@ -107,29 +107,8 @@ def complete_profile_post(
             "error": "You must read and accept the Terms of Use."
         })
 
-    # Update User
-    user.name = name
-
-    # Residential
-    user.address_street = address_street
-    user.address_number = address_number
-    user.address_complement = address_complement
-    user.address_city = address_city
-    user.address_state = address_state
-    user.address_zip_code = address_zip_code
-    user.address_country = address_country
-
-    # Billing
-    if billing_same_as_residential:
-        user.billing_address_street = address_street
-        user.billing_address_number = address_number
-        user.billing_address_complement = address_complement
-        user.billing_address_city = address_city
-        user.billing_address_state = address_state
-        user.billing_address_zip_code = address_zip_code
-        user.billing_address_country = address_country
-    else:
-        # Validate billing fields if not same
+    # Validate billing fields if not same
+    if not billing_same_as_residential:
         if not all([billing_address_street, billing_address_number, billing_address_city, billing_address_state, billing_address_zip_code, billing_address_country]):
              return templates.TemplateResponse("onboarding_profile.html", {
                 "request": request,
@@ -137,20 +116,45 @@ def complete_profile_post(
                 "error": "Please fill in all billing address fields or check 'Same as residential'."
             })
 
-        user.billing_address_street = billing_address_street
-        user.billing_address_number = billing_address_number
-        user.billing_address_complement = billing_address_complement
-        user.billing_address_city = billing_address_city
-        user.billing_address_state = billing_address_state
-        user.billing_address_zip_code = billing_address_zip_code
-        user.billing_address_country = billing_address_country
+    def save_profile():
+        # Update User
+        user.name = name
 
-    user.terms_accepted = True
-    user.terms_accepted_at = datetime.utcnow()
-    user.is_profile_completed = True
+        # Residential
+        user.address_street = address_street
+        user.address_number = address_number
+        user.address_complement = address_complement
+        user.address_city = address_city
+        user.address_state = address_state
+        user.address_zip_code = address_zip_code
+        user.address_country = address_country
 
-    log_audit(db, user.id, "PROFILE_UPDATE", request.client.host, "Profile Completed via Onboarding")
+        # Billing
+        if billing_same_as_residential:
+            user.billing_address_street = address_street
+            user.billing_address_number = address_number
+            user.billing_address_complement = address_complement
+            user.billing_address_city = address_city
+            user.billing_address_state = address_state
+            user.billing_address_zip_code = address_zip_code
+            user.billing_address_country = address_country
+        else:
+            user.billing_address_street = billing_address_street
+            user.billing_address_number = billing_address_number
+            user.billing_address_complement = billing_address_complement
+            user.billing_address_city = billing_address_city
+            user.billing_address_state = billing_address_state
+            user.billing_address_zip_code = billing_address_zip_code
+            user.billing_address_country = billing_address_country
 
-    db.commit()
+        user.terms_accepted = True
+        user.terms_accepted_at = datetime.utcnow()
+        user.is_profile_completed = True
+
+        log_audit(db, user.id, "PROFILE_UPDATE", request.client.host, "Profile Completed via Onboarding")
+
+        db.commit()
+
+    await asyncio.to_thread(save_profile)
 
     return redirect_to_dashboard()
