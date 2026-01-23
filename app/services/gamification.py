@@ -3,20 +3,20 @@ from app.db.models.gamification import Badge, UserBadge
 from app.db.models.user import User
 
 BADGE_DEFINITIONS = [
-    {"slug": "early-adopter", "name": "Pioneiro", "desc": "Um dos primeiros usuários da plataforma.", "icon": "🚀"},
-    {"slug": "polymath", "name": "Polímata", "desc": "Possui habilidades em 3 ou mais tecnologias.", "icon": "🧠"},
-    {"slug": "interviewer", "name": "Comunicador", "desc": "Completou uma simulação de entrevista técnica.", "icon": "🎙️"},
-    {"slug": "planner", "name": "Estrategista", "desc": "Criou seu primeiro plano de estudos.", "icon": "🗺️"},
-    {"slug": "guardian", "name": "Guardião da Identidade", "desc": "Conectou contas do GitHub e LinkedIn para máxima segurança.", "icon": "🛡️"}
+    {"slug": "early-adopter", "name": "Pioneer", "desc": "One of the first users of the platform.", "icon": "🚀"},
+    {"slug": "polymath", "name": "Polymath", "desc": "Possesses skills in 3 or more technologies.", "icon": "🧠"},
+    {"slug": "interviewer", "name": "Communicator", "desc": "Completed a technical interview simulation.", "icon": "🎙️"},
+    {"slug": "planner", "name": "Strategist", "desc": "Created their first study plan.", "icon": "🗺️"},
+    {"slug": "guardian", "name": "Identity Guardian", "desc": "Connected GitHub and LinkedIn accounts for maximum security.", "icon": "🛡️"}
 ]
 
 def init_badges(db: Session):
-    """Ensures all badges exist in DB."""
-    # Fetch all existing badge slugs in a single query to avoid N+1.
-    existing_slugs = {slug for slug, in db.query(Badge.slug).all()}
+    """Ensures all badges exist in DB and are up-to-date."""
+    # Fetch all existing badges
+    existing_badges = {b.slug: b for b in db.query(Badge).all()}
 
     for b_def in BADGE_DEFINITIONS:
-        if b_def["slug"] not in existing_slugs:
+        if b_def["slug"] not in existing_badges:
             new_badge = Badge(
                 slug=b_def["slug"],
                 name=b_def["name"],
@@ -24,6 +24,14 @@ def init_badges(db: Session):
                 icon=b_def["icon"]
             )
             db.add(new_badge)
+        else:
+             # Update existing if changed (Localization fix)
+            badge = existing_badges[b_def["slug"]]
+            if badge.name != b_def["name"] or badge.description != b_def["desc"]:
+                badge.name = b_def["name"]
+                badge.description = b_def["desc"]
+                badge.icon = b_def["icon"]
+
     db.commit()
 
 def award_badge(db: Session, user_id: int, badge_slug: str) -> bool:

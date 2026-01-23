@@ -157,7 +157,7 @@ async def test_dashboard_protection(client, db_session):
     response = await client.get("/dashboard", cookies=cookies, follow_redirects=False)
 
     # 3. Verify Redirect (Should go to connect-github as he has linkedin but no github)
-    assert response.status_code == 302
+    assert response.status_code == 303
     assert response.headers["location"] == "/onboarding/connect-github"
 
     # 4. Update user to have github_id but incomplete profile
@@ -165,7 +165,7 @@ async def test_dashboard_protection(client, db_session):
     db_session.commit()
 
     response = await client.get("/dashboard", cookies=cookies, follow_redirects=False)
-    assert response.status_code == 302
+    assert response.status_code == 303
     assert response.headers["location"] == "/onboarding/complete-profile"
 
     # 5. Complete profile
@@ -193,7 +193,7 @@ async def test_career_protection(client, db_session):
     )
 
     # 3. Verify Redirect
-    assert response.status_code == 302
+    assert response.status_code == 303
     assert response.headers["location"] == "/onboarding/connect-github"
 
 @pytest.mark.asyncio
@@ -224,8 +224,7 @@ async def test_navigation_leak(client, db_session):
     user.is_profile_completed = True
     db_session.commit()
 
-    response = await client.get("/onboarding/connect-github", cookies=cookies)
+    response = await client.get("/onboarding/connect-github", cookies=cookies, follow_redirects=False)
 
-    assert response.status_code == 200
-    html = response.text
-    assert 'href="/dashboard"' in html
+    assert response.status_code == 303
+    assert response.headers["location"] == "/dashboard"
