@@ -7,6 +7,7 @@ from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
+from app.services.security_service import get_active_sessions
 from app.core.config import settings
 import logging
 
@@ -47,9 +48,13 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
-    # Session Info
-    user_agent = request.headers.get('user-agent', 'Unknown Device')
-    client_ip = request.client.host if request.client else 'Unknown IP'
+    # Get SID for highlighting current session
+    token = request.cookies.get("access_token")
+    payload = decode_token(token) if token else {}
+    current_sid = payload.get("sid")
+
+    # Fetch Real Sessions
+    sessions = get_active_sessions(db, user.id)
 
     return templates.TemplateResponse(
         "security.html",
@@ -57,10 +62,8 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "no_user": False,
             "user": user,
-            "current_session": {
-                "user_agent": user_agent,
-                "ip": client_ip
-            }
+            "sessions": sessions,
+            "current_sid": current_sid
         }
     )
 

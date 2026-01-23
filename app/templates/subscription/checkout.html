@@ -189,6 +189,15 @@
             <span style="float: right; font-size: 1rem; color: var(--primary-color);">$9.99 / mo</span>
         </h2>
 
+        {% if error %}
+        <div style="padding: 20px; background: rgba(255, 0, 85, 0.1); border: 1px solid #ff0055; color: #ff0055; border-radius: 8px; text-align: center;">
+            <h3>⚠️ Access Error</h3>
+            <p>{{ error }}</p>
+            {% if debug_error %}
+            <p style="font-size: 0.8em; color: rgba(255, 0, 85, 0.7);">{{ debug_error }}</p>
+            {% endif %}
+        </div>
+        {% else %}
         <form id="payment-form">
             <div id="payment-element">
                 <!-- Stripe Elements will be inserted here -->
@@ -202,6 +211,7 @@
             <button id="submit-btn">Subscribe Now</button>
             <div id="error-message"></div>
         </form>
+        {% endif %}
 
         <p style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #64748b;">
             Cancel anytime in your dashboard.
@@ -210,6 +220,7 @@
 </div>
 
 <script>
+    {% if not error %}
     const stripe = Stripe('{{ publishable_key }}');
     const clientSecret = '{{ client_secret }}';
 
@@ -267,5 +278,6 @@
             }
         });
     }
+    {% endif %}
 </script>
 {% endblock %}
