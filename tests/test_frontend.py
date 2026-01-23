@@ -7,7 +7,10 @@ import uuid
 from datetime import datetime
 from app.db.session import SessionLocal
 from app.db.models.user import User
-from app.db.models.security import UserSession
+# Imports abaixo são necessários para o registro do SQLAlchemy resolver os relacionamentos de User
+from app.db.models.security import UserSession, AuditLog
+from app.db.models.career import CareerProfile, LearningPlan
+from app.db.models.gamification import UserBadge
 from app.core.jwt import create_access_token
 
 # Função auxiliar para criar usuário verificado no DB
