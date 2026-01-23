@@ -10,6 +10,7 @@ from app.core.auth_guard import get_current_user_from_request
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import log_audit
 from app.db.models.user import User
+from app.core.utils import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,13 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
             "user": user
         })
 
+    # 0. Check if already premium locally
+    if user.is_premium and user.subscription_status == 'active':
+        return RedirectResponse("/dashboard?info=already_premium")
+
     try:
+        ip = get_client_ip(request)
+
         # 1. Create Customer if missing
         if not user.stripe_customer_id:
             customer = stripe.Customer.create(
@@ -52,33 +59,62 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
             user.stripe_customer_id = customer.id
             db.commit()
 
-        # 2. Create Subscription
-        # We use ad-hoc price_data for simplicity in this pivot.
-        # In a real app, you'd likely use a fixed Price ID from config.
-        subscription = stripe.Subscription.create(
+        # 2. Check for existing subscriptions (Active or Incomplete)
+        existing_subs = stripe.Subscription.list(
             customer=user.stripe_customer_id,
-            items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': 'CareerDev AI Premium',
-                        'description': 'Unlimited AI Access & Career Insights'
-                    },
-                    'unit_amount': 999, # $9.99
-                    'recurring': {
-                        'interval': 'month',
-                    },
-                },
-            }],
-            payment_behavior='default_incomplete',
-            payment_settings={'save_default_payment_method': 'on_subscription'},
-            expand=['latest_invoice.payment_intent'],
+            limit=5
         )
 
-        # 3. Extract Client Secret
-        client_secret = subscription.latest_invoice.payment_intent.client_secret
+        active_sub = next((s for s in existing_subs.data if s.status == 'active'), None)
+        incomplete_sub = next((s for s in existing_subs.data if s.status in ['incomplete', 'past_due']), None)
 
-        log_audit(db, user_id, "CHECKOUT_INIT", request.client.host, f"Sub ID: {subscription.id}")
+        if active_sub:
+            # Sync local state
+            if not user.is_premium:
+                user.is_premium = True
+                user.subscription_status = 'active'
+                db.commit()
+            return RedirectResponse("/dashboard?success=restored_premium")
+
+        client_secret = None
+
+        if incomplete_sub:
+            # Reuse existing incomplete subscription
+            logger.info(f"Reusing incomplete subscription {incomplete_sub.id} for user {user.id}")
+
+            # Retrieve latest invoice to get payment intent
+            invoice = stripe.Invoice.retrieve(incomplete_sub.latest_invoice)
+            if invoice.payment_intent:
+                pi = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+                client_secret = pi.client_secret
+            else:
+                 # Should not happen for incomplete subs created via Elements, but safer to just create new if failed
+                 logger.warning(f"Incomplete sub {incomplete_sub.id} has no payment intent. Creating new.")
+                 client_secret = None
+
+        if not client_secret:
+            # Create NEW Subscription
+            subscription = stripe.Subscription.create(
+                customer=user.stripe_customer_id,
+                items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': 'CareerDev AI Premium',
+                            'description': 'Unlimited AI Access & Career Insights'
+                        },
+                        'unit_amount': 999, # $9.99
+                        'recurring': {
+                            'interval': 'month',
+                        },
+                    },
+                }],
+                payment_behavior='default_incomplete',
+                payment_settings={'save_default_payment_method': 'on_subscription'},
+                expand=['latest_invoice.payment_intent'],
+            )
+            client_secret = subscription.latest_invoice.payment_intent.client_secret
+            log_audit(db, user_id, "CHECKOUT_INIT", ip, f"Sub ID: {subscription.id}")
 
         return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
@@ -91,19 +127,27 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
         logger.error("Stripe Authentication Error: Invalid API Keys")
         return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
-            "error": "Erro de Configuração: Chaves do Stripe não encontradas.",
+            "error": "Erro de Configuração: Chaves do Stripe não encontradas ou inválidas.",
             "user": user,
             "publishable_key": None,
             "client_secret": None
         })
-
+    except stripe.error.StripeError as e:
+         logger.error(f"Stripe API Error: {e}")
+         return templates.TemplateResponse("subscription/checkout.html", {
+            "request": request,
+            "error": "Erro no processamento do pagamento. Tente novamente.",
+            "user": user,
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+            "client_secret": None,
+            "debug_error": str(e) if settings.ENVIRONMENT != 'production' else None
+        })
     except Exception as e:
-        logger.error(f"Stripe Error: {e}")
-        print(f"STRIPE ERROR: {e}")
-        log_audit(db, user_id, "CHECKOUT_ERROR", request.client.host, f"Stripe Exception: {e}")
+        logger.exception(f"Checkout Error: {e}")
+        log_audit(db, user_id, "CHECKOUT_ERROR", get_client_ip(request), f"Exception: {e}")
         return templates.TemplateResponse("subscription/checkout.html", {
             "request": request,
-            "error": "Payment system unavailable. Please try again later.",
+            "error": "Sistema de pagamento temporariamente indisponível.",
             "user": user,
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             "client_secret": None
@@ -126,6 +170,8 @@ def billing_success(
     if not user_id:
         return RedirectResponse("/login")
 
+    ip = get_client_ip(request)
+
     # Mock Bypass
     if not stripe.api_key:
          user = db.query(User).filter(User.id == user_id).first()
@@ -146,16 +192,16 @@ def billing_success(
             user.subscription_status = "active"
             db.commit()
 
-            log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", request.client.host, f"Stripe Intent: {payment_intent}")
+            log_audit(db, user_id, "SUBSCRIPTION_ACTIVE", ip, f"Stripe Intent: {payment_intent}")
             return RedirectResponse("/dashboard?success=premium_activated")
         elif intent.status == 'processing':
-            log_audit(db, user_id, "SUBSCRIPTION_PROCESSING", request.client.host, f"Stripe Intent: {payment_intent}")
+            log_audit(db, user_id, "SUBSCRIPTION_PROCESSING", ip, f"Stripe Intent: {payment_intent}")
             return RedirectResponse("/dashboard?info=payment_processing")
         else:
-            log_audit(db, user_id, "SUBSCRIPTION_FAIL", request.client.host, f"Status: {intent.status}")
+            log_audit(db, user_id, "SUBSCRIPTION_FAIL", ip, f"Status: {intent.status}")
             return RedirectResponse("/dashboard?error=payment_failed")
 
     except Exception as e:
         logger.error(f"Stripe Verification Error: {e}")
-        log_audit(db, user_id, "SUBSCRIPTION_VERIFY_FAIL", request.client.host, f"Stripe Exception: {e}")
+        log_audit(db, user_id, "SUBSCRIPTION_VERIFY_FAIL", ip, f"Stripe Exception: {e}")
         return RedirectResponse("/dashboard?error=verification_failed")

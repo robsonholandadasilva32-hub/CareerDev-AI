@@ -4,20 +4,23 @@ from fastapi.responses import RedirectResponse
 def get_next_onboarding_step(user: User) -> str:
     """
     Determines the next step in the onboarding flow for a user.
+    Strictly prioritizes Dashboard access if profile is marked as completed.
     """
+    # 1. Absolute Priority: If profile is completed, go to Dashboard.
+    # This prevents looping back to onboarding if a social ID is missing but the user is already "done".
+    if user.is_profile_completed:
+        return "/dashboard"
+
+    # 2. LinkedIn Check (Primary Auth)
     if not user.linkedin_id:
-        # If user somehow got here without LinkedIn (e.g. GitHub login first),
-        # we might want to enforce LinkedIn.
-        # The prompt says: "if not user.linkedin_id: Redirecionar para Login LinkedIn (fluxo existente)"
         return "/login/linkedin"
 
+    # 3. GitHub Check
     if not user.github_id:
         return "/onboarding/connect-github"
 
-    if not user.is_profile_completed:
-        return "/onboarding/complete-profile"
-
-    return "/dashboard"
+    # 4. Profile Completion
+    return "/onboarding/complete-profile"
 
 def validate_onboarding_access(user: User):
     """
@@ -25,7 +28,14 @@ def validate_onboarding_access(user: User):
     Returns a RedirectResponse to the next step if not complete.
     Returns None if complete.
     """
-    step = get_next_onboarding_step(user)
-    if step != "/dashboard":
-        return RedirectResponse(step, status_code=302)
-    return None
+    # If the user is supposed to be on the dashboard, this returns "/dashboard"
+    next_step = get_next_onboarding_step(user)
+
+    # If the calculation says "/dashboard", it means the user is cleared.
+    # If we are calling this function from a protected route (like /dashboard),
+    # returning None means "Access Granted".
+    if next_step == "/dashboard":
+        return None
+
+    # Otherwise, redirect to the required step.
+    return RedirectResponse(next_step, status_code=303)
