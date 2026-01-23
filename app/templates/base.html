@@ -234,8 +234,9 @@
   <main>
     <!-- Trial Banner -->
     {% if user and user.subscription_status == 'free' %}
-    <div style="background-color: #fbbf24; color: #111827; text-align: center; padding: 10px; font-weight: bold; margin-bottom: 20px; border-radius: 5px;">
-        Some features are available for free.
+    <div style="background-color: #fbbf24; color: #111827; text-align: center; padding: 10px; font-weight: bold; margin-bottom: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+        <span>Some features are available for free.</span>
+        <a href="/payment/checkout" class="btn" style="background: #000; color: #fff; padding: 5px 15px; font-size: 0.9rem;">Upgrade Now</a>
     </div>
     {% endif %}
 

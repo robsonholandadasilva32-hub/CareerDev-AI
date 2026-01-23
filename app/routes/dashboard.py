@@ -37,10 +37,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # GUARD: Ensure Onboarding is Complete
-    if resp := validate_onboarding_access(user):
-        return resp
-
+    # GUARD: Ensure Onboarding is Complete (REMOVED)
     user_id = user.id
     email = user.email
 
@@ -162,10 +159,7 @@ def dashboard_legal(request: Request, user: User = Depends(get_current_user_secu
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # GUARD
-    if resp := validate_onboarding_access(user):
-        return resp
-
+    # GUARD (REMOVED)
     return templates.TemplateResponse(
         "legal_menu.html",
         {

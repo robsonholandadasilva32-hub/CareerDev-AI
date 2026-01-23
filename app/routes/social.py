@@ -86,8 +86,8 @@ def login_user_and_redirect(request: Request, user, db: Session):
         "email": user.email,
         "sid": sid
     })
-    next_url = get_next_onboarding_step(user)
-    response = RedirectResponse(next_url, status_code=302)
+    # Force Dashboard Redirect (Onboarding Removed)
+    response = RedirectResponse("/dashboard", status_code=303)
     response.set_cookie(
         key="access_token",
         value=token,
@@ -171,7 +171,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
                 # Check Security Badge
                 check_and_award_security_badge(db, current_user)
 
-                return RedirectResponse(get_next_onboarding_step(current_user), status_code=302)
+                return RedirectResponse("/dashboard", status_code=303)
 
         # --- EXISTING LOGIN/REGISTER LOGIC ---
 

@@ -42,10 +42,7 @@ def accessibility_panel(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return RedirectResponse("/login", status_code=302)
 
-    # GUARD: Ensure Onboarding is Complete
-    if resp := validate_onboarding_access(user):
-        return resp
-
+    # GUARD: Ensure Onboarding is Complete (REMOVED)
     return templates.TemplateResponse(
         "accessibility.html",
         {

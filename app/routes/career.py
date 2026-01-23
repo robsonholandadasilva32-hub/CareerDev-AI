@@ -26,10 +26,8 @@ async def analyze_resume(
     if not user_id:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    # GUARD: Ensure Onboarding is Complete
+    # GUARD: Ensure Onboarding is Complete (REMOVED)
     user = request.state.user
-    if resp := validate_onboarding_access(user):
-        return resp
 
     try:
         result = await process_resume_upload_async(db, user_id, resume_text)
@@ -46,8 +44,6 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
 
     user = request.state.user
-    if resp := validate_onboarding_access(user):
-        return resp
 
     # 2. Premium Guard
     await requires_premium_tier(request)

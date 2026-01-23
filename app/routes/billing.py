@@ -63,10 +63,7 @@ def upgrade_page(request: Request, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.id == user_id).first()
 
-    # GUARD: Ensure Onboarding is Complete
-    if resp := validate_onboarding_access(user):
-        return resp
-
+    # GUARD: Ensure Onboarding is Complete (REMOVED)
     # Mock Flow for Dev/Test (if no Stripe Key)
     if not stripe.api_key:
         logger.warning("Stripe API Key missing. Using Mock Mode.")
