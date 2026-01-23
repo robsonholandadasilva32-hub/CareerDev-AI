@@ -3,28 +3,27 @@ from playwright.sync_api import Page, expect
 import time
 import random
 import re
+import uuid
 from datetime import datetime
 from app.db.session import SessionLocal
-# Import all models to ensure relationships are resolved
 from app.db.models.user import User
-from app.db.models.security import UserSession, AuditLog
-from app.db.models.career import CareerProfile, LearningPlan
-from app.db.models.gamification import UserBadge
+from app.db.models.security import UserSession
 from app.core.jwt import create_access_token
 
-# Helper to setup a user directly in the DB
+# Função auxiliar para criar usuário verificado no DB
 def setup_verified_user(db):
-    # Use unique email and IDs to avoid collisions
     timestamp = int(time.time())
     rand = random.randint(1000, 9999)
-    email = f"billing_test_{timestamp}_{rand}@example.com"
+    email = f"test_{timestamp}_{rand}@example.com"
 
     user = User(
-        name="Billing Test User",
+        name="Test User",
         email=email,
-        hashed_password="mock_hash_bypass", # Direct hash inject to avoid passlib issues
+        hashed_password="mock_hash_bypass", 
         email_verified=True,
-        is_profile_completed=True, # Critical to avoid Onboarding redirect loop
+        is_profile_completed=True, # Crítico para evitar redirect loop
+        terms_accepted=True,
+        subscription_status='free',
         linkedin_id=f"li_{timestamp}_{rand}",
         github_id=f"gh_{timestamp}_{rand}",
         created_at=datetime.utcnow()
@@ -34,20 +33,17 @@ def setup_verified_user(db):
     db.refresh(user)
     return user
 
-def test_billing_page_access_via_cookie_bypass(page: Page):
+def test_user_flow(page: Page):
     """
-    Verifies the Billing Page by bypassing the login UI and injecting a valid session cookie.
-    Checks for:
-    1. Successful access (no redirect to login)
-    2. Presence of specific Portuguese text.
-    3. Presence of Stripe Elements container.
+    Testa o fluxo completo: Login via Cookie -> Dashboard (English) -> Checkout (Stripe Elements)
     """
     db = SessionLocal()
+    
     try:
         # 1. Setup User
         user = setup_verified_user(db)
 
-        # 2. Create Session (Required for AuthMiddleware)
+        # 2. Create Session (Manual - Obrigatório para gerar o token com SID correto)
         session = UserSession(
             user_id=user.id,
             ip_address="127.0.0.1",
@@ -59,37 +55,39 @@ def test_billing_page_access_via_cookie_bypass(page: Page):
         db.commit()
         db.refresh(session)
 
-        # 3. Generate Valid JWT
+        # 3. Generate Valid JWT (Incluindo 'sid')
         token = create_access_token({
             "sub": str(user.id),
             "email": user.email,
             "sid": str(session.id)
         })
 
-        # 4. Inject Cookie into Browser Context
+        # 4. Inject Cookie (Configuração robusta para Localhost)
         page.context.add_cookies([{
             "name": "access_token",
             "value": token,
             "domain": "localhost",
             "path": "/",
             "httpOnly": True,
-            "secure": False,
+            "secure": False, # False para rodar localmente sem HTTPS
             "sameSite": "Lax"
         }])
 
-        # 5. Navigate to Billing Page
-        # Using the direct route alias
+        # 5. Navegar para Dashboard (Smoke Test)
+        page.goto("http://localhost:8000/dashboard")
+        
+        # Assert: Não deve redirecionar para login
+        expect(page).not_to_have_url(re.compile(".*login.*"))
+        
+        # Assert: Verifica texto em INGLÊS (Freemium Policy)
+        # "Some features are available for free" deve estar visível
+        expect(page.locator("body")).to_contain_text("Some features are available for free")
+
+        # 6. Navegar para a Página Unificada de Pagamento
         page.goto("http://localhost:8000/subscription/checkout")
 
-        # 6. Assertions
-
-        # Should NOT be redirected to login
-        expect(page).not_to_have_url(re.compile(".*login.*"))
-
-        # Should contain the specific Portuguese text requested
-        expect(page.locator("body")).to_contain_text("Algumas funcionalidades são disponibilizadas gratuitamente.")
-
-        # Should show the Stripe Payment Element container
+        # Assert: Verifica se o container do Stripe Elements carregou
+        # Isso confirma que a PaymentIntent/Subscription foi criada no backend
         expect(page.locator("#payment-element")).to_be_visible()
 
     finally:
