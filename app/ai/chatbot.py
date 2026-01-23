@@ -95,19 +95,32 @@ class ChatbotService:
         return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
 
     async def _llm_response(self, message: str, lang: str, context: str, system_prompt: str) -> str:
-        try:
-            lang_instruction = f"Reply in {lang}."
+        lang_instruction = f"Reply in {lang}."
+        messages = [
+            {"role": "system", "content": system_prompt + "\n" + context},
+            {"role": "system", "content": lang_instruction},
+            {"role": "user", "content": message}
+        ]
 
+        try:
             response = await self.async_client.chat.completions.create(
                 model=settings.OPENAI_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt + "\n" + context},
-                    {"role": "system", "content": lang_instruction},
-                    {"role": "user", "content": message}
-                ],
+                messages=messages,
                 temperature=0.7
             )
             return response.choices[0].message.content
+        except (openai.NotFoundError, openai.BadRequestError) as e:
+            print(f"WARNING: Primary model {settings.OPENAI_MODEL} failed (Error: {e}). Switching to fallback: {settings.OPENAI_FALLBACK_MODEL}.")
+            try:
+                response = await self.async_client.chat.completions.create(
+                    model=settings.OPENAI_FALLBACK_MODEL,
+                    messages=messages,
+                    temperature=0.7
+                )
+                return response.choices[0].message.content
+            except Exception as e_fallback:
+                print(f"CRITICAL: Fallback model {settings.OPENAI_FALLBACK_MODEL} also failed: {e_fallback}")
+                return "Erro ao comunicar com a IA (Fallback falhou)."
         except Exception as e:
             print(f"OpenAI Error: {e}")
             return "Erro ao comunicar com a IA (Verifique a API Key)."
