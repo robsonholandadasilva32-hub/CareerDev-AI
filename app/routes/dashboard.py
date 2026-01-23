@@ -7,7 +7,6 @@ from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, revoke_session, log_audit
-from app.i18n.loader import get_texts
 from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
@@ -58,13 +57,6 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # Generate/Fetch Plan
     plan_items = career_engine.generate_plan(db, user)
 
-    # 4️⃣ Load Language
-    lang = request.query_params.get("lang")
-    if not lang:
-        lang = request.session.get("lang", "pt")
-
-    t = get_texts(lang)
-
     # 5️⃣ Renderiza o dashboard
     return templates.TemplateResponse(
         "dashboard.html",
@@ -76,8 +68,6 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "profile": profile_data,
             "plan": plan_items, # List of LearningPlan objects
             "badges": user.badges, # Pass UserBadges to template
-            "t": t,
-            "lang": lang
         }
     )
 
@@ -100,16 +90,11 @@ def dashboard_security(request: Request, db: Session = Depends(get_db), user: Us
         if payload:
             current_sid = payload.get("sid")
 
-    lang = request.query_params.get("lang") or request.session.get("lang", "pt")
-    t = get_texts(lang)
-
     return templates.TemplateResponse("dashboard/security.html", {
         "request": request,
         "user": user,
         "sessions": sessions,
         "current_sid": current_sid,
-        "t": t,
-        "lang": lang
     })
 
 @router.post("/dashboard/security/revoke/{session_id}")
@@ -138,16 +123,10 @@ def dashboard_legal(request: Request, user: User = Depends(get_current_user_secu
     if resp := validate_onboarding_access(user):
         return resp
 
-    # Load Language
-    lang = request.session.get("lang", user.preferred_language or "pt")
-    t = get_texts(lang)
-
     return templates.TemplateResponse(
         "legal_menu.html",
         {
             "request": request,
             "user": user,
-            "lang": lang,
-            "t": t
         }
     )

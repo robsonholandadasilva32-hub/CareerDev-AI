@@ -116,11 +116,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):
-    return templates.TemplateResponse("404.html", {"request": request, "t": {}, "lang": "pt"}, status_code=404)
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
 @app.exception_handler(500)
 async def custom_500_handler(request: Request, exc):
-    return templates.TemplateResponse("500.html", {"request": request, "t": {}, "lang": "pt"}, status_code=500)
+    return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
 
 @app.exception_handler(PremiumRedirect)
 async def premium_redirect_handler(request: Request, exc: PremiumRedirect):

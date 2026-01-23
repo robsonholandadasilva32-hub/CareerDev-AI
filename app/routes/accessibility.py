@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
-from app.i18n.loader import get_texts
 from app.services.onboarding import validate_onboarding_access
 import logging
 
@@ -47,16 +46,10 @@ def accessibility_panel(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
-    # Load Language
-    lang = request.session.get("lang", user.preferred_language or "pt")
-    t = get_texts(lang)
-
     return templates.TemplateResponse(
         "accessibility.html",
         {
             "request": request,
-            "lang": lang,
-            "t": t,
             "user": user
         }
     )

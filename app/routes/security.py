@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.core.jwt import decode_token
-from app.i18n.loader import get_texts
 from app.services.onboarding import validate_onboarding_access
 from app.core.config import settings
 import logging
@@ -48,10 +47,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
-    # Load Language
-    lang = request.session.get("lang", user.preferred_language or "pt")
-    t = get_texts(lang)
-
     # Session Info
     user_agent = request.headers.get('user-agent', 'Unknown Device')
     client_ip = request.client.host if request.client else 'Unknown IP'
@@ -61,8 +56,6 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "no_user": False,
-            "lang": lang,
-            "t": t,
             "user": user,
             "current_session": {
                 "user_agent": user_agent,
@@ -74,24 +67,19 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
 @router.post("/dashboard/security/update")
 def update_security(
     request: Request,
-    language: str = Form("pt"),
     db: Session = Depends(get_db)
 ):
-    user = get_current_user(request, db)
+    # This route previously updated language.
+    # Now it does nothing or could update other preferences.
+    # For now, we just redirect back.
 
+    user = get_current_user(request, db)
     if not user:
          return RedirectResponse("/login", status_code=302)
 
     # GUARD: Ensure Onboarding is Complete
     if resp := validate_onboarding_access(user):
         return resp
-
-    # 1. Update Preferences
-    if user.preferred_language != language:
-        user.preferred_language = language
-        request.session["lang"] = language # Update session immediately
-
-    db.commit()
 
     return RedirectResponse("/dashboard/security?success=true", status_code=302)
 
