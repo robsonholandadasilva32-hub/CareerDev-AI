@@ -55,23 +55,3 @@ async def create_user_async(
 
     await asyncio.to_thread(db_operations)
     return user
-
-async def create_user_async(
-    db: Session,
-    name: str,
-    email: str,
-    hashed_password: str,
-    **kwargs
-) -> User:
-    user = User(
-        name=name,
-        email=email,
-        hashed_password=hashed_password,
-        **kwargs
-    )
-
-    await asyncio.to_thread(db.add, user)
-    await asyncio.to_thread(db.commit)
-    await asyncio.to_thread(db.refresh, user)
-
-    return user
