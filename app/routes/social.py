@@ -99,6 +99,8 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         if settings.ENVIRONMENT == 'production':
             redirect_uri = redirect_uri.replace('http:', 'https:')
 
+        logger.info(f"GitHub Auth: Using fetch_access_token with redirect_uri={redirect_uri}")
+
         # 2. Use fetch_access_token (Bypassing authorize_access_token wrapper)
         token = await oauth.github.fetch_access_token(
             redirect_uri=redirect_uri,
