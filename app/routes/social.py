@@ -71,8 +71,9 @@ def login_user_and_redirect(request: Request, user, db: Session):
     db.commit()
 
     # Security: Create Session
-    ip = request.client.host
+    ip = request.client.host if request.client else "0.0.0.0"
     user_agent = request.headers.get("user-agent", "unknown")
+    logger.info(f"Creating session for user {user.id} | IP: {ip} | UA: {user_agent[:30]}...")
     sid = create_user_session(db, user.id, ip, user_agent)
 
     # Security: Audit Log
