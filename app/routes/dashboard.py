@@ -122,8 +122,6 @@ def dashboard_profile(request: Request, user: User = Depends(get_current_user_se
     return templates.TemplateResponse("dashboard/profile.html", {
         "request": request,
         "user": user,
-        "lang": request.session.get("lang", "pt"),
-        "t": get_texts(request.session.get("lang", "pt"))
     })
 
 @router.post("/dashboard/profile", response_class=HTMLResponse)
@@ -192,8 +190,6 @@ def update_profile(
     return templates.TemplateResponse("dashboard/profile.html", {
         "request": request,
         "user": user,
-        "lang": request.session.get("lang", "pt"),
-        "t": get_texts(request.session.get("lang", "pt")),
         "success": success,
         "error": error
     })
