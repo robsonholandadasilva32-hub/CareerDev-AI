@@ -60,6 +60,7 @@ from app.core.config import settings
 from app.services.gamification import init_badges
 from app.middleware.auth import AuthMiddleware
 from app.core.exceptions import PremiumRedirect
+from app.ai.chatbot import chatbot_service
 # Worker removed
 
 # Importando suas rotas
@@ -84,6 +85,13 @@ async def lifespan(app: FastAPI):
             logger.info("Badges inicializados.")
         finally:
             db.close()
+
+        # Verify AI Connection
+        try:
+            logger.info("Verifying OpenAI connection...")
+            await chatbot_service.verify_connection()
+        except Exception as e:
+            logger.critical(f"CRITICAL OUTAGE: AI MODULE FAILURE. {e}")
 
         # Worker Start removed
 
