@@ -66,7 +66,7 @@ from app.ai.chatbot import chatbot_service
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security,
-    logout, social, billing, career, legal, onboarding, accessibility
+    logout, social, billing, career, legal, onboarding, accessibility, payment
     # email_verification, two_factor, debug removed
 )
 
@@ -124,7 +124,8 @@ async def custom_500_handler(request: Request, exc):
 
 @app.exception_handler(PremiumRedirect)
 async def premium_redirect_handler(request: Request, exc: PremiumRedirect):
-    return RedirectResponse(url="/subscription/upgrade?error=premium_required", status_code=303)
+    # Redirect directly to Stripe Checkout
+    return RedirectResponse(url="/payment/checkout", status_code=303)
 
 # 6. Middlewares
 app.add_middleware(AuthMiddleware)
@@ -190,3 +191,4 @@ app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
 app.include_router(onboarding.router)
 app.include_router(accessibility.router)
+app.include_router(payment.router)
