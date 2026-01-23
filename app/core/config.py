@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # AI
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-5-mini"
+    OPENAI_FALLBACK_MODEL: str = "gpt-4o-mini"
 
     # OAuth
     GITHUB_CLIENT_ID: Optional[str] = None
@@ -44,3 +45,9 @@ class Settings(BaseSettings):
         extra = "ignore" # Prevent crash on extra env vars
 
 settings = Settings()
+
+if not settings.OPENAI_API_KEY:
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.critical("OPENAI_API_KEY is missing. AI features will fail. Please check your environment variables.")
