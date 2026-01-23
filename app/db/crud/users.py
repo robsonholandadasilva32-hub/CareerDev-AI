@@ -41,17 +41,11 @@ async def create_user_async(
     hashed_password: str,
     **kwargs
 ) -> User:
-    user = User(
+    return await asyncio.to_thread(
+        create_user,
+        db=db,
         name=name,
         email=email,
         hashed_password=hashed_password,
         **kwargs
     )
-
-    def db_operations():
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    await asyncio.to_thread(db_operations)
-    return user
