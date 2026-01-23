@@ -60,6 +60,16 @@ def setup_incomplete_user(db):
     db.refresh(user)
     return user
 
+def test_billing_access_redirect(page: Page):
+    """
+    Verifies that accessing the billing page without login redirects to login.
+    """
+    # Access billing directly
+    page.goto("http://localhost:8000/subscription/checkout")
+
+    # Should redirect to login
+    expect(page).to_have_url(re.compile(".*login"))
+
 def test_user_flow(page: Page):
     """
     Testa o fluxo completo: Login via Cookie -> Dashboard (English) -> Checkout (Stripe Elements)
@@ -173,7 +183,6 @@ def test_onboarding_flow(page: Page):
         expect(page).not_to_have_url(re.compile(".*verify-email.*"))
 
         # Assert: Deve redirecionar para complete-profile (pois já tem social IDs)
-        # Se pedisse verificação de e-mail, falharia aqui ou iria para outra URL.
         expect(page).to_have_url(re.compile(".*onboarding/complete-profile"))
 
         # 6. Preencher Formulário
