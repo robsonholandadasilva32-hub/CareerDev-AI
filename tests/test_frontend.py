@@ -113,6 +113,9 @@ def test_user_flow(page: Page):
         # 5. Navegar para Dashboard (Smoke Test)
         page.goto("http://localhost:8000/dashboard")
         
+        # Assert: Não deve redirecionar para verificação de e-mail (Bypass Logic)
+        expect(page).not_to_have_url(re.compile(".*verify-email.*"))
+
         # Assert: Não deve redirecionar para login
         expect(page).not_to_have_url(re.compile(".*login.*"))
         
@@ -176,13 +179,17 @@ def test_onboarding_flow(page: Page):
         # 5. Tentar acessar Dashboard
         page.goto("http://localhost:8000/dashboard")
 
+        # Assert: Não deve redirecionar para verificação de e-mail (Bypass Logic)
+        expect(page).not_to_have_url(re.compile(".*verify-email.*"))
+
         # Assert: Deve redirecionar para complete-profile (pois já tem social IDs)
         expect(page).to_have_url(re.compile(".*onboarding/complete-profile"))
 
         # 6. Preencher Formulário
         page.fill('input[name="name"]', "New User Test")
 
-        # Address fields removed as they are no longer in the UI
+        # Address fields removed as per UI changes
+        # Only Name and Terms are required now
 
         # Terms
         page.check('input[name="terms_accepted"]')
