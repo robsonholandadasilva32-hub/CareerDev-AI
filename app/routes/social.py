@@ -102,6 +102,10 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 @router.get("/login/github")
 @limiter.limit("5/minute")
 async def login_github(request: Request):
+    # STRICT AUTH CHECK: GitHub is secondary step ONLY
+    if not getattr(request.state, "user", None):
+        return RedirectResponse("/login?error=linkedin_required_first")
+
     if not settings.GITHUB_CLIENT_ID:
         return RedirectResponse("/login?error=github_not_configured")
 
@@ -116,6 +120,13 @@ async def login_github(request: Request):
 async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
     ip = get_client_ip(request)
     try:
+        # STRICT AUTH CHECK
+        current_user_state = getattr(request.state, "user", None)
+        if not current_user_state:
+            # This should not happen if /login/github is protected, but safeguards callback attacks
+            logger.warning("GitHub Callback attempted without session")
+            return RedirectResponse("/login?error=session_expired_github")
+
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = str(request.url_for('auth_github_callback'))
         if settings.ENVIRONMENT == 'production':
@@ -150,86 +161,34 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         name = profile.get('name') or profile.get('login')
         avatar = profile.get('avatar_url')
 
-        # --- LINKING LOGIC (The Loop Fix) ---
-        current_user_state = getattr(request.state, "user", None)
-        if current_user_state:
-            # Re-fetch user attached to current session
-            current_user = db.query(User).filter(User.id == current_user_state.id).first()
-            if current_user:
-                # Check for conflict
-                existing_user = get_user_by_github_id(db, github_id)
-                if existing_user and existing_user.id != current_user.id:
-                    log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
-                    return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
+        # --- STRICT LINKING LOGIC ---
+        # Re-fetch user attached to current session
+        current_user = db.query(User).filter(User.id == current_user_state.id).first()
+        if not current_user:
+             return RedirectResponse("/login?error=user_not_found")
 
-                # Update User
-                current_user.github_id = github_id
-                if not current_user.avatar_url:
-                    current_user.avatar_url = avatar
-                db.commit() # Sync commit
+        # Check for conflict
+        existing_user = get_user_by_github_id(db, github_id)
+        if existing_user and existing_user.id != current_user.id:
+            log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
+            return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
 
-                log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
+        # Update User
+        current_user.github_id = github_id
+        if not current_user.avatar_url:
+            current_user.avatar_url = avatar
+        db.commit() # Sync commit
 
-                # Check Security Badge
-                check_and_award_security_badge(db, current_user)
+        log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
 
-                return RedirectResponse("/dashboard", status_code=303)
+        # Check Security Badge
+        check_and_award_security_badge(db, current_user)
 
-        # --- EXISTING LOGIN/REGISTER LOGIC ---
+        # Redirect to Profile Completion (Next Step)
+        if not current_user.is_profile_completed:
+             return RedirectResponse("/onboarding/complete-profile", status_code=303)
 
-        # 1. Check by Email (Fix: Prioritize Email to prevent loop)
-        user = get_user_by_email(db, email)
-        if user:
-            logger.info(f"DEBUG: Found existing user: {user.id}")
-            # Update ID if missing
-            if user.github_id != github_id:
-                user.github_id = github_id
-                if not user.avatar_url:
-                    user.avatar_url = avatar
-                db.commit() # Fix: Sync commit
-
-                # Check Security Badge
-                check_and_award_security_badge(db, user)
-
-            return login_user_and_redirect(request, user, db)
-
-        # 2. Check by ID (Legacy/Fallback)
-        user = get_user_by_github_id(db, github_id)
-        if user:
-            return login_user_and_redirect(request, user, db)
-
-        # 3. Create User (with Idempotency Check)
-        logger.info("DEBUG: Creating new user")
-        pwd = secrets.token_urlsafe(16)
-        hashed_password = await asyncio.to_thread(hash_password, pwd)
-        try:
-            user = await create_user_async(
-                db=db,
-                name=name,
-                email=email,
-                hashed_password=hashed_password,
-                github_id=github_id,
-                avatar_url=avatar,
-                email_verified=True # Trusted provider
-            )
-        except IntegrityError:
-            # Race condition: User created in parallel
-            db.rollback()
-            logger.warning(f"GitHub Race Condition: User {email} already exists. Fetching...")
-            user = get_user_by_email(db, email)
-            if not user:
-                 user = get_user_by_github_id(db, github_id)
-            if not user:
-                 raise Exception("IntegrityError caught but user not found on retry.")
-
-            # Update missing ID if needed
-            if not user.github_id:
-                user.github_id = github_id
-                db.commit()
-                # Check Security Badge
-                check_and_award_security_badge(db, user)
-
-        return login_user_and_redirect(request, user, db)
+        return RedirectResponse("/dashboard", status_code=303)
 
     except Exception as e:
         logger.error(f"GitHub Error: {e}")

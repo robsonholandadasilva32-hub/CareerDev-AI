@@ -38,14 +38,10 @@ async def connect_github(request: Request, user: User = Depends(get_current_user
     if not user:
         return RedirectResponse("/login")
 
-    # FORCE CHECK: Absolute Priority
-    if user.is_profile_completed:
-        logger.info(f"Onboarding Guard: User {user.id} is already completed. Redirecting to Dashboard.")
-        return redirect_to_dashboard()
-
-    # If already connected, move to next step
+    # STRICT SEQUENTIAL FLOW
+    # If already connected, move to next step (Profile)
     if user.github_id:
-        return RedirectResponse(get_next_onboarding_step(user))
+        return RedirectResponse("/onboarding/complete-profile", status_code=303)
 
     return templates.TemplateResponse("onboarding_github.html", {"request": request, "user": user})
 
