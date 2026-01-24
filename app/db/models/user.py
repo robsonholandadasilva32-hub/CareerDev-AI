@@ -25,12 +25,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
 
-    # Subscription
-    subscription_status = Column(String, default="free") # 'free', 'active', 'expired'
-    subscription_end_date = Column(DateTime, nullable=True)
-    is_recurring = Column(Boolean, default=False)
-    stripe_customer_id = Column(String, nullable=True)
-    is_premium = Column(Boolean, default=False)
+    # Access Control (Universal Premium)
+    is_premium = Column(Boolean, default=True)
 
     # Social Auth
     github_id = Column(String, nullable=True, unique=True)
@@ -45,15 +41,6 @@ class User(Base):
     address_state = Column(String, nullable=True)
     address_zip_code = Column(String, nullable=True)
     address_country = Column(String, nullable=True)
-
-    # Billing Address
-    billing_address_street = Column(String, nullable=True)
-    billing_address_number = Column(String, nullable=True)
-    billing_address_complement = Column(String, nullable=True)
-    billing_address_city = Column(String, nullable=True)
-    billing_address_state = Column(String, nullable=True)
-    billing_address_zip_code = Column(String, nullable=True)
-    billing_address_country = Column(String, nullable=True)
 
     # Onboarding Control
     is_profile_completed = Column(Boolean, default=False)

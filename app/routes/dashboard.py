@@ -11,7 +11,6 @@ from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.db.models.gamification import UserBadge
-from app.middleware.subscription import check_subscription_status
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -40,12 +39,6 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # GUARD: Ensure Onboarding is Complete (REMOVED)
     user_id = user.id
     email = user.email
-
-    # 2.5️⃣ Check Subscription Status
-    is_allowed = check_subscription_status(user)
-    if not is_allowed:
-            # Redirect to Billing if trial expired
-            return RedirectResponse("/billing", status_code=302)
 
     # 3️⃣ Career Data (Real Logic)
     # This will create/update the profile and sync (simulated) external data
@@ -107,48 +100,6 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
 
     return RedirectResponse("/dashboard/security", status_code=303)
 
-# ==========================================
-# PROFILE ROUTES
-# ==========================================
-
-@router.get("/dashboard/profile", response_class=HTMLResponse)
-def dashboard_profile(request: Request, user: User = Depends(get_current_user_secure)):
-    if not user:
-        return RedirectResponse("/login")
-
-    return templates.TemplateResponse("dashboard/profile.html", {
-        "request": request,
-        "user": user,
-    })
-
-@router.post("/dashboard/profile", response_class=HTMLResponse)
-def update_profile(
-    request: Request,
-    name: str = Form(...),
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_secure)
-):
-    if not user:
-        return RedirectResponse("/login")
-
-    try:
-        user.name = name
-        # Address update logic removed
-
-        db.commit()
-        success = True
-        error = None
-    except Exception as e:
-        db.rollback()
-        success = False
-        error = f"Error updating profile: {str(e)}"
-
-    return templates.TemplateResponse("dashboard/profile.html", {
-        "request": request,
-        "user": user,
-        "success": success,
-        "error": error
-    })
 
 # ==========================================
 # NOVAS ROTAS LEGAIS (Da Main Branch)
