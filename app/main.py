@@ -59,12 +59,13 @@ from app.db.session import engine, SessionLocal
 from app.core.config import settings
 from app.services.gamification import init_badges
 from app.middleware.auth import AuthMiddleware
+from app.middleware.watchdog import WatchdogMiddleware
 from app.ai.chatbot import chatbot_service
 # Worker removed
 
 # Importando suas rotas
 from app.routes import (
-    auth, dashboard, chatbot, security,
+    auth, dashboard, chatbot, security, admin,
     logout, social, career, legal, onboarding, accessibility
     # email_verification, two_factor, debug removed
 )
@@ -123,6 +124,7 @@ async def custom_500_handler(request: Request, exc):
 
 
 # 6. Middlewares
+app.add_middleware(WatchdogMiddleware)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
@@ -185,3 +187,4 @@ app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
 app.include_router(onboarding.router)
 app.include_router(accessibility.router)
+app.include_router(admin.router)

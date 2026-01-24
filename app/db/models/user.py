@@ -27,6 +27,8 @@ class User(Base):
 
     # Access Control (Universal Premium)
     is_premium = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    is_banned = Column(Boolean, default=False)
 
     # Social Auth
     github_id = Column(String, nullable=True, unique=True)

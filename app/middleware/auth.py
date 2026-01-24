@@ -1,5 +1,7 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from app.core.jwt import decode_token
 from app.db.session import SessionLocal
 from app.db.models.user import User
@@ -8,6 +10,7 @@ import logging
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+templates = Jinja2Templates(directory="app/templates")
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -39,6 +42,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         if valid_session:
                             user = db.query(User).filter(User.id == user_id).first()
                             if user:
+                                if user.is_banned:
+                                    logger.warning(f"AuthMiddleware: Banned user {user_id} attempted access.")
+                                    if "application/json" in request.headers.get("accept", "") or request.url.path.startswith("/api"):
+                                         return JSONResponse(status_code=403, content={"detail": "Access Revoked"})
+                                    return templates.TemplateResponse("errors/403_banned.html", {"request": request}, status_code=403)
+
                                 request.state.user = user
                     finally:
                         db.close()
