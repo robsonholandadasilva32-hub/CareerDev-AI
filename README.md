@@ -1,6 +1,10 @@
 # CareerDev AI
 
-**CareerDev AI** is a high-performance, AI-powered career management platform for developers. Built with **FastAPI** and **Python 3.12**, it prioritizes security, accessibility, and professional growth.
+**Uma plataforma de aceleração de carreira impulsionada por IA.**
+
+Une a precisão da máquina com a intuição humana para otimizar currículos e estratégias profissionais.
+
+**Stack:** Python/FastAPI, Stripe, OAuth.
 
 ## 🚀 Features
 
