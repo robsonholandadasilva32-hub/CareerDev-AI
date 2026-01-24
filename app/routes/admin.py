@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models.user import User
+from app.db.models.security import AuditLog
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 def get_current_admin(request: Request):
     user = getattr(request.state, "user", None)
@@ -16,6 +20,32 @@ def get_current_admin(request: Request):
         logger.warning(f"Unauthorized Admin Access Attempt by User {user.id}")
         raise HTTPException(status_code=403, detail="Not authorized")
     return user
+
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    # Fetch all users
+    users = db.query(User).all()
+
+    # Fetch recent watchdog logs
+    logs = db.query(AuditLog)\
+        .filter(AuditLog.action == "WARNING")\
+        .order_by(AuditLog.created_at.desc())\
+        .limit(50)\
+        .all()
+
+    return templates.TemplateResponse(
+        "admin/dashboard.html",
+        {
+            "request": request,
+            "user": admin,
+            "users": users,
+            "logs": logs
+        }
+    )
 
 @router.post("/admin/users/{user_id}/ban")
 def ban_user(user_id: int, request: Request, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):

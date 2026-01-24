@@ -28,16 +28,9 @@ def get_db():
         db.close()
 
 def get_current_user(request: Request, db: Session) -> User | None:
-    token = request.cookies.get("access_token")
-    if not token:
-        return None
-
-    payload = decode_token(token)
-    if not payload:
-        return None
-
-    user_id = int(payload.get("sub"))
-    return db.query(User).filter(User.id == user_id).first()
+    # Use the user object already validated by AuthMiddleware
+    # This ensures we respect session revocation/banning checks done there.
+    return getattr(request.state, "user", None)
 
 def parse_agent(ua_string: str) -> str:
     """Parses user agent string into a readable format."""
