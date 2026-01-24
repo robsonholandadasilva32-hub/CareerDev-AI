@@ -17,6 +17,7 @@ from app.services.onboarding import get_next_onboarding_step
 from app.services.security_service import create_user_session, log_audit
 from app.services.gamification import check_and_award_security_badge
 from app.core.utils import get_client_ip
+from app.core.limiter import limiter
 import secrets
 import logging
 import os
@@ -99,6 +100,7 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     return response
 
 @router.get("/login/github")
+@limiter.limit("5/minute")
 async def login_github(request: Request):
     if not settings.GITHUB_CLIENT_ID:
         return RedirectResponse("/login?error=github_not_configured")
@@ -235,6 +237,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login?error=github_failed")
 
 @router.get("/login/linkedin")
+@limiter.limit("5/minute")
 async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
