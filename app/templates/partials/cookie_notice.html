@@ -162,28 +162,30 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 Acknowledge
             </button>
-            <button class="btn-prefs" onclick="closeCookieBanner()">
-                Preferences
-            </button>
         </div>
     </div>
 </div>
 
 <script>
     (function() {
-        // Logic: Check sessionStorage (clears when tab/browser closes)
-        const hasConsentedSession = sessionStorage.getItem('cookieConsent_session');
+        // Logic: Check localStorage (persistent)
+        const hasConsented = localStorage.getItem('cookie_consent_accepted');
         const banner = document.getElementById('tech-cookie-banner');
 
-        if (!hasConsentedSession) {
-            // Small delay for smooth entrance
-            setTimeout(() => {
-                banner.style.display = 'block';
-            }, 500);
+        // Immediate check to prevent flash
+        if (hasConsented) {
+            banner.style.display = 'none';
+            return;
         }
 
+        // Show if not consented
+        // Small delay for smooth entrance
+        setTimeout(() => {
+            banner.style.display = 'block';
+        }, 500);
+
         window.acceptCookies = function() {
-            sessionStorage.setItem('cookieConsent_session', 'true');
+            localStorage.setItem('cookie_consent_accepted', 'true');
             banner.style.display = 'none';
         }
 
