@@ -4,6 +4,8 @@ from collections import defaultdict
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 from app.core.utils import get_client_ip
+from app.db.session import SessionLocal
+from app.services.security_service import log_audit
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,22 @@ class WatchdogMiddleware(BaseHTTPMiddleware):
             if not self.ip_tracker[ip]:
                 del self.ip_tracker[ip]
             elif len(self.ip_tracker[ip]) > self.THRESHOLD:
-                logger.warning(f"Potential Intrusion Detected: IP {ip} exceeded {self.THRESHOLD} failed attempts in {self.WINDOW}s.")
+                msg = f"Potential Intrusion Detected: IP {ip} exceeded {self.THRESHOLD} failed attempts in {self.WINDOW}s."
+                logger.warning(msg)
+
+                # Write to Audit Log
+                db = SessionLocal()
+                try:
+                    log_audit(
+                        db=db,
+                        user_id=None,
+                        action="WARNING",
+                        ip_address=ip,
+                        details={"message": msg, "count": len(self.ip_tracker[ip])}
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log watchdog event to DB: {e}")
+                finally:
+                    db.close()
 
         return response
