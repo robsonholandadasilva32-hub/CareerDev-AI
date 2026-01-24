@@ -36,7 +36,11 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # GUARD: Ensure Onboarding is Complete (REMOVED)
+    # CRITICAL ARCHITECTURE CHANGE: Strict Sequential Flow
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
     user_id = user.id
     email = user.email
 

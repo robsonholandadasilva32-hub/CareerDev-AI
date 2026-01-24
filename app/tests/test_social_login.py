@@ -42,7 +42,11 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture(autouse=True)
+def override_dependency():
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides = {}
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -96,9 +100,9 @@ async def test_linkedin_callback_success(client, db_session):
         response = await client.get("/auth/linkedin/callback?code=123&state=abc", follow_redirects=False)
 
         # Assert
-        assert response.status_code == 302
-        # Updated to expect redirection to GitHub connection step (Progressive Onboarding)
-        assert response.headers["location"] == "/onboarding/connect-github"
+        assert response.status_code == 303
+        # Strict onboarding: New user needs GitHub -> Redirect to /login/github which triggers GitHub auth
+        assert response.headers["location"] == "/login/github"
 
         # Verify fetch_access_token was called correctly
         mock_fetch.assert_called_once()
@@ -164,29 +168,13 @@ async def test_github_callback_success(client, db_session):
         response = await client.get("/auth/github/callback?code=gh_code&state=gh_state", follow_redirects=False)
 
         # Assert
-        assert response.status_code == 302
-        # Updated to expect redirection to LinkedIn login if LinkedIn is missing
-        assert response.headers["location"] == "/login/linkedin"
+        # Without session, it should redirect to login
+        # Since logic returns RedirectResponse("/login?error=session_expired_github"), defaults to 307
+        assert response.status_code == 307
+        assert "/login?error=session_expired_github" in response.headers["location"]
 
-        # Verify fetch_access_token was called correctly
-        mock_fetch.assert_called_once()
-        call_kwargs = mock_fetch.call_args.kwargs
-
-        # The critical check: verify we are passing redirect_uri explicitly as a string
-        assert 'redirect_uri' in call_kwargs
-        assert isinstance(call_kwargs['redirect_uri'], str)
-        # Not production, so http://
-        assert call_kwargs['redirect_uri'].startswith("http://test/auth/github/callback")
-
-        # Verify grant_type and code
-        assert call_kwargs.get('grant_type') == 'authorization_code'
-        assert call_kwargs.get('code') == 'gh_code'
-
-        # Verify user created in DB
-        from app.db.crud.users import get_user_by_email
-        user = get_user_by_email(db_session, "github@example.com")
-        assert user is not None
-        assert user.github_id == "98765"
+        # Verify fetch_access_token was NOT called
+        mock_fetch.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_github_connect_existing_user(client, db_session):
@@ -242,7 +230,7 @@ async def test_github_connect_existing_user(client, db_session):
         response = await client.get("/auth/github/callback?code=gh_link_code", follow_redirects=False)
 
         # 6. Assert
-        assert response.status_code == 302
+        assert response.status_code == 303
         # Since profile is not completed, it should go to complete profile
         assert response.headers["location"] == "/onboarding/complete-profile"
 

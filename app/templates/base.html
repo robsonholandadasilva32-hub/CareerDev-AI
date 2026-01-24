@@ -197,7 +197,7 @@
   <!-- HEADER -->
   <header>
     <h1>
-        <a href="{% if user %}/dashboard{% else %}/login{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+        <a href="{% if user %}{% if user.is_profile_completed %}/dashboard{% else %}/onboarding/connect-github{% endif %}{% else %}/login{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
             <!-- Animated Logo Placeholder -->
             <div class="logo-container">
                 <svg class="logo-svg" viewBox="0 0 100 100">

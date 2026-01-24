@@ -25,8 +25,11 @@ async def analyze_resume(
     if not user_id:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    # GUARD: Ensure Onboarding is Complete (REMOVED)
+    # GUARD: Ensure Onboarding is Complete
     user = request.state.user
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
 
     try:
         result = await process_resume_upload_async(db, user_id, resume_text)
@@ -43,6 +46,11 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
 
     user = request.state.user
+
+    # GUARD: Ensure Onboarding is Complete
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
 
     # 3. Data Preparation (Mock Data for MVP)
     analytics_data = {
