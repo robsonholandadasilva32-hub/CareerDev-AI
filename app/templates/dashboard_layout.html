@@ -96,26 +96,12 @@
                         Accessibility
                     </a>
                 </li>
-                <li class="sidebar-item">
-                    <a href="/dashboard/profile" class="sidebar-link {% if request.url.path == '/dashboard/profile' %}active{% endif %}">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        My Profile
-                    </a>
-                </li>
                  <li class="sidebar-item">
                     <a href="/dashboard/legal" class="sidebar-link {% if request.url.path == '/dashboard/legal' %}active{% endif %}">
                         <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         Legal & About
                     </a>
                 </li>
-                {% if user.subscription_status == 'free' %}
-                <li class="sidebar-item" style="margin-top: 20px;">
-                    <a href="/payment/checkout" class="sidebar-link" style="color: #000; background: var(--secondary-color); font-weight: bold; justify-content: center;">
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                        Upgrade to Premium
-                    </a>
-                </li>
-                {% endif %}
             </ul>
         </nav>
 
@@ -130,4 +116,117 @@
         {% block dashboard_content %}{% endblock %}
     </div>
 </div>
+{% endblock %}
+
+{% block footer %}
+<style>
+    .coffee-footer {
+        text-align: center;
+        padding: 40px 20px;
+        border-top: 1px solid var(--accent-color);
+        margin-top: 40px;
+        color: var(--text-color);
+    }
+    .coffee-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        display: block;
+        animation: pixel-bounce 2s infinite;
+    }
+    @keyframes pixel-bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .coffee-title {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+    }
+    .coffee-body {
+        max-width: 600px;
+        margin: 0 auto 20px;
+        color: #9ca3af;
+        line-height: 1.6;
+    }
+    .commit-btn {
+        background: #1f2937;
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        padding: 12px 24px;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        border-radius: 4px;
+        min-width: 200px;
+    }
+    .commit-btn:hover {
+        background: rgba(0, 243, 255, 0.1);
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    }
+    .progress-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: rgba(0, 243, 255, 0.2);
+        width: 0%;
+        transition: width 2s linear;
+    }
+    .btn-text {
+        position: relative;
+        z-index: 2;
+    }
+</style>
+
+<footer class="coffee-footer">
+    <span class="coffee-icon">👾</span>
+    <h2 class="coffee-title">git push origin support</h2>
+    <p class="coffee-body">
+        Compilamos o conhecimento para acelerar sua carreira. Se o app te ajudou a resolver um bug na sua trajetória profissional, considere apoiar o próximo deploy.
+    </p>
+    <button class="commit-btn" id="commitBtn" onclick="deployCoffee()">
+        <div class="progress-bar" id="progressBar"></div>
+        <span class="btn-text" id="btnText">Commit a Coffee ☕</span>
+    </button>
+</footer>
+
+<script>
+    function deployCoffee() {
+        const btn = document.getElementById('commitBtn');
+        const bar = document.getElementById('progressBar');
+        const text = document.getElementById('btnText');
+
+        if (btn.disabled) return;
+        btn.disabled = true;
+
+        // Start Animation
+        text.innerText = "Deploying...";
+        bar.style.width = "100%";
+
+        setTimeout(() => {
+            // Success
+            text.innerText = "Build Successful! Thanks!";
+            bar.style.backgroundColor = "rgba(0, 255, 136, 0.3)"; // Greenish
+
+            setTimeout(() => {
+                // Reset
+                bar.style.transition = 'none';
+                bar.style.width = "0%";
+                bar.style.backgroundColor = "rgba(0, 243, 255, 0.2)";
+                text.innerText = "Commit a Coffee ☕";
+                btn.disabled = false;
+
+                // Restore transition for next click
+                setTimeout(() => {
+                    bar.style.transition = "width 2s linear";
+                }, 50);
+            }, 3000);
+
+        }, 2000);
+    }
+</script>
 {% endblock %}

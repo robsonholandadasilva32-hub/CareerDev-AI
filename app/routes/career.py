@@ -8,7 +8,6 @@ from app.core.auth_guard import get_current_user_from_request
 from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
-from app.core.dependencies import requires_premium_tier
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,9 +43,6 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
 
     user = request.state.user
-
-    # 2. Premium Guard
-    await requires_premium_tier(request)
 
     # 3. Data Preparation (Mock Data for MVP)
     analytics_data = {

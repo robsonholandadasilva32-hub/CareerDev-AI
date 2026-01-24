@@ -28,11 +28,6 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
 
-    # Payments (Stripe)
-    STRIPE_SECRET_KEY: Optional[str] = None
-    STRIPE_PUBLISHABLE_KEY: Optional[str] = None
-    STRIPE_WEBHOOK_SECRET: Optional[str] = None
-
     # Analytics (PostHog)
     POSTHOG_API_KEY: Optional[str] = None
     POSTHOG_HOST: str = "https://app.posthog.com"
