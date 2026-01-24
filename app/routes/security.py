@@ -2,13 +2,17 @@ from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from datetime import datetime
+import user_agents
 
 from app.db.session import SessionLocal
 from app.db.models.user import User
+from app.db.models.security import UserSession
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
-from app.services.security_service import get_active_sessions
+from app.services.security_service import get_active_sessions, revoke_session, log_audit
 from app.core.config import settings
+from app.core.utils import get_client_ip
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,6 +39,13 @@ def get_current_user(request: Request, db: Session) -> User | None:
     user_id = int(payload.get("sub"))
     return db.query(User).filter(User.id == user_id).first()
 
+def parse_agent(ua_string: str) -> str:
+    """Parses user agent string into a readable format."""
+    try:
+        user_agent = user_agents.parse(ua_string)
+        return str(user_agent) # Returns "PC / Windows / Chrome" format usually
+    except Exception:
+        return "Unknown Device"
 
 @router.get("/dashboard/security", response_class=HTMLResponse)
 def security_panel(request: Request, db: Session = Depends(get_db)):
@@ -53,16 +64,34 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     payload = decode_token(token) if token else {}
     current_sid = payload.get("sid")
 
+    # Current Session Data
+    current_ua_string = request.headers.get("user-agent", "")
+    current_device = parse_agent(current_ua_string)
+    current_ip = get_client_ip(request)
+
     # Fetch Real Sessions
-    sessions = get_active_sessions(db, user.id)
+    raw_sessions = get_active_sessions(db, user.id)
+
+    # Process Sessions for Display
+    processed_sessions = []
+    for s in raw_sessions:
+        processed_sessions.append({
+            "id": s.id,
+            "device": parse_agent(s.user_agent),
+            "ip_address": s.ip_address,
+            "last_active": s.last_active_at, # Template handles formatting usually, or we can fmt here
+            "is_current": (str(s.id) == str(current_sid))
+        })
 
     return templates.TemplateResponse(
-        "security.html",
+        "dashboard/security.html",
         {
             "request": request,
             "no_user": False,
             "user": user,
-            "sessions": sessions,
+            "current_device": current_device,
+            "current_ip": current_ip,
+            "sessions": processed_sessions,
             "current_sid": current_sid
         }
     )
@@ -105,3 +134,17 @@ def delete_account(
     response = RedirectResponse("/login?msg=account_deleted", status_code=302)
     response.delete_cookie("access_token")
     return response
+
+@router.post("/dashboard/security/revoke/{session_id}")
+def revoke_user_session_route(session_id: str, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    # Security: Ensure session belongs to user
+    session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
+    if session_to_revoke:
+        revoke_session(db, session_id)
+        log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
+
+    return RedirectResponse("/dashboard/security", status_code=303)

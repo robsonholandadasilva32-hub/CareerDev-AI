@@ -63,42 +63,8 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
 
 # ==========================================
 # NOVAS ROTAS DE SEGURANÇA (Da Feature Branch)
+# MOVED TO app/routes/security.py
 # ==========================================
-
-@router.get("/dashboard/security", response_class=HTMLResponse)
-def dashboard_security(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
-    if not user:
-        return RedirectResponse("/login")
-
-    sessions = get_active_sessions(db, user.id)
-
-    # Identify current session
-    token = request.cookies.get("access_token")
-    current_sid = None
-    if token:
-        payload = decode_token(token)
-        if payload:
-            current_sid = payload.get("sid")
-
-    return templates.TemplateResponse("dashboard/security.html", {
-        "request": request,
-        "user": user,
-        "sessions": sessions,
-        "current_sid": current_sid,
-    })
-
-@router.post("/dashboard/security/revoke/{session_id}")
-def revoke_user_session_route(session_id: str, request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
-    if not user:
-        return RedirectResponse("/login")
-
-    # Security: Ensure session belongs to user
-    session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
-    if session_to_revoke:
-        revoke_session(db, session_id)
-        log_audit(db, user.id, "REVOKE_SESSION", request.client.host, f"Revoked session {session_id}")
-
-    return RedirectResponse("/dashboard/security", status_code=303)
 
 
 # ==========================================
