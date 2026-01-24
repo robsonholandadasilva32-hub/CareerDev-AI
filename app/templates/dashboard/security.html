@@ -24,31 +24,10 @@
              <span style="color: var(--primary-color); font-size: 0.9em; border: 1px solid var(--primary-color); padding: 2px 8px; border-radius: 4px;">Current</span>
         </div>
 
-        <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;">
-            {% for session in sessions %}
-                {% if session.id != current_sid %}
-                <div class="session-item" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--accent-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <div style="font-weight: bold; color: white;">
-                            {{ session.ip_address }}
-                        </div>
-                        <div style="font-size: 0.9em; color: #aaa;">
-                            {{ session.user_agent }}
-                        </div>
-                        <div style="font-size: 0.8em; color: #666;">
-                            Active at: {{ session.last_active_at.strftime('%d/%m/%Y %H:%M') }}
-                        </div>
-                    </div>
-
-                    <form action="/dashboard/security/revoke/{{ session.id }}" method="post" onsubmit="return confirm('Are you sure you want to disconnect this device?');">
-                        <button type="submit" class="btn-outline" style="color: var(--error-color); border-color: var(--error-color);">
-                            Disconnect
-                        </button>
-                    </form>
-                </div>
-                {% endif %}
-            {% endfor %}
-        </div>
+        <!-- History Hidden until backend fix -->
+        <!-- <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;"> -->
+            <!-- History loop commented out -->
+        <!-- </div> -->
     </div>
 
     <div style="margin-top: 40px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px;">
