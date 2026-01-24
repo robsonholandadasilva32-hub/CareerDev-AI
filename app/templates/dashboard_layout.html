@@ -175,6 +175,8 @@
         background: rgba(0, 243, 255, 0.2);
         width: 0%;
         transition: width 2s linear;
+        display: none;
+        pointer-events: none;
     }
     .btn-text {
         position: relative;
@@ -205,6 +207,11 @@
 
         // Start Animation
         text.innerText = "Deploying...";
+        bar.style.display = "block";
+
+        // Force reflow for transition
+        void bar.offsetWidth;
+
         bar.style.width = "100%";
 
         setTimeout(() => {
@@ -216,6 +223,7 @@
                 // Reset
                 bar.style.transition = 'none';
                 bar.style.width = "0%";
+                bar.style.display = "none";
                 bar.style.backgroundColor = "rgba(0, 243, 255, 0.2)";
                 text.innerText = "Commit a Coffee ☕";
                 btn.disabled = false;
