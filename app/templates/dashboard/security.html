@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "dashboard_layout.html" %}
 
-{% block content %}
+{% block dashboard_content %}
 <div class="card security-dashboard">
     <h2>🔒 Manage Security</h2>
     <p>Manage your active devices and sessions.</p>
@@ -12,22 +12,39 @@
         <div class="session-item" style="background: rgba(0, 255, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--primary-color); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
              <div>
                 <div style="font-weight: bold; color: var(--primary-color);">
-                    This Device
+                    {{ current_device }}
                 </div>
                 <div style="font-size: 0.9em; color: #aaa;">
-                    {{ request.headers.get('user-agent') }}
+                    {{ request.headers.get('user-agent')|truncate(60) }}
                 </div>
                 <div style="font-size: 0.8em; color: #666;">
-                    IP: {{ request.client.host }} (Now)
+                    IP: {{ current_ip }} (Now)
                 </div>
              </div>
              <span style="color: var(--primary-color); font-size: 0.9em; border: 1px solid var(--primary-color); padding: 2px 8px; border-radius: 4px;">Current</span>
         </div>
 
-        <!-- History Hidden until backend fix -->
-        <!-- <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;"> -->
-            <!-- History loop commented out -->
-        <!-- </div> -->
+        {% if sessions %}
+        <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;">
+            {% for session in sessions %}
+                {% if not session.is_current %}
+                <div class="session-item" style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                     <div>
+                        <div style="font-weight: bold; color: #e0e6ed;">
+                            {{ session.device }}
+                        </div>
+                        <div style="font-size: 0.8em; color: #888;">
+                            IP: {{ session.ip_address }}
+                        </div>
+                        <div style="font-size: 0.8em; color: #666;">
+                            Last Active: {{ session.last_active.strftime('%Y-%m-%d %H:%M') }} UTC
+                        </div>
+                     </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div style="margin-top: 40px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px;">
