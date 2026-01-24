@@ -11,12 +11,12 @@
 </div>
 <script>
     // Logic: Show by default (HTML), Hide only if key exists
-    // Changed to sessionStorage as requested for session-based persistence
-    if (sessionStorage.getItem('cookie_consent_accepted')) {
+    // Changed to localStorage as requested for persistent storage
+    if (localStorage.getItem('cookie_consent_accepted')) {
         document.getElementById('cookie-notice').style.display = 'none';
     }
     function acceptCookies() {
-        sessionStorage.setItem('cookie_consent_accepted', 'true');
+        localStorage.setItem('cookie_consent_accepted', 'true');
         document.getElementById('cookie-notice').style.display = 'none';
     }
 </script>

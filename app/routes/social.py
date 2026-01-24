@@ -67,7 +67,7 @@ if settings.LINKEDIN_CLIENT_ID:
         }
     )
 
-def login_user_and_redirect(request: Request, user, db: Session):
+def login_user_and_redirect(request: Request, user, db: Session, redirect_url: str = "/dashboard"):
     # Update last_login
     user.last_login = datetime.utcnow()
     db.commit()
@@ -87,7 +87,7 @@ def login_user_and_redirect(request: Request, user, db: Session):
         "sid": sid
     })
     # Force Dashboard Redirect (Onboarding Removed)
-    response = RedirectResponse("/dashboard", status_code=303)
+    response = RedirectResponse(redirect_url, status_code=303)
     response.set_cookie(
         key="access_token",
         value=token,
@@ -314,12 +314,23 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 # Check Security Badge
                 check_and_award_security_badge(db, user)
 
-            return login_user_and_redirect(request, user, db)
+            # STRICT ONBOARDING: Check GitHub
+            target = "/dashboard"
+            if not user.github_id:
+                logger.info("Strict Onboarding: User missing GitHub. Redirecting to GitHub auth.")
+                target = "/login/github"
+
+            return login_user_and_redirect(request, user, db, redirect_url=target)
 
         # 2. Check by ID (Legacy/Fallback)
         user = get_user_by_linkedin_id(db, linkedin_id)
         if user:
-            return login_user_and_redirect(request, user, db)
+            # STRICT ONBOARDING: Check GitHub
+            target = "/dashboard"
+            if not user.github_id:
+                logger.info("Strict Onboarding: User missing GitHub. Redirecting to GitHub auth.")
+                target = "/login/github"
+            return login_user_and_redirect(request, user, db, redirect_url=target)
 
         # 3. Create User (with Idempotency Check)
         logger.info("DEBUG: Creating new user")
@@ -352,7 +363,13 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 # Check Security Badge
                 check_and_award_security_badge(db, user)
 
-        return login_user_and_redirect(request, user, db)
+        # STRICT ONBOARDING: New user definitely needs GitHub
+        target = "/login/github"
+        if user.github_id: # Should not happen for new user via LinkedIn unless found via email
+            target = "/dashboard"
+
+        logger.info(f"Strict Onboarding: New user created. Redirecting to {target}")
+        return login_user_and_redirect(request, user, db, redirect_url=target)
 
     except Exception as e:
         logger.exception(f"LinkedIn Error: {e}")
