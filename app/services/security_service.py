@@ -57,6 +57,12 @@ def get_active_sessions(db: Session, user_id: int):
         UserSession.is_active == True
     ).order_by(UserSession.last_active_at.desc()).all()
 
+def get_all_user_sessions(db: Session, user_id: int):
+    """Returns all sessions for a user, ordered by creation date descending."""
+    return db.query(UserSession).filter(
+        UserSession.user_id == user_id
+    ).order_by(UserSession.created_at.desc()).all()
+
 def update_session_activity(db: Session, session_id: str):
     """Updates last_active_at for a session."""
     try:

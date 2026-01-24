@@ -10,7 +10,7 @@ from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
-from app.services.security_service import get_active_sessions, revoke_session, log_audit
+from app.services.security_service import get_active_sessions, get_all_user_sessions, revoke_session, log_audit
 from app.core.config import settings
 from app.core.utils import get_client_ip
 import logging
@@ -69,18 +69,25 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     current_device = parse_agent(current_ua_string)
     current_ip = get_client_ip(request)
 
-    # Fetch Real Sessions
-    raw_sessions = get_active_sessions(db, user.id)
+    # Fetch Real Sessions (History)
+    raw_sessions = get_all_user_sessions(db, user.id)
 
     # Process Sessions for Display
     processed_sessions = []
     for s in raw_sessions:
+        is_current = (str(s.id) == str(current_sid))
+        status = "Expired"
+        if s.is_active:
+             status = "Current" if is_current else "Active"
+
         processed_sessions.append({
             "id": s.id,
             "device": parse_agent(s.user_agent),
             "ip_address": s.ip_address,
-            "last_active": s.last_active_at, # Template handles formatting usually, or we can fmt here
-            "is_current": (str(s.id) == str(current_sid))
+            "last_active": s.last_active_at,
+            "is_current": is_current,
+            "status": status,
+            "raw_ua": s.user_agent # For icon determination if needed
         })
 
     return templates.TemplateResponse(
