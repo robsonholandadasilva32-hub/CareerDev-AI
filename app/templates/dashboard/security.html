@@ -8,35 +8,45 @@
     <div style="margin-top: 30px;">
         <h3>Active Sessions</h3>
 
+        <!-- Current Session (Live Request Data) -->
+        <div class="session-item" style="background: rgba(0, 255, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--primary-color); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+             <div>
+                <div style="font-weight: bold; color: var(--primary-color);">
+                    This Device
+                </div>
+                <div style="font-size: 0.9em; color: #aaa;">
+                    {{ request.headers.get('user-agent') }}
+                </div>
+                <div style="font-size: 0.8em; color: #666;">
+                    IP: {{ request.client.host }} (Now)
+                </div>
+             </div>
+             <span style="color: var(--primary-color); font-size: 0.9em; border: 1px solid var(--primary-color); padding: 2px 8px; border-radius: 4px;">Current</span>
+        </div>
+
         <div class="sessions-list" style="margin-top: 15px; display: grid; gap: 15px;">
             {% for session in sessions %}
-            <div class="session-item" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid {% if session.id == current_sid %}var(--primary-color){% else %}var(--accent-color){% endif %}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <div style="font-weight: bold; color: {% if session.id == current_sid %}var(--primary-color){% else %}white{% endif %};">
-                        {% if session.id == current_sid %}
-                            This Device
-                        {% else %}
-                            {{ session.ip_address }}
-                        {% endif %}
-                    </div>
-                    <div style="font-size: 0.9em; color: #aaa;">
-                        {{ session.user_agent }}
-                    </div>
-                    <div style="font-size: 0.8em; color: #666;">
-                        Active at: {{ session.last_active_at.strftime('%d/%m/%Y %H:%M') }}
-                    </div>
-                </div>
-
                 {% if session.id != current_sid %}
-                <form action="/dashboard/security/revoke/{{ session.id }}" method="post" onsubmit="return confirm('Are you sure you want to disconnect this device?');">
-                    <button type="submit" class="btn-outline" style="color: var(--error-color); border-color: var(--error-color);">
-                        Disconnect
-                    </button>
-                </form>
-                {% else %}
-                <span style="color: var(--primary-color); font-size: 0.9em; border: 1px solid var(--primary-color); padding: 2px 8px; border-radius: 4px;">Current</span>
+                <div class="session-item" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--accent-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-weight: bold; color: white;">
+                            {{ session.ip_address }}
+                        </div>
+                        <div style="font-size: 0.9em; color: #aaa;">
+                            {{ session.user_agent }}
+                        </div>
+                        <div style="font-size: 0.8em; color: #666;">
+                            Active at: {{ session.last_active_at.strftime('%d/%m/%Y %H:%M') }}
+                        </div>
+                    </div>
+
+                    <form action="/dashboard/security/revoke/{{ session.id }}" method="post" onsubmit="return confirm('Are you sure you want to disconnect this device?');">
+                        <button type="submit" class="btn-outline" style="color: var(--error-color); border-color: var(--error-color);">
+                            Disconnect
+                        </button>
+                    </form>
+                </div>
                 {% endif %}
-            </div>
             {% endfor %}
         </div>
     </div>
