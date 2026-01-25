@@ -66,7 +66,7 @@ from app.ai.chatbot import chatbot_service
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security, admin,
-    logout, social, career, legal, onboarding, accessibility
+    logout, social, career, legal, accessibility
     # email_verification, two_factor, debug removed
 )
 from app.routes import setup_hotfix
@@ -186,7 +186,6 @@ app.include_router(logout.router)
 app.include_router(social.router)
 app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
-app.include_router(onboarding.router)
 app.include_router(accessibility.router)
 app.include_router(admin.router)
 app.include_router(setup_hotfix.router)
