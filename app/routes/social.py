@@ -93,9 +93,9 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 
     try:
         db.commit()
-        logger.critical(f"✅ DB COMMIT SUCCESS: User {user.id} logged in.")
+        logger.info(f"✅ DB COMMIT SUCCESS: User {user.id} logged in.")
     except Exception as e:
-        logger.critical(f"❌ DB COMMIT FAILED: {e}")
+        logger.error(f"❌ DB COMMIT FAILED: {e}")
         raise e
 
     # Security: Create Session
@@ -173,7 +173,7 @@ async def login_github(request: Request):
     # Generate redirect_uri and FORCE HTTPS
     redirect_uri = get_consistent_redirect_uri(request, 'auth_github_callback')
 
-    logger.critical(f"🔎 GITHUB LOGIN START: Generated Redirect URI: {redirect_uri}")
+    logger.info(f"🔎 GITHUB LOGIN START: Generated Redirect URI: {redirect_uri}")
 
     # SECURITY REFACTOR: Use authorize_redirect which manages state automatically
     return await oauth.github.authorize_redirect(request, redirect_uri)
@@ -187,7 +187,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
     state = request.query_params.get('state')
     error = request.query_params.get('error')
     code_log = code[:5] if code else "None"
-    logger.critical(f"📥 GITHUB CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
+    logger.info(f"📥 GITHUB CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
 
     try:
         # STRICT AUTH CHECK
@@ -200,7 +200,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         # 1. Manual HTTPS Enforcement
         redirect_uri = get_consistent_redirect_uri(request, 'auth_github_callback')
 
-        logger.critical(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
+        logger.info(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
 
         # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
         # FIX: Manual fetch to avoid auto-extraction collision
@@ -210,24 +210,24 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
             grant_type='authorization_code'
         )
 
-        logger.critical(f"🔑 GITHUB TOKEN RECEIVED: {token.get('access_token')[:5]}... | Scope: {token.get('scope')}")
+        logger.info(f"🔑 GITHUB TOKEN RECEIVED: {token.get('access_token')[:5]}... | Scope: {token.get('scope')}")
 
         resp = await oauth.github.get('user', token=token)
         profile = resp.json()
 
-        logger.critical(f"👤 GITHUB PROFILE: ID={profile.get('id')} | Email={profile.get('email')}")
+        logger.info(f"👤 GITHUB PROFILE: ID={profile.get('id')} | Email={profile.get('email')}")
 
         # Get email (might be private)
         email = profile.get('email')
         if not email:
-            logger.critical("⚠️ Email null in profile. Fetching /user/emails...")
+            logger.warning("⚠️ Email null in profile. Fetching /user/emails...")
             resp_emails = await oauth.github.get('user/emails', token=token)
             emails = resp_emails.json()
             for e in emails:
                 if e.get('primary') and e.get('verified'):
                     email = e['email']
                     break
-            logger.critical(f"📧 EMAIL FETCHED: {email}")
+            logger.info(f"📧 EMAIL FETCHED: {email}")
 
         if not email:
              log_audit(db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
@@ -260,7 +260,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         current_user.terms_accepted_at = datetime.utcnow()
 
         db.commit() # Sync commit
-        logger.critical(f"✅ GITHUB LINKED: User {current_user.id} updated.")
+        logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
 
         log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
 
@@ -271,7 +271,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/dashboard", status_code=303)
 
     except Exception as e:
-        logger.critical(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
+        logger.error(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
         log_audit(db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
         return RedirectResponse("/login?error=github_failed")
 
@@ -284,7 +284,7 @@ async def login_linkedin(request: Request):
     # Generate redirect_uri and FORCE HTTPS
     redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
-    logger.critical(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
+    logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
 
     # SECURITY REFACTOR: Remove nonce=None to allow default state handling if applicable, or ensure state is managed.
     # Authlib default is to generate state.
@@ -299,13 +299,13 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
     state = request.query_params.get('state')
     error = request.query_params.get('error')
     code_log = code[:5] if code else "None"
-    logger.critical(f"📥 LINKEDIN CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
+    logger.info(f"📥 LINKEDIN CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
 
     try:
         # 1. Manual HTTPS Enforcement (Crucial for Railway)
         redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
-        logger.critical(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
+        logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
 
         # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
         # FIX: Manual fetch to avoid auto-extraction collision
@@ -316,11 +316,11 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             grant_type='authorization_code'
         )
 
-        logger.critical(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
+        logger.info(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
 
         user_info = await oauth.linkedin.userinfo(token=token)
 
-        logger.critical(f"👤 LINKEDIN USER INFO: {json.dumps(user_info, default=str)}")
+        logger.info(f"👤 LINKEDIN USER INFO: {json.dumps(user_info, default=str)}")
 
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
@@ -363,7 +363,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 if not user.avatar_url:
                     user.avatar_url = picture
                 db.commit() # Fix: Sync commit
-                logger.critical(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
+                logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
 
                 # Check Security Badge
                 check_and_award_security_badge(db, user)
@@ -393,7 +393,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             user.terms_accepted = True
             user.terms_accepted_at = datetime.utcnow()
             db.commit()
-            logger.critical(f"✅ NEW USER CREATED: {user.id} ({email})")
+            logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
 
         except IntegrityError:
             # Race condition: User created in parallel
@@ -416,6 +416,6 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
         return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
     except Exception as e:
-        logger.critical(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
+        logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
         log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
         return RedirectResponse("/login?error=linkedin_failed")
