@@ -172,10 +172,6 @@ def root():
 def health_check():
     return {"status": "ok"}
 
-@app.get("/sentry-debug")
-async def trigger_error():
-    division_by_zero = 1 / 0
-
 @app.get("/static/favicon/manifest.json")
 def manifest():
     manifest_path = static_dir / "favicon" / "manifest.json"
