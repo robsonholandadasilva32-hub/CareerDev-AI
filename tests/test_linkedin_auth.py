@@ -118,6 +118,8 @@ async def test_linkedin_callback_missing_nonce_handled(client, db):
         args, kwargs = mock_auth_token.call_args
         assert "claims_options" in kwargs
         assert kwargs["claims_options"]["nonce"]["required"] is False
+        # Fix verification: Ensure redirect_uri is explicitly passed
+        assert "redirect_uri" in kwargs
 
         # VALIDAÇÃO 2: Integridade do Fluxo (Zero-Touch)
         # Como o usuário é novo (não tem GitHub), deve redirecionar para conectar GitHub
