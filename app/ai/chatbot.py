@@ -51,7 +51,7 @@ class ChatbotService:
             self.async_client = None
             self.simulated = True
 
-    async def get_response(self, message: str, lang: str = "pt", user_id: int = None, db: Session = None, mode: str = "standard") -> str:
+    async def get_response(self, message: str, lang: str = "en", user_id: int = None, db: Session = None, mode: str = "standard") -> str:
         """
         Mode can be 'standard' or 'interview'.
         """
@@ -72,26 +72,24 @@ class ChatbotService:
         msg = message.lower()
 
         if mode == "interview":
-             if "start" in msg or "iniciar" in msg:
-                 return "Vamos começar. Explique a diferença entre TCP e UDP."
-             return "Boa resposta (Simulada). Próxima: O que é Dependency Injection?"
+             if "start" in msg:
+                 return "Let's start. Explain the difference between TCP and UDP."
+             return "Good answer (Simulated). Next: What is Dependency Injection?"
 
-        if "meu plano" in msg or "my plan" in msg:
+        if "my plan" in msg or "meu plano" in msg:
             if "Active Learning Plan" in context:
-                 return "Baseado no seu perfil, você deve focar em: " + context.split("Active Learning Plan:")[1].split("- Focus")[0].strip()
-            return "Você ainda não tem um plano ativo. Acesse o dashboard para gerar um."
+                 return "Based on your profile, you should focus on: " + context.split("Active Learning Plan:")[1].split("- Focus")[0].strip()
+            return "You don't have an active plan yet. Go to the dashboard to generate one."
 
         if "rust" in msg:
-            return "Rust é uma linguagem focada em segurança e performance. Ótima para sistemas embarcados e serviços críticos."
+            return "Rust is a language focused on safety and performance. Great for embedded systems and critical services."
         elif "go" in msg or "golang" in msg:
-            return "Go é excelente para microsserviços e aplicações em nuvem devido à sua concorrência leve."
-        elif "carreira" in msg or "career" in msg:
-            return "Para avançar sua carreira, o CareerDev AI sugere focar em T-Shaped skills e conectar seu GitHub para análise de lacunas."
+            return "Go is excellent for microservices and cloud applications due to its lightweight concurrency."
+        elif "career" in msg or "carreira" in msg:
+            return "To advance your career, CareerDev AI suggests focusing on T-Shaped skills and connecting your GitHub for gap analysis."
         elif "login" in msg or "entrar" in msg:
-            return "Você pode entrar usando E-mail/Senha, GitHub ou LinkedIn para uma experiência completa."
+            return "You can login using Email/Password, GitHub or LinkedIn for a complete experience."
 
-        if lang == "pt":
-            return "Estou em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'. Tente o modo Entrevista!"
         return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
 
     async def verify_connection(self):
@@ -112,7 +110,7 @@ class ChatbotService:
             raise Exception(f"OpenAI Connection Failed: {e}")
 
     async def _llm_response(self, message: str, lang: str, context: str, system_prompt: str) -> str:
-        lang_instruction = f"Reply in {lang}."
+        lang_instruction = "Reply in English."
         messages = [
             {"role": "system", "content": system_prompt + "\n" + context},
             {"role": "system", "content": lang_instruction},
@@ -137,10 +135,10 @@ class ChatbotService:
                 return response.choices[0].message.content
             except Exception as e_fallback:
                 print(f"CRITICAL: Fallback model {settings.OPENAI_FALLBACK_MODEL} also failed: {e_fallback}")
-                return "Erro ao comunicar com a IA (Fallback falhou)."
+                return "Error communicating with AI (Fallback failed)."
         except Exception as e:
             print(f"OpenAI Error: {e}")
-            return "Erro ao comunicar com a IA (Verifique a API Key)."
+            return "Error communicating with AI (Check API Key)."
 
 # Global Instance
 chatbot_service = ChatbotService()
