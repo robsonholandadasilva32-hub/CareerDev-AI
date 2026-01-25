@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -28,6 +29,7 @@ from sqlalchemy.exc import IntegrityError
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 oauth = OAuth()
 
 # GitHub Config
@@ -68,9 +70,26 @@ if settings.LINKEDIN_CLIENT_ID:
         }
     )
 
+def get_current_user_onboarding(request: Request, db: Session = Depends(get_db)):
+    # 🛡️ Relies on AuthMiddleware for session validation
+    if not getattr(request.state, "user", None):
+        return None
+    # Re-query to attach to current db session
+    return db.query(User).filter(User.id == request.state.user.id).first()
+
 def login_user_and_redirect(request: Request, user, db: Session, redirect_url: str = "/dashboard"):
     # Update last_login
     user.last_login = datetime.utcnow()
+    # Implicitly accept terms on login (Zero Touch)
+    if not user.terms_accepted:
+        user.terms_accepted = True
+        user.terms_accepted_at = datetime.utcnow()
+
+    # Zero Touch: If we have LinkedIn, we are good to go, but we want to check GitHub
+    # Note: is_profile_completed is now largely semantic for "has github and terms"
+    if user.linkedin_id and user.github_id and user.terms_accepted:
+        user.is_profile_completed = True
+
     db.commit()
 
     # Security: Create Session
@@ -99,6 +118,19 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     )
     return response
 
+@router.get("/onboarding/connect-github", response_class=HTMLResponse)
+async def connect_github(request: Request, user: User = Depends(get_current_user_onboarding)):
+    if not user:
+        return RedirectResponse("/login")
+
+    # STRICT SEQUENTIAL FLOW
+    # If already connected, move to Dashboard (Zero Touch)
+    if user.github_id:
+        return RedirectResponse("/dashboard", status_code=303)
+
+    return templates.TemplateResponse("onboarding_github.html", {"request": request, "user": user})
+
+
 @router.get("/login/github")
 @limiter.limit("5/minute")
 async def login_github(request: Request):
@@ -114,6 +146,7 @@ async def login_github(request: Request):
     if "http://" in redirect_uri:
         redirect_uri = redirect_uri.replace("http://", "https://")
 
+    # SECURITY REFACTOR: Use authorize_redirect which manages state automatically
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/github/callback")
@@ -132,14 +165,12 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         if settings.ENVIRONMENT == 'production':
             redirect_uri = redirect_uri.replace('http:', 'https:')
 
-        logger.info(f"GitHub Auth: Using fetch_access_token with redirect_uri={redirect_uri}")
+        logger.info(f"GitHub Auth: Using authorize_access_token with redirect_uri={redirect_uri}")
 
-        # 2. Use fetch_access_token (Bypassing authorize_access_token wrapper)
-        token = await oauth.github.fetch_access_token(
-            redirect_uri=redirect_uri,
-            code=str(request.query_params.get('code')),
-            grant_type='authorization_code'
-        )
+        # 2. SECURITY REFACTOR: Use authorize_access_token (Enforces State Validation)
+        # This replaces manual fetch_access_token
+        token = await oauth.github.authorize_access_token(request)
+
         resp = await oauth.github.get('user', token=token)
         profile = resp.json()
 
@@ -177,6 +208,12 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         current_user.github_id = github_id
         if not current_user.avatar_url:
             current_user.avatar_url = avatar
+
+        # ZERO TOUCH: Automatically complete profile
+        current_user.is_profile_completed = True
+        current_user.terms_accepted = True
+        current_user.terms_accepted_at = datetime.utcnow()
+
         db.commit() # Sync commit
 
         log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
@@ -184,10 +221,7 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         # Check Security Badge
         check_and_award_security_badge(db, current_user)
 
-        # Redirect to Profile Completion (Next Step)
-        if not current_user.is_profile_completed:
-             return RedirectResponse("/onboarding/complete-profile", status_code=303)
-
+        # Redirect Directly to Dashboard (Zero Touch)
         return RedirectResponse("/dashboard", status_code=303)
 
     except Exception as e:
@@ -206,10 +240,11 @@ async def login_linkedin(request: Request):
     if "http://" in redirect_uri:
         redirect_uri = redirect_uri.replace("http://", "https://")
 
-    logger.info(f"LinkedIn Login: Starting flow with nonce=None and sanitized redirect_uri={redirect_uri}")
+    logger.info(f"LinkedIn Login: Starting flow with authorize_redirect (State Enforced) and redirect_uri={redirect_uri}")
 
-    # Pass the sanitized string
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri, nonce=None)
+    # SECURITY REFACTOR: Remove nonce=None to allow default state handling if applicable, or ensure state is managed.
+    # Authlib default is to generate state.
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
@@ -220,14 +255,11 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
         if settings.ENVIRONMENT == 'production':
             redirect_uri = redirect_uri.replace('http:', 'https:')
 
-        logger.info(f"LinkedIn Auth: Using fetch_access_token with redirect_uri={redirect_uri}")
+        logger.info(f"LinkedIn Auth: Using authorize_access_token with redirect_uri={redirect_uri}")
 
-        # 2. Use fetch_access_token (Bypassing authorize_access_token wrapper)
-        token = await oauth.linkedin.fetch_access_token(
-            redirect_uri=redirect_uri,
-            code=str(request.query_params.get('code')),
-            grant_type='authorization_code'
-        )
+        # 2. SECURITY REFACTOR: Use authorize_access_token (Enforces State Validation)
+        # This replaces manual fetch_access_token
+        token = await oauth.linkedin.authorize_access_token(request)
 
         user_info = await oauth.linkedin.userinfo(token=token)
 
@@ -280,7 +312,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             target = "/dashboard"
             if not user.github_id:
                 logger.info("Strict Onboarding: User missing GitHub. Redirecting to GitHub auth.")
-                target = "/login/github"
+                target = "/onboarding/connect-github"
 
             return login_user_and_redirect(request, user, db, redirect_url=target)
 
@@ -291,7 +323,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
             target = "/dashboard"
             if not user.github_id:
                 logger.info("Strict Onboarding: User missing GitHub. Redirecting to GitHub auth.")
-                target = "/login/github"
+                target = "/onboarding/connect-github"
             return login_user_and_redirect(request, user, db, redirect_url=target)
 
         # 3. Create User (with Idempotency Check)
@@ -308,6 +340,11 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 avatar_url=picture,
                 email_verified=True
             )
+            # ZERO TOUCH: Implicit acceptance
+            user.terms_accepted = True
+            user.terms_accepted_at = datetime.utcnow()
+            db.commit()
+
         except IntegrityError:
             # Race condition: User created in parallel
             db.rollback()
@@ -326,7 +363,7 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 check_and_award_security_badge(db, user)
 
         # STRICT ONBOARDING: New user definitely needs GitHub
-        target = "/login/github"
+        target = "/onboarding/connect-github"
         if user.github_id: # Should not happen for new user via LinkedIn unless found via email
             target = "/dashboard"
 

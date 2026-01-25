@@ -7,8 +7,7 @@ def get_next_onboarding_step(user: User) -> str:
     """
     if not user.github_id:
         return "/onboarding/connect-github"
-    if not user.is_profile_completed:
-        return "/onboarding/complete-profile"
+    # Zero Touch: Profile completion is automatic or skipped
     return "/dashboard"
 
 def validate_onboarding_access(user: User):
@@ -25,7 +24,6 @@ def validate_onboarding_access(user: User):
     if not user.github_id:
          return RedirectResponse("/onboarding/connect-github", status_code=303)
 
-    if not user.is_profile_completed:
-         return RedirectResponse("/onboarding/complete-profile", status_code=303)
+    # Zero Touch: We no longer block access for profile completion
 
     return None
