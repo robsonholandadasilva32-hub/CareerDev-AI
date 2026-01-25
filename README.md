@@ -1,4 +1,5 @@
 # CareerDev AI
+![License](https://img.shields.io/badge/License-Apache_2.0-green?style=flat)
 
 **Uma plataforma de aceleração de carreira impulsionada por IA.**
 
@@ -82,6 +83,10 @@ The project is configured for secure deployment:
 *   `requirements.txt` has pinned versions.
 *   `start.sh` uses multiple workers.
 *   Security middleware is active by default.
+
+## License
+
+This project is licensed under the Apache License 2.0. See the LICENSE file for details.
 
 ---
 *Built with ❤️ for Developers.*
