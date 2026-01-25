@@ -70,7 +70,7 @@ from app.ai.chatbot import chatbot_service
 # Importando suas rotas
 from app.routes import (
     auth, dashboard, chatbot, security, admin,
-    logout, social, career, legal, accessibility
+    logout, social, career, legal, accessibility, monitoring
     # email_verification, two_factor, debug removed
 )
 from app.routes import setup_hotfix
@@ -114,6 +114,7 @@ app = FastAPI(title="CareerDev AI", lifespan=lifespan)
 app.state.limiter = limiter
 app.state.posthog_key = settings.POSTHOG_API_KEY
 app.state.posthog_host = settings.POSTHOG_HOST
+app.state.sentry_dsn = settings.SENTRY_DSN
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5.5 Exception Handlers
@@ -192,4 +193,5 @@ app.include_router(career.router, prefix="/career")
 app.include_router(legal.router, prefix="/legal")
 app.include_router(accessibility.router)
 app.include_router(admin.router)
+app.include_router(monitoring.router, prefix="/api/v1/monitoring")
 app.include_router(setup_hotfix.router)
