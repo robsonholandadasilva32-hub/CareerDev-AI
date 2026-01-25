@@ -259,7 +259,11 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         # 2. SECURITY REFACTOR: Use authorize_access_token (Enforces State Validation)
         # This replaces manual fetch_access_token
-        token = await oauth.linkedin.authorize_access_token(request)
+        # FIX: LinkedIn OIDC sometimes omits 'nonce', causing 500 errors. validation relaxed via claims_options.
+        token = await oauth.linkedin.authorize_access_token(
+            request,
+            claims_options={"nonce": {"required": False}}
+        )
 
         user_info = await oauth.linkedin.userinfo(token=token)
 
