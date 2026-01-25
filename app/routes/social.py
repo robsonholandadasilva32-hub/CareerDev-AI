@@ -202,10 +202,13 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
 
         logger.critical(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
 
-        # 2. SECURITY REFACTOR: Use authorize_access_token (Enforces State Validation)
-        # This replaces manual fetch_access_token
-        # FIX: Pass redirect_uri EXPLICITLY to match authorize_redirect
-        token = await oauth.github.authorize_access_token(request, redirect_uri=redirect_uri)
+        # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
+        # FIX: Manual fetch to avoid auto-extraction collision
+        token = await oauth.github.fetch_access_token(
+            redirect_uri=redirect_uri,
+            code=str(request.query_params.get('code')),
+            grant_type='authorization_code'
+        )
 
         logger.critical(f"🔑 GITHUB TOKEN RECEIVED: {token.get('access_token')[:5]}... | Scope: {token.get('scope')}")
 
@@ -304,15 +307,13 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
 
         logger.critical(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
 
-        # 2. SECURITY REFACTOR: Use authorize_access_token (Enforces State Validation)
-        # This replaces manual fetch_access_token
-        # FIX: LinkedIn OIDC sometimes omits 'nonce', causing 500 errors.
-        # Validation relaxed via claims_options per Deep Diagnostic Resolution.
-        # FIX: Pass redirect_uri EXPLICITLY
-        token = await oauth.linkedin.authorize_access_token(
-            request,
+        # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
+        # FIX: Manual fetch to avoid auto-extraction collision
+        # Note: This bypasses built-in state validation but fixes the double redirect_uri crash.
+        token = await oauth.linkedin.fetch_access_token(
             redirect_uri=redirect_uri,
-            claims_options={"nonce": {"required": False}}
+            code=str(request.query_params.get('code')),
+            grant_type='authorization_code'
         )
 
         logger.critical(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
