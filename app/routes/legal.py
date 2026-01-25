@@ -16,3 +16,7 @@ def terms_page(request: Request):
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_page(request: Request):
     return templates.TemplateResponse("legal/privacy.html", {"request": request})
+
+@router.get("/security-accessibility", response_class=HTMLResponse)
+def security_accessibility_page(request: Request):
+    return templates.TemplateResponse("legal/security_accessibility.html", {"request": request})

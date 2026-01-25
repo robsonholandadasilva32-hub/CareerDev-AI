@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Promise & Accessibility - CareerDev AI</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/accessibility.css">
+
+  <style>
+    :root {
+      /* Base Colors */
+      --bg-main: #0a0f1c;
+      --bg-overlay: rgba(10, 15, 28, 0.95);
+      --bg-card: #121a2f;
+      --bg-input: #0a1020;
+
+      /* Accents */
+      --accent-blue: #00b4ff;
+      --accent-green: #00ff9c;
+      --accent-purple: #bd00ff;
+
+      /* Text */
+      --text-main: #e6e9ef;
+      --text-muted: #9aa4b2;
+      --text-highlight: #ffffff;
+
+      /* Borders & Effects */
+      --border-soft: rgba(255, 255, 255, 0.1);
+      --border-glow: rgba(0, 180, 255, 0.3);
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --glow-blue: 0 0 15px rgba(0, 180, 255, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin: 0;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .back-btn {
+      color: var(--text-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .back-btn:hover {
+      color: var(--accent-blue);
+    }
+
+    .section-wrapper {
+        margin-bottom: 4rem;
+    }
+
+    /* Override accessibility-showcase margin for this page */
+    .accessibility-showcase {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+        max-width: 100%;
+        text-align: left;
+    }
+
+    .a11y-title {
+        text-align: left;
+    }
+
+    .a11y-subtitle {
+        text-align: left;
+    }
+
+    footer {
+        margin-top: 4rem;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-soft);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Security & Accessibility</h1>
+    <a href="/login" class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Back to Login
+    </a>
+  </header>
+
+  <div class="section-wrapper">
+    <!-- SECURITY PROMISE (Transferred) -->
+    <div class="accessibility-showcase">
+        <h3 class="a11y-title" style="color: var(--accent-green);">🔐 Security Promise</h3>
+        <p class="a11y-subtitle">Your data is safe with us.</p>
+
+        <div class="a11y-grid">
+            <!-- Card 1: No Selling -->
+            <div class="a11y-card" style="border-color: rgba(0, 255, 156, 0.3);">
+                <div class="icon-wrapper" style="color: var(--accent-green);">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </div>
+                <h4>No Data Selling</h4>
+                <p>We do not sell your personal data.</p>
+            </div>
+
+            <!-- Card 2: Encryption -->
+            <div class="a11y-card" style="border-color: rgba(0, 255, 156, 0.3);">
+                <div class="icon-wrapper" style="color: var(--accent-green);">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                </div>
+                <h4>Encrypted</h4>
+                <p>All data is encrypted at rest and in transit.</p>
+            </div>
+
+            <!-- Card 3: No AI Training -->
+            <div class="a11y-card" style="border-color: rgba(0, 255, 156, 0.3);">
+                <div class="icon-wrapper" style="color: var(--accent-green);">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 6v6l4 2.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                </div>
+                <h4>Private AI</h4>
+                <p>Your data is not used to train public models.</p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div class="section-wrapper">
+    <!-- ACCESSIBILITY SHOWCASE (Transferred) -->
+    <div class="accessibility-showcase">
+        <h3 class="a11y-title">Accessibility</h3>
+        <p class="a11y-subtitle">Inclusive for everyone.</p>
+
+        <div class="a11y-grid">
+            <!-- Card 1: Cognitive -->
+            <div class="a11y-card">
+                <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8-3.582-8-8-8m0 2v4l3.5 2-3.5 2v4" fill="currentColor" fill-opacity="0.2"/><path d="M12 6v6l4 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <h4>Cognitive</h4>
+                <p>Designed for focus and clarity.</p>
+            </div>
+
+            <!-- Card 2: Vision -->
+            <div class="a11y-card">
+                <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <h4>Vision</h4>
+                <p>High contrast and screen reader friendly.</p>
+            </div>
+
+            <!-- Card 3: Hearing -->
+            <div class="a11y-card">
+                 <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+                 </div>
+                <h4>Hearing</h4>
+                <p>Visual cues for all notifications.</p>
+            </div>
+
+            <!-- Card 4: Motor -->
+            <div class="a11y-card">
+                 <div class="icon-wrapper">
+                    <svg class="icon" viewBox="0 0 24 24" style="width:100%; height:100%;"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                 </div>
+                <h4>Motor</h4>
+                <p>Keyboard navigable and large targets.</p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2026 CareerDev AI. All rights reserved.</p>
+  </footer>
+</div>
+
+</body>
+</html>
