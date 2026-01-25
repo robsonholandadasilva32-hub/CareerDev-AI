@@ -6,8 +6,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 def get_legal_template(base_name: str) -> str:
-    # Always return English version
-    return f"legal/{base_name}_en.html"
+    return f"legal/{base_name}.html"
 
 @router.get("/terms", response_class=HTMLResponse)
 def terms_page(request: Request):
