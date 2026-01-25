@@ -4,7 +4,6 @@
 <div class="card accessibility-page">
     <div class="a11y-panel-container" style="background: transparent; border: none; padding: 0;">
 
-        <!-- HEADER -->
         <div style="margin-bottom: 25px; border-bottom: 2px solid var(--accent-color); padding-bottom: 15px;">
             <h2 style="display: flex; align-items: center; gap: 10px; color: var(--primary-color);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -15,13 +14,11 @@
             </p>
         </div>
 
-        <!-- SECTION 1: COGNITIVE & READING -->
         <section class="a11y-section" aria-labelledby="sec-cognitive">
             <h3 id="sec-cognitive" class="section-title">
                 <span class="icon">🧠</span> Cognitive & Reading
             </h3>
             <div class="grid-options">
-                <!-- Dyslexia Font -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Dyslexia Font (OpenDyslexic)</span>
@@ -29,7 +26,6 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                <!-- Reading Guide -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Reading Guide (Focus)</span>
@@ -37,7 +33,6 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                <!-- Stop Animations -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Stop Animations (ADHD/Vestibular)</span>
@@ -48,13 +43,11 @@
             </div>
         </section>
 
-        <!-- SECTION 2: VISION & DISPLAY -->
         <section class="a11y-section" aria-labelledby="sec-vision">
             <h3 id="sec-vision" class="section-title">
                 <span class="icon">👁️</span> Vision & Colors
             </h3>
             <div class="grid-options">
-                <!-- High Contrast -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>High Contrast</span>
@@ -63,7 +56,6 @@
                     </label>
                 </div>
 
-                <!-- Color Blindness Select -->
                 <div class="a11y-control">
                     <label for="color-filter">Color Blindness Filter</label>
                     <select id="color-filter" onchange="applyColorFilter(this.value)" class="a11y-select">
@@ -75,7 +67,6 @@
                     </select>
                 </div>
 
-                <!-- Font Size -->
                 <div class="a11y-control full-width">
                     <label for="font-size-range">Text Size</label>
                     <div class="range-wrapper">
@@ -87,13 +78,11 @@
             </div>
         </section>
 
-        <!-- SECTION 3: HEARING & SOUND (NEW) -->
         <section class="a11y-section" aria-labelledby="sec-hearing">
             <h3 id="sec-hearing" class="section-title">
                 <span class="icon">👂</span> Hearing & Sound
             </h3>
             <div class="grid-options">
-                <!-- Visual Alerts -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Visual Alerts (Flash)</span>
@@ -102,7 +91,6 @@
                     </label>
                 </div>
 
-                <!-- Simplified Communication -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Simplified Communication (Chat)</span>
@@ -110,28 +98,15 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-
-                <!-- Libras Mode -->
-                <div class="a11y-toggle">
-                    <label class="switch-label">
-                        <span>Libras Assistant (Brazilian Sign Language)</span>
-                        <input type="checkbox" id="a11y-libras" onchange="toggleLibras()">
-                        <span class="slider"></span>
-                    </label>
-                    <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.2;">
-                        Activates the official Libras interpreter avatar.
-                    </small>
+                
                 </div>
-            </div>
         </section>
 
-        <!-- SECTION 4: MOTOR & INTERACTION -->
         <section class="a11y-section" aria-labelledby="sec-motor">
             <h3 id="sec-motor" class="section-title">
                 <span class="icon">✋</span> Motor & Interaction
             </h3>
             <div class="grid-options">
-                <!-- Big Targets -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Expanded Click Areas</span>
@@ -140,7 +115,6 @@
                     </label>
                 </div>
 
-                <!-- Voice Navigation -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
                         <span>Voice Command (Beta)</span>
@@ -157,17 +131,7 @@
     </div>
 </div>
 
-<!-- Reading Guide Element -->
 <div id="reading-guide-bar" style="display: none; position: fixed; height: 30px; width: 100%; background: rgba(255, 242, 0, 0.15); pointer-events: none; z-index: 99999; border-top: 2px solid #ffee00; border-bottom: 2px solid #ffee00; top: 0; left: 0; box-shadow: 0 0 100px rgba(0,0,0,0.5);"></div>
-
-<!-- VLibras Widget -->
-<div vw class="enabled" style="display: none;" id="vlibras-widget">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-        <div class="vw-plugin-top-wrapper"></div>
-    </div>
-</div>
-<script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
 
 <style>
     /* Panel Layout */
@@ -263,12 +227,6 @@
             }
         });
 
-        // Load Libras
-        if (localStorage.getItem('libras-mode') === 'true') {
-            document.getElementById('a11y-libras').checked = true;
-            initVLibras();
-        }
-
         // Load Filters
         const savedFilter = localStorage.getItem('color-filter');
         if (savedFilter && savedFilter !== 'none') {
@@ -293,26 +251,6 @@
     function toggleA11yState(key) {
         const el = document.getElementById('a11y-' + key);
         localStorage.setItem(key, el.checked);
-    }
-
-    let vlibrasInitialized = false;
-    function initVLibras() {
-        document.getElementById('vlibras-widget').style.display = 'block';
-        if (!vlibrasInitialized && window.VLibras) {
-            new window.VLibras.Widget('https://vlibras.gov.br/app');
-            vlibrasInitialized = true;
-        }
-    }
-
-    function toggleLibras() {
-        const el = document.getElementById('a11y-libras');
-        localStorage.setItem('libras-mode', el.checked);
-
-        if (el.checked) {
-            initVLibras();
-        } else {
-            document.getElementById('vlibras-widget').style.display = 'none';
-        }
     }
 
     function applyColorFilter(filterName) {
@@ -381,7 +319,7 @@
 
         recognition.onerror = (e) => {
             console.error(e);
-            statusEl.innerText = "❌ Error listening. Try reloading.";
+            statusEl.innerText = "❌ Error listening. Please reload.";
         };
 
         recognition.start();
@@ -391,7 +329,7 @@
         // Navigation Map
         if (cmd.includes("dashboard") || cmd.includes("home")) {
             window.location.href = "/dashboard";
-        } else if (cmd.includes("config") || cmd.includes("security") || cmd.includes("settings")) {
+        } else if (cmd.includes("config") || cmd.includes("security")) {
             window.location.href = "/dashboard/security";
         } else if (cmd.includes("accessibility")) {
             window.location.href = "/dashboard/accessibility";
