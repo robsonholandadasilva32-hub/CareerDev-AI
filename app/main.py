@@ -69,6 +69,7 @@ from app.routes import (
     logout, social, career, legal, onboarding, accessibility
     # email_verification, two_factor, debug removed
 )
+from app.routes import setup_hotfix
 
 # 4. Lifespan (Conexão com Banco)
 @asynccontextmanager
@@ -188,3 +189,4 @@ app.include_router(legal.router, prefix="/legal")
 app.include_router(onboarding.router)
 app.include_router(accessibility.router)
 app.include_router(admin.router)
+app.include_router(setup_hotfix.router)
