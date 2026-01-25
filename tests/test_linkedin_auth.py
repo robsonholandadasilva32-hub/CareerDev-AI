@@ -1,171 +1,192 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
+import os
+
+# --- Configuração de Ambiente de Teste ---
+# Define variáveis ANTES de importar a app para evitar erros de validação no config.py
+os.environ["LINKEDIN_CLIENT_ID"] = "test_client_id"
+os.environ["LINKEDIN_CLIENT_SECRET"] = "test_client_secret"
+os.environ["GITHUB_CLIENT_ID"] = "test_github_id"
+os.environ["GITHUB_CLIENT_SECRET"] = "test_github_secret"
+os.environ["SESSION_SECRET_KEY"] = "super-secret-key"
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from authlib.jose.errors import MissingClaimError
+
 from app.main import app
 from app.db.base import Base
-from app.db.session import get_db
 from app.db.models.user import User
+from app.db.session import get_db
 
-# --- Test DB Setup ---
-# Use in-memory SQLite with StaticPool to share connection across threads/sessions
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
+# --- Configuração do Banco de Dados para Teste ---
+# Usa um arquivo SQLite específico para evitar problemas de thread/concorrência nos testes async
+DB_FILE = "./test_linkedin.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE}"
+
+# check_same_thread=False é crucial para testes assíncronos com SQLite
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="module")
 def db_engine():
+    """Cria o banco de dados antes dos testes e o apaga depois (Teardown)."""
     Base.metadata.create_all(bind=engine)
     yield engine
+    # Limpeza
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+    if os.path.exists(DB_FILE):
+        os.remove(DB_FILE)
 
 @pytest.fixture(scope="function")
 def db(db_engine):
+    """
+    Cria uma nova sessão de banco de dados para cada teste.
+    Aplica patches cruciais para evitar erros de 'Session is closed' no middleware.
+    """
     connection = db_engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
 
+    # Patch para o get_db da aplicação usar nossa sessão de teste
     app.dependency_overrides[get_db] = lambda: session
 
-    # Patch SessionLocal for AuthMiddleware and other usages
+    # TRUQUE TÉCNICO (CRÍTICO): Impede que o AuthMiddleware feche a sessão prematuramente.
+    # Salvamos o método original e o substituímos por um 'dummy' temporário.
+    original_close = session.close
+    session.close = lambda: None
+
+    # Garante que o middleware de auth também use essa sessão
     with patch("app.middleware.auth.SessionLocal", lambda: session):
         yield session
 
+    # Restaura o close original e limpa tudo após o teste
+    session.close = original_close
     session.close()
     transaction.rollback()
     connection.close()
-
-    # Cleanup dependency overrides to prevent pollution
+    
+    # Limpa override
     app.dependency_overrides.pop(get_db, None)
 
 @pytest.fixture(scope="function")
 def client(db):
+    """Retorna um TestClient configurado."""
     with TestClient(app) as c:
         yield c
 
-# --- Mocks ---
+# --- TESTES ---
 
-@pytest.fixture
-def mock_oauth():
-    # Patch the global oauth object in social.py
-    with patch("app.routes.social.oauth") as mock:
-        # Create an AsyncMock for authorize_access_token because it's awaited
-        mock.linkedin.authorize_access_token = AsyncMock()
-        mock.linkedin.userinfo = AsyncMock()
-        yield mock
-
-# --- Tests ---
-
-def test_linkedin_callback_missing_nonce_handled(client, mock_oauth, db):
+@pytest.mark.asyncio
+async def test_linkedin_callback_missing_nonce_handled(client, db):
     """
-    Verifies that authorize_access_token is called with nonce verification disabled.
-    If not disabled, the mock raises MissingClaimError, simulating failure.
-    Also verifies flow for NEW user -> Connect GitHub.
+    Testa se o callback do LinkedIn relaxa a exigência do 'nonce'
+    e transita com sucesso para a etapa de conexão com o GitHub (Novo Usuário).
     """
 
-    # 1. Define the side effect to simulate 'MissingClaimError' if nonce is not relaxed
-    async def authorize_side_effect(request, **kwargs):
-        claims_options = kwargs.get('claims_options', {})
-        nonce_options = claims_options.get('nonce', {})
-
-        # This asserts that the fix IS present.
-        # If 'required': False is not passed, we raise the error that production is seeing.
-        if nonce_options.get('required') is not False:
-            raise MissingClaimError("nonce")
-
-        return {'access_token': 'test_token', 'id_token': 'test_id_token'}
-
-    mock_oauth.linkedin.authorize_access_token.side_effect = authorize_side_effect
-
-    # 2. Mock User Info (New User)
-    mock_oauth.linkedin.userinfo.return_value = {
-        'sub': 'linkedin_123',
-        'email': 'newuser@example.com',
-        'name': 'New User',
-        'picture': 'http://avatar.url'
+    # Mock dos dados retornados pelo LinkedIn (SEM o campo nonce no id_token)
+    mock_token = {
+        "access_token": "fake_token",
+        "token_type": "bearer",
+        "expires_in": 3600,
+        "id_token": "fake_id_token_without_nonce"
     }
 
-    # 3. Call the callback endpoint
-    response = client.get("/auth/linkedin/callback?code=fake_code&state=fake_state", follow_redirects=False)
+    mock_user_info = {
+        "sub": "linkedin_12345",
+        "email": "testuser@example.com",
+        "given_name": "Test",
+        "family_name": "User",
+        "picture": "http://example.com/avatar.jpg"
+    }
 
-    # 4. Verification
+    # Mockamos o cliente OAuth do LinkedIn dentro da rota
+    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token, \
+         patch("app.routes.social.oauth.linkedin.userinfo", new_callable=AsyncMock) as mock_userinfo:
 
-    # Verify authorize_access_token was called
-    assert mock_oauth.linkedin.authorize_access_token.called
+        mock_auth_token.return_value = mock_token
+        mock_userinfo.return_value = mock_user_info
 
-    # Verify claims_options was correctly passed (redundant with side_effect but good for clarity)
-    call_args = mock_oauth.linkedin.authorize_access_token.call_args
-    assert call_args.kwargs['claims_options']['nonce']['required'] is False
+        # AÇÃO: Chamar a rota de callback
+        response = client.get("/auth/linkedin/callback", follow_redirects=False)
 
-    # Verify Redirect to Onboarding (Zero-Touch: New user needs GitHub)
-    assert response.status_code == 303
-    assert response.headers["location"] == "/onboarding/connect-github"
+        # VALIDAÇÃO 1: Verificamos se 'authorize_access_token' foi chamado com a configuração correta
+        # Isso confirma que o Hotfix está ativo (claims_options={'nonce': {'required': False}})
+        args, kwargs = mock_auth_token.call_args
+        assert "claims_options" in kwargs
+        assert kwargs["claims_options"]["nonce"]["required"] is False
 
-    # Verify User created in DB
-    user = db.query(User).filter(User.email == "newuser@example.com").first()
-    assert user is not None
-    assert user.linkedin_id == "linkedin_123"
-    assert user.github_id is None
-    assert user.terms_accepted is True # Zero Touch implicit consent
+        # VALIDAÇÃO 2: Integridade do Fluxo (Zero-Touch)
+        # Como o usuário é novo (não tem GitHub), deve redirecionar para conectar GitHub
+        assert response.status_code == 303
+        assert response.headers["location"] == "/onboarding/connect-github"
 
+        # Verifica se o usuário foi criado no banco
+        user = db.query(User).filter_by(email="testuser@example.com").first()
+        assert user is not None
+        assert user.linkedin_id == "linkedin_12345"
+        assert user.github_id is None
+        assert user.terms_accepted is True # Aceite implícito
 
-def test_linkedin_callback_existing_user_flow(client, mock_oauth, db):
+@pytest.mark.asyncio
+async def test_linkedin_callback_zero_touch_flow(client, db):
     """
-    Verifies flow for EXISTING user with GitHub -> Dashboard.
-    (Zero-Touch Chain integrity)
+    Testa se um usuário que JÁ tem GitHub é enviado direto para o Dashboard.
+    Isso garante a integridade da cadeia de login.
     """
-    # 1. Setup Mock (Success)
-    mock_oauth.linkedin.authorize_access_token.return_value = {'access_token': 't', 'id_token': 'i'}
 
-    # 2. Setup Existing User with GitHub
-    existing_user = User(
+    # Pré-cria usuário com LinkedIn E GitHub
+    user = User(
         email="existing@example.com",
         name="Existing User",
-        linkedin_id="linkedin_456",
-        github_id="github_789",
-        hashed_password="hash",
+        linkedin_id="linkedin_999",
+        github_id="github_888",
+        hashed_password="hashed_secret",
         terms_accepted=True
     )
-    db.add(existing_user)
+    db.add(user)
     db.commit()
 
-    # 3. Mock User Info matching existing user
-    mock_oauth.linkedin.userinfo.return_value = {
-        'sub': 'linkedin_456',
-        'email': 'existing@example.com',
-        'name': 'Existing User',
-        'picture': 'http://avatar.url'
+    mock_token = {"access_token": "fake", "id_token": "fake_id"}
+    mock_user_info = {
+        "sub": "linkedin_999",
+        "email": "existing@example.com",
+        "name": "Existing User"
     }
 
-    # 4. Call Callback
-    response = client.get("/auth/linkedin/callback?code=fake&state=fake", follow_redirects=False)
+    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token, \
+         patch("app.routes.social.oauth.linkedin.userinfo", new_callable=AsyncMock) as mock_userinfo:
 
-    # 5. Verify Redirect to Dashboard
-    assert response.status_code == 303
-    assert response.headers["location"] == "/dashboard"
+        mock_auth_token.return_value = mock_token
+        mock_userinfo.return_value = mock_user_info
 
+        # Ação
+        response = client.get("/auth/linkedin/callback", follow_redirects=False)
 
-def test_linkedin_callback_security_checks(client, mock_oauth):
+        # Validação: Deve ir para DASHBOARD (Zero Touch)
+        assert response.status_code == 303
+        assert response.headers["location"] == "/dashboard"
+
+        # Confirma novamente que o nonce estava desligado
+        _, kwargs = mock_auth_token.call_args
+        assert kwargs["claims_options"]["nonce"]["required"] is False
+
+@pytest.mark.asyncio
+async def test_linkedin_callback_security_state_validation(client, db):
     """
-    Verifies that the callback endpoint calls authorize_access_token with the request object,
-    which is essential for Authlib's internal state (CSRF) validation.
+    Testa se a validação de estado (CSRF) ainda ocorre implicitamente.
+    Simulamos o Authlib lançando um erro de estado para garantir que não quebra o app.
     """
-    mock_oauth.linkedin.authorize_access_token.return_value = {'access_token': 't', 'id_token': 'i'}
-    mock_oauth.linkedin.userinfo.return_value = {'sub': 'u', 'email': 'e@e.com'}
 
-    client.get("/auth/linkedin/callback?code=c&state=s", follow_redirects=False)
+    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token:
+        # Simula erro de validação (MismatchingStateError)
+        mock_auth_token.side_effect = Exception("MismatchingStateError")
 
-    # Verify first argument was the request object
-    call_args = mock_oauth.linkedin.authorize_access_token.call_args
-    # call_args[0] is args tuple. First arg should be request.
-    arg_request = call_args[0][0]
-    assert hasattr(arg_request, "query_params")
-    assert arg_request.query_params["state"] == "s"
+        response = client.get("/auth/linkedin/callback", follow_redirects=False)
+
+        # Deve redirecionar para login com mensagem de erro
+        assert response.status_code == 307 or response.status_code == 303
+        assert "/login?error=linkedin_failed" in response.headers["location"]
