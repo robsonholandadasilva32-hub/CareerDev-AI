@@ -81,13 +81,14 @@ def client(db):
 # --- TESTES ---
 
 @pytest.mark.asyncio
-async def test_linkedin_callback_missing_nonce_handled(client, db):
+async def test_linkedin_callback_success_path(client, db):
     """
-    Testa se o callback do LinkedIn relaxa a exigência do 'nonce'
+    Testa se o callback do LinkedIn funciona corretamente usando fetch_access_token
     e transita com sucesso para a etapa de conexão com o GitHub (Novo Usuário).
+    Anteriormente verificava 'missing nonce', agora verifica fluxo manual de token.
     """
 
-    # Mock dos dados retornados pelo LinkedIn (SEM o campo nonce no id_token)
+    # Mock dos dados retornados pelo LinkedIn
     mock_token = {
         "access_token": "fake_token",
         "token_type": "bearer",
@@ -104,22 +105,23 @@ async def test_linkedin_callback_missing_nonce_handled(client, db):
     }
 
     # Mockamos o cliente OAuth do LinkedIn dentro da rota
-    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token, \
+    # ATENÇÃO: Agora patchamos fetch_access_token em vez de authorize_access_token
+    with patch("app.routes.social.oauth.linkedin.fetch_access_token", new_callable=AsyncMock) as mock_fetch_token, \
          patch("app.routes.social.oauth.linkedin.userinfo", new_callable=AsyncMock) as mock_userinfo:
 
-        mock_auth_token.return_value = mock_token
+        mock_fetch_token.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
 
-        # AÇÃO: Chamar a rota de callback
-        response = client.get("/auth/linkedin/callback", follow_redirects=False)
+        # AÇÃO: Chamar a rota de callback (incluindo código para simular retorno real)
+        response = client.get("/auth/linkedin/callback?code=test_code", follow_redirects=False)
 
-        # VALIDAÇÃO 1: Verificamos se 'authorize_access_token' foi chamado com a configuração correta
-        # Isso confirma que o Hotfix está ativo (claims_options={'nonce': {'required': False}})
-        args, kwargs = mock_auth_token.call_args
-        assert "claims_options" in kwargs
-        assert kwargs["claims_options"]["nonce"]["required"] is False
-        # Fix verification: Ensure redirect_uri is explicitly passed
-        assert "redirect_uri" in kwargs
+        # VALIDAÇÃO 1: Verificamos se 'fetch_access_token' foi chamado corretamente
+        args, kwargs = mock_fetch_token.call_args
+
+        # O novo código passa redirect_uri, code e grant_type explicitamente
+        assert kwargs["redirect_uri"] is not None
+        assert kwargs["code"] == "test_code"
+        assert kwargs["grant_type"] == "authorization_code"
 
         # VALIDAÇÃO 2: Integridade do Fluxo (Zero-Touch)
         # Como o usuário é novo (não tem GitHub), deve redirecionar para conectar GitHub
@@ -159,35 +161,36 @@ async def test_linkedin_callback_zero_touch_flow(client, db):
         "name": "Existing User"
     }
 
-    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token, \
+    with patch("app.routes.social.oauth.linkedin.fetch_access_token", new_callable=AsyncMock) as mock_fetch_token, \
          patch("app.routes.social.oauth.linkedin.userinfo", new_callable=AsyncMock) as mock_userinfo:
 
-        mock_auth_token.return_value = mock_token
+        mock_fetch_token.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
 
         # Ação
-        response = client.get("/auth/linkedin/callback", follow_redirects=False)
+        response = client.get("/auth/linkedin/callback?code=test_code", follow_redirects=False)
 
         # Validação: Deve ir para DASHBOARD (Zero Touch)
         assert response.status_code == 303
         assert response.headers["location"] == "/dashboard"
 
-        # Confirma novamente que o nonce estava desligado
-        _, kwargs = mock_auth_token.call_args
-        assert kwargs["claims_options"]["nonce"]["required"] is False
+        # Valida chamada do token
+        _, kwargs = mock_fetch_token.call_args
+        assert kwargs["code"] == "test_code"
 
 @pytest.mark.asyncio
-async def test_linkedin_callback_security_state_validation(client, db):
+async def test_linkedin_callback_token_error_handling(client, db):
     """
-    Testa se a validação de estado (CSRF) ainda ocorre implicitamente.
-    Simulamos o Authlib lançando um erro de estado para garantir que não quebra o app.
+    Testa se erros durante a troca do token são tratados.
+    Anteriormente testava validação de estado (CSRF) via authorize_access_token.
+    Agora testa exceção genérica no fetch_access_token.
     """
 
-    with patch("app.routes.social.oauth.linkedin.authorize_access_token", new_callable=AsyncMock) as mock_auth_token:
-        # Simula erro de validação (MismatchingStateError)
-        mock_auth_token.side_effect = Exception("MismatchingStateError")
+    with patch("app.routes.social.oauth.linkedin.fetch_access_token", new_callable=AsyncMock) as mock_fetch_token:
+        # Simula erro de conexão ou token inválido
+        mock_fetch_token.side_effect = Exception("TokenExchangeError")
 
-        response = client.get("/auth/linkedin/callback", follow_redirects=False)
+        response = client.get("/auth/linkedin/callback?code=invalid", follow_redirects=False)
 
         # Deve redirecionar para login com mensagem de erro
         assert response.status_code == 307 or response.status_code == 303
