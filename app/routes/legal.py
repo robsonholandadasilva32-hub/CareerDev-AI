@@ -5,16 +5,10 @@ from fastapi.templating import Jinja2Templates
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-def get_legal_template(base_name: str) -> str:
-    # Always return English version
-    return f"legal/{base_name}_en.html"
-
 @router.get("/terms", response_class=HTMLResponse)
 def terms_page(request: Request):
-    template_name = get_legal_template("terms")
-    return templates.TemplateResponse(template_name, {"request": request})
+    return templates.TemplateResponse("legal/terms.html", {"request": request})
 
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_page(request: Request):
-    template_name = get_legal_template("privacy")
-    return templates.TemplateResponse(template_name, {"request": request})
+    return templates.TemplateResponse("legal/privacy.html", {"request": request})

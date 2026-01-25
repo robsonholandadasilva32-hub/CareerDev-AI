@@ -8,23 +8,23 @@
         <div style="margin-bottom: 25px; border-bottom: 2px solid var(--accent-color); padding-bottom: 15px;">
             <h2 style="display: flex; align-items: center; gap: 10px; color: var(--primary-color);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                Acessibilidade Universal
+                Universal Accessibility
             </h2>
             <p style="color: var(--text-muted); font-size: 0.95rem;">
-                Personalize sua experiência. Configurações salvas automaticamente.
+                Customize your experience. Settings saved automatically.
             </p>
         </div>
 
         <!-- SECTION 1: COGNITIVE & READING -->
         <section class="a11y-section" aria-labelledby="sec-cognitive">
             <h3 id="sec-cognitive" class="section-title">
-                <span class="icon">🧠</span> Cognitivo & Leitura
+                <span class="icon">🧠</span> Cognitive & Reading
             </h3>
             <div class="grid-options">
                 <!-- Dyslexia Font -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Fonte Dislexia (OpenDyslexic)</span>
+                        <span>Dyslexia Font (OpenDyslexic)</span>
                         <input type="checkbox" id="a11y-font" onchange="toggleA11y('dyslexic-font')">
                         <span class="slider"></span>
                     </label>
@@ -32,7 +32,7 @@
                 <!-- Reading Guide -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Guia de Leitura (Foco)</span>
+                        <span>Reading Guide (Focus)</span>
                         <input type="checkbox" id="a11y-guide" onchange="toggleReadingGuide()">
                         <span class="slider"></span>
                     </label>
@@ -40,7 +40,7 @@
                 <!-- Stop Animations -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Parar Animações (TDAH/Vestibular)</span>
+                        <span>Stop Animations (ADHD/Vestibular)</span>
                         <input type="checkbox" id="a11y-motion" onchange="toggleA11y('reduced-motion')">
                         <span class="slider"></span>
                     </label>
@@ -51,13 +51,13 @@
         <!-- SECTION 2: VISION & DISPLAY -->
         <section class="a11y-section" aria-labelledby="sec-vision">
             <h3 id="sec-vision" class="section-title">
-                <span class="icon">👁️</span> Visão & Cores
+                <span class="icon">👁️</span> Vision & Colors
             </h3>
             <div class="grid-options">
                 <!-- High Contrast -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Alto Contraste</span>
+                        <span>High Contrast</span>
                         <input type="checkbox" id="a11y-contrast" onchange="toggleA11y('high-contrast')">
                         <span class="slider"></span>
                     </label>
@@ -65,19 +65,19 @@
 
                 <!-- Color Blindness Select -->
                 <div class="a11y-control">
-                    <label for="color-filter">Filtro de Daltonismo</label>
+                    <label for="color-filter">Color Blindness Filter</label>
                     <select id="color-filter" onchange="applyColorFilter(this.value)" class="a11y-select">
-                        <option value="none">Nenhum</option>
-                        <option value="protanopia">Protanopia (Vermelho)</option>
-                        <option value="deuteranopia">Deuteranopia (Verde)</option>
-                        <option value="tritanopia">Tritanopia (Azul)</option>
-                        <option value="achromatopsia">Acromatopsia (Monocromático)</option>
+                        <option value="none">None</option>
+                        <option value="protanopia">Protanopia (Red)</option>
+                        <option value="deuteranopia">Deuteranopia (Green)</option>
+                        <option value="tritanopia">Tritanopia (Blue)</option>
+                        <option value="achromatopsia">Achromatopsia (Monochrome)</option>
                     </select>
                 </div>
 
                 <!-- Font Size -->
                 <div class="a11y-control full-width">
-                    <label for="font-size-range">Tamanho do Texto</label>
+                    <label for="font-size-range">Text Size</label>
                     <div class="range-wrapper">
                         <span style="font-size: 0.8rem">A</span>
                         <input type="range" id="font-size-range" min="100" max="150" step="10" value="100" oninput="updateFontSize(this.value)">
@@ -90,13 +90,13 @@
         <!-- SECTION 3: HEARING & SOUND (NEW) -->
         <section class="a11y-section" aria-labelledby="sec-hearing">
             <h3 id="sec-hearing" class="section-title">
-                <span class="icon">👂</span> Audição & Som
+                <span class="icon">👂</span> Hearing & Sound
             </h3>
             <div class="grid-options">
                 <!-- Visual Alerts -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Alertas Visuais (Flash)</span>
+                        <span>Visual Alerts (Flash)</span>
                         <input type="checkbox" id="a11y-visual-alerts" onchange="toggleA11yState('visual-alerts')">
                         <span class="slider"></span>
                     </label>
@@ -105,7 +105,7 @@
                 <!-- Simplified Communication -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Comunicação Simplificada (Chat)</span>
+                        <span>Simplified Communication (Chat)</span>
                         <input type="checkbox" id="a11y-simple-text" onchange="toggleA11yState('simple-text')">
                         <span class="slider"></span>
                     </label>
@@ -114,12 +114,12 @@
                 <!-- Libras Mode -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Assistente Libras (VLibras)</span>
+                        <span>Libras Assistant (Brazilian Sign Language)</span>
                         <input type="checkbox" id="a11y-libras" onchange="toggleLibras()">
                         <span class="slider"></span>
                     </label>
                     <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.2;">
-                        Ativa o avatar intérprete oficial de Libras.
+                        Activates the official Libras interpreter avatar.
                     </small>
                 </div>
             </div>
@@ -128,13 +128,13 @@
         <!-- SECTION 4: MOTOR & INTERACTION -->
         <section class="a11y-section" aria-labelledby="sec-motor">
             <h3 id="sec-motor" class="section-title">
-                <span class="icon">✋</span> Motor & Interação
+                <span class="icon">✋</span> Motor & Interaction
             </h3>
             <div class="grid-options">
                 <!-- Big Targets -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Áreas de Clique Ampliadas</span>
+                        <span>Expanded Click Areas</span>
                         <input type="checkbox" id="a11y-big-targets" onchange="toggleA11y('big-targets')">
                         <span class="slider"></span>
                     </label>
@@ -143,12 +143,12 @@
                 <!-- Voice Navigation -->
                 <div class="a11y-toggle">
                     <label class="switch-label">
-                        <span>Comando de Voz (Beta)</span>
+                        <span>Voice Command (Beta)</span>
                         <input type="checkbox" id="a11y-voice" onchange="toggleVoiceNav()">
                         <span class="slider"></span>
                     </label>
                     <small id="voice-status" style="display: block; margin-top: 5px; color: var(--primary-color); font-size: 0.8rem; display: none;">
-                        🎤 Escutando... Diga "Ir para Dashboard", "Sair", "Rolar Baixo"
+                        🎤 Listening... Say "Go to Dashboard", "Logout", "Scroll Down"
                     </small>
                 </div>
             </div>
@@ -356,32 +356,32 @@
         }
 
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            alert("Seu navegador não suporta Comandos de Voz. Tente Chrome ou Edge.");
+            alert("Your browser does not support Voice Commands. Try Chrome or Edge.");
             checkbox.checked = false;
             return;
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR';
+        recognition.lang = 'en-US';
         recognition.continuous = true;
         recognition.interimResults = false;
 
         recognition.onstart = () => {
             statusEl.style.display = 'block';
-            statusEl.innerText = "🎤 Escutando... (Diga 'Ajuda' para comandos)";
+            statusEl.innerText = "🎤 Listening... (Say 'Help' for commands)";
         };
 
         recognition.onresult = (event) => {
             const command = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
             console.log("Voice Command:", command);
-            statusEl.innerText = `🎤 Ouvi: "${command}"`;
+            statusEl.innerText = `🎤 Heard: "${command}"`;
             handleVoiceCommand(command);
         };
 
         recognition.onerror = (e) => {
             console.error(e);
-            statusEl.innerText = "❌ Erro ao escutar. Tente recarregar.";
+            statusEl.innerText = "❌ Error listening. Try reloading.";
         };
 
         recognition.start();
@@ -389,20 +389,20 @@
 
     function handleVoiceCommand(cmd) {
         // Navigation Map
-        if (cmd.includes("dashboard") || cmd.includes("início") || cmd.includes("home")) {
+        if (cmd.includes("dashboard") || cmd.includes("home")) {
             window.location.href = "/dashboard";
-        } else if (cmd.includes("configura") || cmd.includes("segurança")) {
+        } else if (cmd.includes("config") || cmd.includes("security") || cmd.includes("settings")) {
             window.location.href = "/dashboard/security";
-        } else if (cmd.includes("acessibilidade")) {
+        } else if (cmd.includes("accessibility")) {
             window.location.href = "/dashboard/accessibility";
-        } else if (cmd.includes("sair") || cmd.includes("logout")) {
+        } else if (cmd.includes("logout") || cmd.includes("exit")) {
             window.location.href = "/logout";
-        } else if (cmd.includes("baixo") || cmd.includes("descer")) {
+        } else if (cmd.includes("down") || cmd.includes("scroll down")) {
             window.scrollBy({ top: 400, behavior: 'smooth' });
-        } else if (cmd.includes("cima") || cmd.includes("subir")) {
+        } else if (cmd.includes("up") || cmd.includes("scroll up")) {
             window.scrollBy({ top: -400, behavior: 'smooth' });
-        } else if (cmd.includes("ajuda")) {
-            alert("Comandos: 'Ir para Dashboard', 'Configurações', 'Acessibilidade', 'Sair', 'Rolar Baixo', 'Rolar Cima'");
+        } else if (cmd.includes("help")) {
+            alert("Commands: 'Go to Dashboard', 'Settings', 'Accessibility', 'Logout', 'Scroll Down', 'Scroll Up'");
         }
     }
 </script>
