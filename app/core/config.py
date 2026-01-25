@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     POSTHOG_API_KEY: Optional[str] = None
     POSTHOG_HOST: str = "https://app.posthog.com"
 
+    # Monitoring (Sentry)
+    SENTRY_DSN: Optional[str] = None
+
     # Feature Flags
     FEATURES: dict = {
         "ENABLE_CHATBOT": True,
