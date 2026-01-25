@@ -189,6 +189,22 @@
     posthog.init('{{ request.app.state.posthog_key }}', {api_host: '{{ request.app.state.posthog_host }}'})
   </script>
   {% endif %}
+
+  {% if request.app.state.sentry_dsn %}
+  <script src="https://browser.sentry-cdn.com/7.114.0/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
+  <script>
+    Sentry.init({
+      dsn: "{{ request.app.state.sentry_dsn }}",
+      integrations: [
+        Sentry.browserTracingIntegration(),
+        Sentry.replayIntegration(),
+      ],
+      tracesSampleRate: 1.0,
+      replaysSessionSampleRate: 1.0,
+      replaysOnErrorSampleRate: 1.0,
+    });
+  </script>
+  {% endif %}
 </head>
 
 <body>
