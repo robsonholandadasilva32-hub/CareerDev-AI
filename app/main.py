@@ -22,6 +22,8 @@ import sentry_sdk
 # 1. Carregar .env e Configurar Logs
 load_dotenv()
 
+from app.core.config import settings
+
 # Structured Logging Configuration
 logging.basicConfig(
     level=logging.INFO,
@@ -41,12 +43,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';"
         return response
 
-# Initialize Sentry (if DSN provided)
-if os.getenv("SENTRY_DSN"):
+# Initialize Sentry
+if settings.SENTRY_DSN:
     sentry_sdk.init(
-        dsn=os.getenv("SENTRY_DSN"),
+        dsn=settings.SENTRY_DSN,
+        send_default_pii=True,
+        enable_logs=True,
         traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
+        profile_session_sample_rate=1.0,
+        profile_lifecycle="trace",
     )
 
 # 2. CAMINHO ABSOLUTO (Correção importante para o PythonAnywhere)
@@ -56,7 +61,6 @@ BASE_DIR = Path(__file__).resolve().parent
 # Se faltar alguma biblioteca aqui, o erro vai aparecer no Log de Erros.
 from app.db.base import Base
 from app.db.session import engine, SessionLocal
-from app.core.config import settings
 from app.services.gamification import init_badges
 from app.middleware.auth import AuthMiddleware
 from app.middleware.watchdog import WatchdogMiddleware
@@ -167,6 +171,10 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 @app.get("/static/favicon/manifest.json")
 def manifest():
