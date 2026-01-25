@@ -3,10 +3,10 @@
 {% block content %}
 <div class="auth-container">
     <div class="card auth-card" style="max-width: 600px; margin: 0 auto; padding: 30px;">
-        <h2 style="text-align: center; color: #00f3ff;">{{ t.billing_title | default('Assinatura e Cobrança') }}</h2>
+        <h2 style="text-align: center; color: #00f3ff;">Subscription & Billing</h2>
 
         <p style="text-align: center; margin-bottom: 20px;">
-            {{ t.billing_desc | default('Para continuar evoluindo sua carreira, ative sua assinatura.') }}
+            To continue advancing your career, activate your subscription.
         </p>
 
         {% if error %}
@@ -16,23 +16,23 @@
         {% endif %}
 
         <div class="plan-info" style="text-align: center; margin-bottom: 30px; background: rgba(0, 243, 255, 0.05); padding: 20px; border-radius: 8px;">
-            <h3 style="font-size: 2em; margin: 0;">$1.00 <span style="font-size: 0.5em; color: #9ca3af;">/ {{ t.month | default('mês') }}</span></h3>
+            <h3 style="font-size: 2em; margin: 0;">$1.00 <span style="font-size: 0.5em; color: #9ca3af;">/ month</span></h3>
             <ul style="list-style: none; padding: 0; margin-top: 15px; text-align: left; display: inline-block;">
-                <li>✅ {{ t.billing_benefit_1 | default('Acesso total ao Dashboard') }}</li>
-                <li>✅ {{ t.billing_benefit_2 | default('Análise de Carreira com IA') }}</li>
-                <li>✅ {{ t.billing_benefit_3 | default('Suporte Prioritário') }}</li>
+                <li>✅ Full Dashboard Access</li>
+                <li>✅ AI Career Analysis</li>
+                <li>✅ Priority Support</li>
             </ul>
         </div>
 
         <form action="/billing/pay" method="POST" id="payment-form">
             <!-- Recurring Toggle -->
             <div style="margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <label for="recurring" style="cursor: pointer;">{{ t.billing_recurring_label | default('Cobrança Recorrente (Assinatura)') }}</label>
+                <label for="recurring" style="cursor: pointer;">Recurring Billing (Subscription)</label>
                 <input type="checkbox" id="recurring" name="recurring" checked style="width: 20px; height: 20px; accent-color: #00f3ff;">
             </div>
 
             <div class="form-group">
-                <label for="card-element">Cartão de Crédito ou Débito</label>
+                <label for="card-element">Credit or Debit Card</label>
                 <div id="card-element" style="padding: 15px; background: #374151; border-radius: 5px;">
                     <!-- A Stripe Element will be inserted here. -->
                 </div>
@@ -41,7 +41,7 @@
             </div>
 
             <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">
-                {{ t.billing_pay_button | default('Pagar $1.00') }}
+                Pay $1.00
             </button>
         </form>
     </div>
