@@ -151,7 +151,7 @@ app.add_middleware(
     secret_key=settings.SESSION_SECRET_KEY,
     session_cookie="careerdev_session",
     same_site="lax",
-    https_only=os.getenv("Render", "False") == "True" or os.getenv("DYNO") is not None, # Auto-detect prod envs (Render/Heroku)
+    https_only=settings.ENVIRONMENT == "production" or os.getenv("Render", "False") == "True" or os.getenv("DYNO") is not None, # Auto-detect prod envs (Render/Heroku/Railway)
     max_age=1800 # 30 minutes session invalidation
 )
 
