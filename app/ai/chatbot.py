@@ -165,12 +165,19 @@ class ChatbotService:
             {"role": "user", "content": message}
         ]
 
+        # Determine params based on model name
+        primary_model = settings.OPENAI_MODEL
+        params = {
+            "model": primary_model,
+            "messages": messages
+        }
+
+        # O1 models and gpt-5-mini do not support temperature
+        if not (primary_model.startswith("o1-") or primary_model == "gpt-5-mini"):
+            params["temperature"] = 0.7
+
         try:
-            response = await self.async_client.chat.completions.create(
-                model=settings.OPENAI_MODEL,
-                messages=messages,
-                temperature=0.7
-            )
+            response = await self.async_client.chat.completions.create(**params)
             return response.choices[0].message.content
         except (openai.NotFoundError, openai.BadRequestError) as e:
             print(f"WARNING: Primary model {settings.OPENAI_MODEL} failed (Error: {e}). Switching to fallback: {settings.OPENAI_FALLBACK_MODEL}.")
