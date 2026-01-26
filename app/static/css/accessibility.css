@@ -107,3 +107,145 @@
     color: var(--secondary-color);
     white-space: nowrap;
 }
+
+/* --- FUNCTIONAL ACCESSIBILITY STYLES (Moved from base.html) --- */
+
+/* Dyslexic Font */
+html.dyslexic-font body {
+    font-family: 'OpenDyslexic', 'Verdana', sans-serif !important;
+    letter-spacing: 0.5px;
+    word-spacing: 2px;
+    line-height: 1.8 !important;
+}
+
+/* High Contrast Mode */
+html.high-contrast body {
+    --bg-color: #000 !important;
+    --text-color: #fff !important;
+    --primary-color: #ffff00 !important;
+    --secondary-color: #00ffff !important;
+    /* Login Page Variables */
+    --bg-main: #000 !important;
+    --bg-panel-left: #000 !important;
+
+    background-color: black !important;
+    color: white !important;
+}
+html.high-contrast .card,
+html.high-contrast .login-card {
+    border: 2px solid white !important;
+    background: black !important;
+}
+html.high-contrast a { color: yellow !important; text-decoration: underline !important; }
+
+/* Reduced Motion */
+html.reduced-motion * { animation: none !important; transition: none !important; }
+
+/* Motor A11y: Big Targets */
+html.big-targets .btn,
+html.big-targets input,
+html.big-targets select,
+html.big-targets a.btn-outline,
+html.big-targets nav a {
+    min-height: 60px !important;
+    padding: 15px 30px !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 10px !important;
+}
+html.big-targets label { font-size: 1.2rem !important; margin-bottom: 10px !important; display: block; }
+html.big-targets input[type="checkbox"] + .slider { height: 34px !important; width: 64px !important; }
+html.big-targets input[type="checkbox"] + .slider::before { width: 26px !important; height: 26px !important; top: 4px !important; }
+html.big-targets input[type="checkbox"]:checked + .slider::before { transform: translateX(30px) !important; }
+
+/* Vision A11y: Color Blindness Filters (SVG-based logic simulations) */
+html[data-color-filter="protanopia"] body { filter: url('/static/filters.svg#protanopia'); }
+html[data-color-filter="deuteranopia"] body { filter: url('/static/filters.svg#deuteranopia'); }
+html[data-color-filter="tritanopia"] body { filter: url('/static/filters.svg#tritanopia'); }
+html[data-color-filter="achromatopsia"] body { filter: grayscale(100%); }
+
+/* Hearing A11y: Visual Flash Alert */
+@keyframes flash-anim {
+    0% { box-shadow: inset 0 0 0 0px var(--primary-color); opacity: 0; }
+    50% { box-shadow: inset 0 0 0 50px var(--primary-color); opacity: 0.8; }
+    100% { box-shadow: inset 0 0 0 0px var(--primary-color); opacity: 0; }
+}
+
+.visual-flash-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: 999999;
+    animation: flash-anim 0.5s ease-out;
+    box-shadow: inset 0 0 0 20px var(--primary-color); /* Fallback */
+}
+
+/* --- PANEL & CONTROL STYLES (Moved from accessibility.html) --- */
+
+/* Panel Layout */
+.a11y-section {
+    margin-bottom: 30px;
+    background: rgba(255,255,255,0.02);
+    padding: 15px;
+    border-radius: 8px;
+}
+.section-title {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--text-color);
+    border-left: 4px solid var(--primary-color);
+    padding-left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-title .icon { font-size: 1.4rem; }
+
+/* Grid */
+.grid-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+}
+.full-width { grid-column: 1 / -1; }
+
+/* Controls */
+.switch-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+}
+.switch-label:hover {
+    background: rgba(0, 243, 255, 0.05);
+    border-color: rgba(0, 243, 255, 0.2);
+}
+.switch-label input { display: none; }
+
+.slider {
+    width: 44px; height: 24px; background: #374151; border-radius: 24px; position: relative; transition: 0.3s;
+    pointer-events: none; /* Let label handle click */
+}
+.slider::before {
+    content: ""; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: 0.3s;
+}
+input:checked + .slider { background: var(--secondary-color); }
+input:checked + .slider::before { transform: translateX(20px); }
+
+/* Select & Range */
+.a11y-control label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #cbd5e1; }
+.a11y-select {
+    width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155;
+    color: white; border-radius: 6px; cursor: pointer;
+}
+.range-wrapper {
+    display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;
+}
+input[type=range] { flex: 1; accent-color: var(--primary-color); cursor: pointer; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
