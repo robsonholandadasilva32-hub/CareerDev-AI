@@ -104,9 +104,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (e.key === 'Enter') sendMessage();
             });
         }
+
+        // Modal Events
+        const closeMicBtn = document.getElementById('btn-close-mic-modal');
+        const dismissMicBtn = document.getElementById('btn-dismiss-mic-modal');
+        if (closeMicBtn) closeMicBtn.addEventListener('click', closeMicModal);
+        if (dismissMicBtn) dismissMicBtn.addEventListener('click', closeMicModal);
     }
 
     // --- Core Logic ---
+
+    function showMicModal() {
+        const modal = document.getElementById('mic-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeMicModal() {
+        const modal = document.getElementById('mic-modal');
+        if (modal) modal.style.display = 'none';
+    }
 
     function toggleChat() {
         if (widget.style.display === 'none' || widget.style.display === '') {
@@ -156,12 +172,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function startVoiceInput() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            showToast("Browser does not support voice recognition.");
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            console.error("CRITICAL: Browser does not support Speech API");
+            alert("Voice features are optimized for Chrome and Edge. Please switch browsers for the best experience.");
             return;
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         const t = translations[currentLang] || translations['en'];
 
@@ -170,19 +188,26 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // Visual indicator
-        micBtn.style.color = 'var(--error-color)';
-        micBtn.style.borderColor = 'var(--error-color)';
+        // Visual indicator: Start Red Pulse
+        micBtn.classList.add('pulse-red');
+        micBtn.style.color = ''; // Remove inline override if any
+        micBtn.style.borderColor = '';
+
         showToast(t.listening);
 
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Recognition Start Error:", e);
+            micBtn.classList.remove('pulse-red');
+        }
 
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
             input.value = speechResult;
 
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            // Reset Visuals
+            micBtn.classList.remove('pulse-red');
 
             // Auto-send
             sendMessage();
@@ -190,20 +215,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onspeechend = () => {
             recognition.stop();
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.classList.remove('pulse-red');
         };
 
         recognition.onerror = (event) => {
             console.error("Speech Recognition Error:", event.error);
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.classList.remove('pulse-red');
 
             if (event.error === 'not-allowed') {
-                 showToast(t.error_mic);
+                 showMicModal();
+            } else if (event.error === 'no-speech') {
+                 // Mic is open but silence
+                 showToast("No speech detected. Please speak clearly.");
             } else {
                  showToast("Error: " + event.error);
             }
+        };
+
+        recognition.onend = () => {
+             micBtn.classList.remove('pulse-red');
         };
     }
 

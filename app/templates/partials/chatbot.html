@@ -53,6 +53,26 @@
     </div>
 </button>
 
+<!-- Mic Permission Modal -->
+<div id="mic-modal" class="chatbot-modal-overlay" style="display: none;" aria-hidden="true">
+    <div class="chatbot-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="chatbot-modal-header">
+            <h3 id="modal-title">🎤 Permission Required</h3>
+            <button id="btn-close-mic-modal" aria-label="Close modal">✖</button>
+        </div>
+        <div class="chatbot-modal-body">
+            <p>Microphone access was denied.</p>
+            <p style="font-size: 0.9em; opacity: 0.8;">To use voice features, please allow microphone access in your browser settings.</p>
+            <div class="browser-tip">
+                <span>🔒 Click the lock icon in your address bar to enable.</span>
+            </div>
+        </div>
+        <div class="chatbot-modal-footer">
+             <button id="btn-dismiss-mic-modal" class="chatbot-btn-primary">Understood</button>
+        </div>
+    </div>
+</div>
+
 <script src="/static/js/chatbot.js" defer></script>
 
 <style>
@@ -305,6 +325,103 @@
     }
     .chatbot-toast.show {
         opacity: 1;
+    }
+
+    /* Modal Styles */
+    .chatbot-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .chatbot-modal {
+        background: #111827;
+        border: 1px solid var(--error-color);
+        box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+        width: 90%;
+        max-width: 400px;
+        border-radius: 12px;
+        padding: 20px;
+        animation: slide-up 0.3s ease-out;
+        color: #fff;
+    }
+
+    .chatbot-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        color: var(--error-color);
+    }
+
+    .chatbot-modal-header h3 { margin: 0; font-size: 1.1rem; }
+
+    .chatbot-modal-header button {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .chatbot-modal-body {
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .browser-tip {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px dashed #475569;
+    }
+
+    .chatbot-modal-footer {
+        text-align: right;
+    }
+
+    .chatbot-btn-primary {
+        background: var(--primary-color);
+        color: #000;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .chatbot-btn-primary:hover { opacity: 0.9; }
+
+    @keyframes slide-up {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Red Pulse for Recording */
+    @keyframes pulse-red-anim {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .pulse-red {
+        animation: pulse-red-anim 1.5s infinite;
+        color: #ef4444 !important;
+        border-color: #ef4444 !important;
     }
 </style>
 

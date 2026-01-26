@@ -43,6 +43,20 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';"
         return response
 
+# Force HTTPS Middleware
+class ForceHTTPSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.scheme == "http":
+            hostname = request.url.hostname or ""
+            # print(f"DEBUG: Middleware Scheme={request.url.scheme} Hostname={hostname}")
+            # Skip localhost for development
+            if hostname not in ("localhost", "127.0.0.1", "testserver", "test"):
+                return RedirectResponse(
+                    url=str(request.url).replace("http://", "https://", 1),
+                    status_code=301
+                )
+        return await call_next(request)
+
 # Initialize Sentry
 if settings.SENTRY_DSN:
     sentry_sdk.init(
@@ -155,6 +169,7 @@ app.add_middleware(
     max_age=1800 # 30 minutes session invalidation
 )
 
+app.add_middleware(ForceHTTPSMiddleware)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)
