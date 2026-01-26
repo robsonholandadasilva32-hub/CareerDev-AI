@@ -13,10 +13,10 @@
         }
     });
 
-    // Filters
-    const savedFilter = localStorage.getItem('color-filter');
+    // Filters (Class-based persistence)
+    const savedFilter = localStorage.getItem('colorBlindness');
     if (savedFilter && savedFilter !== 'none') {
-        document.documentElement.setAttribute('data-color-filter', savedFilter);
+        document.documentElement.classList.add('a11y-' + savedFilter);
     }
 
     // Font Size
@@ -47,9 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Sync Filters
-    const savedFilter = localStorage.getItem('color-filter');
+    const savedFilter = localStorage.getItem('colorBlindness');
     const filterEl = document.getElementById('color-filter');
-    if (filterEl && savedFilter && savedFilter !== 'none') {
+    if (filterEl && savedFilter) {
         filterEl.value = savedFilter;
     }
 
@@ -86,8 +86,21 @@ window.toggleA11yState = function(key) {
 };
 
 window.applyColorFilter = function(filterName) {
-    document.documentElement.setAttribute('data-color-filter', filterName);
-    localStorage.setItem('color-filter', filterName);
+    // Remove all potential filter classes to prevent duplication/specificity issues
+    document.documentElement.classList.remove(
+        'a11y-protanopia',
+        'a11y-deuteranopia',
+        'a11y-tritanopia',
+        'a11y-achromatopsia'
+    );
+
+    // Add new class if not 'none'
+    if (filterName !== 'none') {
+        document.documentElement.classList.add('a11y-' + filterName);
+    }
+
+    // Persist to localStorage
+    localStorage.setItem('colorBlindness', filterName);
 };
 
 window.updateFontSize = function(val) {
