@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // State
+    // --- State ---
     let isVoiceEnabled = false;
     let isInterviewMode = false;
     let currentLang = 'en'; // Default
 
-    // UI Elements
+    // --- UI Elements ---
     const widget = document.getElementById('chatbot-widget');
     const toggleBtn = document.getElementById('chatbot-toggle');
     const closeBtn = document.getElementById('btn-close-chat');
@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusDiv = document.getElementById('chatbot-status');
     const statusText = document.getElementById('status-text');
 
-    // Translations
+    // --- Translations ---
     const translations = {
         'en': {
             placeholder: "Ask something...",
@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update welcome message
         const welcomeMsg = document.getElementById('chatbot-welcome-msg');
         if (welcomeMsg) {
-             welcomeMsg.innerText = t.welcome;
+            welcomeMsg.innerText = t.welcome;
         }
     }
 
@@ -174,7 +174,12 @@ document.addEventListener("DOMContentLoaded", () => {
         micBtn.classList.add('pulse-red');
         showToast(t.listening);
 
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Mic start error:", e);
+            micBtn.classList.remove('pulse-red');
+        }
 
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
@@ -196,18 +201,20 @@ document.addEventListener("DOMContentLoaded", () => {
             micBtn.classList.remove('pulse-red');
 
             if (event.error === 'not-allowed') {
-                 const modal = document.getElementById('permission-modal');
-                 if (modal) {
-                     modal.style.display = 'flex';
-                     modal.setAttribute('aria-hidden', 'false');
-                 }
+                const modal = document.getElementById('permission-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.setAttribute('aria-hidden', 'false');
+                } else {
+                    showToast(t.error_mic);
+                }
             } else {
-                 triggerShake();
-                 if (event.error === 'no-speech') {
-                     showToast("No speech detected.");
-                 } else {
-                     showToast("Error: " + event.error);
-                 }
+                triggerShake();
+                if (event.error === 'no-speech') {
+                    showToast("No speech detected.");
+                } else {
+                    showToast("Error: " + event.error);
+                }
             }
         };
     }
@@ -230,8 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const t = translations[currentLang] || translations['en'];
 
         // Status & Visual Feedback
-        statusText.innerText = t.exploring;
-        statusDiv.style.display = 'flex';
+        if (statusText) statusText.innerText = t.exploring;
+        if (statusDiv) statusDiv.style.display = 'flex';
         micBtn.classList.add('pulse-green'); // Thinking Mode
 
         // Audio Accessibility
@@ -256,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await response.json();
 
-            statusDiv.style.display = 'none';
+            if (statusDiv) statusDiv.style.display = 'none';
             micBtn.classList.remove('pulse-green');
             addMessage(data.response, 'bot');
 
@@ -271,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
         } catch (error) {
-            statusDiv.style.display = 'none';
+            if (statusDiv) statusDiv.style.display = 'none';
             micBtn.classList.remove('pulse-green');
             console.error("Chatbot Error:", error);
             showToast(t.error_ai);
@@ -293,6 +300,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function addMessage(text, sender) {
+        if (!messagesContainer) return;
+        
         const div = document.createElement('div');
         div.className = `message ${sender}`;
         div.innerText = text;
