@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeBtn = document.getElementById('chatbot-close-btn');
     const sendBtn = document.getElementById('chatbot-send-btn');
     const micBtn = document.getElementById('chatbot-mic-btn');
-    const input = document.getElementById('chatbot-input');
+    const input = document.getElementById('chatbot-input'); 
     const messagesArea = document.getElementById('chatbot-messages');
 
     // Variáveis de Estado
