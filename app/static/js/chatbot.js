@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000);
     }
 
-    // --- Voice Input Logic (Corrigida e Estabilizada) ---
+    // --- Voice Input Logic (Corrigida) ---
     function startVoiceInput() {
         // 1. Definição única da API (Evita erro de redeclaração)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
