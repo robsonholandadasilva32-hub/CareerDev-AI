@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- UI Elements ---
     const widget = document.getElementById('chatbot-widget');
-    const toggleBtn = document.getElementById('chatbot-toggle');
+    const toggleBtn = document.getElementById('chatbot-toggle'); 
     const closeBtn = document.getElementById('btn-close-chat');
     const input = document.getElementById('chat-input'); 
     const sendBtn = document.getElementById('btn-send');
