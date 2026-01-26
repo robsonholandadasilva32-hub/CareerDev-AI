@@ -64,6 +64,7 @@ from app.db.session import engine, SessionLocal
 from app.services.gamification import init_badges
 from app.middleware.auth import AuthMiddleware
 from app.middleware.watchdog import WatchdogMiddleware
+from app.middleware.blocker import RouteBlockerMiddleware
 from app.ai.chatbot import chatbot_service
 # Worker removed
 
@@ -134,6 +135,7 @@ app.add_middleware(WatchdogMiddleware)
 app.add_middleware(AuthMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(RouteBlockerMiddleware)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -156,6 +158,15 @@ app.add_middleware(
 )
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+@app.middleware("http")
+async def catch_runtime_errors(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except RuntimeError as e:
+        if "No response returned" in str(e):
+            return JSONResponse(status_code=404, content={"detail": "Not Found (Empty Response)"})
+        raise e
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)
 static_dir = BASE_DIR / "static"
