@@ -1,116 +1,41 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // State
-    let isVoiceEnabled = false;
-    let isInterviewMode = false;
-    let currentLang = 'en'; // Default
-
-    // UI Elements
+    // --- Seletores do DOM ---
     const widget = document.getElementById('chatbot-widget');
-    const toggleBtn = document.getElementById('chatbot-toggle');
-    const closeBtn = document.getElementById('btn-close-chat');
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('btn-send');
-    const micBtn = document.getElementById('btn-mic');
-    const voiceToggleBtn = document.getElementById('voice-toggle');
-    const interviewBtn = document.getElementById('interview-toggle');
-    const langSelect = document.getElementById('chat-lang-selector');
-    const messagesContainer = document.getElementById('chatbot-messages');
-    const statusDiv = document.getElementById('chatbot-status');
-    const statusText = document.getElementById('status-text');
+    const openBtn = document.getElementById('chatbot-open-btn');
+    const closeBtn = document.getElementById('chatbot-close-btn');
+    const sendBtn = document.getElementById('chatbot-send-btn');
+    const micBtn = document.getElementById('chatbot-mic-btn');
+    const input = document.getElementById('chatbot-input');
+    const messagesArea = document.getElementById('chatbot-messages');
 
-    // Translations
+    // Variáveis de Estado (Defina conforme sua lógica de tradução existente)
+    let currentLang = document.documentElement.lang || 'en'; 
+    
+    // Objeto de traduções simples para fallback
     const translations = {
-        'en': {
-            placeholder: "Ask something...",
-            listening: "Listening...",
-            exploring: "Exploring...",
-            error_mic: "Microphone access required.",
-            error_ai: "Connection Error: AI Unavailable",
-            interview_start: "🎙️ Interview Mode Activated. I am your Senior Tech Lead. Say 'Start' when ready.",
-            interview_end: "Interview mode ended.",
-            voice_enabled: "Voice mode enabled.",
-            welcome: "Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub."
-        },
-        'pt-BR': {
-            placeholder: "Pergunte algo...",
-            listening: "Ouvindo...",
-            exploring: "Explorando...",
-            error_mic: "Acesso ao microfone necessário.",
-            error_ai: "Erro de Conexão: IA Indisponível",
-            interview_start: "🎙️ Modo Entrevista Ativado. Sou seu Líder Técnico. Diga 'Começar' quando estiver pronto.",
-            interview_end: "Modo entrevista encerrado.",
-            voice_enabled: "Modo de voz ativado.",
-            welcome: "Olá! Sou seu assistente de carreira. Pergunte sobre Rust, Go ou como conectar seu GitHub."
-        },
-        'es': {
-            placeholder: "Pregunta algo...",
-            listening: "Escuchando...",
-            exploring: "Explorando...",
-            error_mic: "Se requiere acceso al micrófono.",
-            error_ai: "Error de conexión: IA no disponible",
-            interview_start: "🎙️ Modo Entrevista Activado. Soy tu Líder Técnico. Di 'Comenzar' cuando estés listo.",
-            interview_end: "Modo entrevista finalizado.",
-            voice_enabled: "Modo de voz activado.",
-            welcome: "¡Hola! Soy tu asistente de carrera. Pregunta sobre Rust, Go o cómo conectar tu GitHub."
-        }
+        'en': { listening: "Listening...", error_mic: "Microphone access denied." },
+        'pt': { listening: "Ouvindo...", error_mic: "Acesso ao microfone negado." },
+        'es': { listening: "Escuchando...", error_mic: "Acceso al micrófono denegado." }
     };
 
-    // --- Initialization ---
-    function init() {
-        // Detect Language from Browser
-        const browserLang = navigator.language || 'en';
-        if (browserLang.startsWith('pt')) currentLang = 'pt-BR';
-        else if (browserLang.startsWith('es')) currentLang = 'es';
-        else currentLang = 'en';
-
-        // Set Selector
-        if (langSelect) {
-            // Check if option exists, otherwise default to EN
-            const options = Array.from(langSelect.options).map(o => o.value);
-            if (!options.includes(currentLang)) currentLang = 'en';
-
-            langSelect.value = currentLang;
-
-            langSelect.addEventListener('change', (e) => {
-                currentLang = e.target.value;
-                updateUIText();
-            });
-        }
-
-        updateUIText();
-        attachEventListeners();
+    // --- Event Listeners Iniciais ---
+    if (openBtn) openBtn.addEventListener('click', toggleChat);
+    if (closeBtn) closeBtn.addEventListener('click', toggleChat);
+    if (micBtn) micBtn.addEventListener('click', startVoiceInput);
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
     }
 
-    function updateUIText() {
-        const t = translations[currentLang] || translations['en'];
-        if (input) input.placeholder = t.placeholder;
-
-        // Update welcome message
-        const welcomeMsg = document.getElementById('chatbot-welcome-msg');
-        if (welcomeMsg) {
-             welcomeMsg.innerText = t.welcome;
-        }
-    }
-
-    function attachEventListeners() {
-        if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
-        if (closeBtn) closeBtn.addEventListener('click', toggleChat);
-        if (voiceToggleBtn) voiceToggleBtn.addEventListener('click', toggleVoice);
-        if (interviewBtn) interviewBtn.addEventListener('click', toggleInterview);
-        if (micBtn) micBtn.addEventListener('click', startVoiceInput);
-        if (sendBtn) sendBtn.addEventListener('click', sendMessage);
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
-            });
-        }
-
-        // Modal Events
-        const closeMicBtn = document.getElementById('btn-close-mic-modal');
-        const dismissMicBtn = document.getElementById('btn-dismiss-mic-modal');
-        if (closeMicBtn) closeMicBtn.addEventListener('click', closeMicModal);
-        if (dismissMicBtn) dismissMicBtn.addEventListener('click', closeMicModal);
-    }
+    // --- Modal Events (Adicionado conforme o diff) ---
+    const closeMicBtn = document.getElementById('btn-close-mic-modal');
+    const dismissMicBtn = document.getElementById('btn-dismiss-mic-modal');
+    
+    if (closeMicBtn) closeMicBtn.addEventListener('click', closeMicModal);
+    if (dismissMicBtn) dismissMicBtn.addEventListener('click', closeMicModal);
 
     // --- Core Logic ---
 
@@ -125,91 +50,79 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleChat() {
+        if (!widget) return;
         if (widget.style.display === 'none' || widget.style.display === '') {
             widget.style.display = 'flex';
-            toggleBtn.style.display = 'none';
-            input.focus();
+            if (input) input.focus();
         } else {
             widget.style.display = 'none';
-            toggleBtn.style.display = 'flex';
         }
     }
 
-    function toggleVoice() {
-        isVoiceEnabled = !isVoiceEnabled;
-        const t = translations[currentLang] || translations['en'];
-
-        if (isVoiceEnabled) {
-            voiceToggleBtn.innerHTML = '🔊';
-            voiceToggleBtn.setAttribute('aria-label', "Disable voice");
-            voiceToggleBtn.title = "Disable voice";
-            speakText(t.voice_enabled);
-        } else {
-            voiceToggleBtn.innerHTML = '🔇';
-            voiceToggleBtn.setAttribute('aria-label', "Enable voice");
-            voiceToggleBtn.title = "Enable voice";
-            window.speechSynthesis.cancel();
+    function showToast(message) {
+        // Cria o elemento toast dinamicamente se não existir, ou usa um existente
+        let toast = document.getElementById('chatbot-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'chatbot-toast';
+            toast.className = 'chatbot-toast';
+            widget.appendChild(toast);
         }
+        toast.textContent = message;
+        toast.classList.add('show');
+        
+        // Remove após 3 segundos
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
     }
 
-    function toggleInterview() {
-        isInterviewMode = !isInterviewMode;
-        const header = document.querySelector('.chatbot-header');
-        const t = translations[currentLang] || translations['en'];
-
-        if (isInterviewMode) {
-            interviewBtn.style.color = 'var(--secondary-color)';
-            interviewBtn.title = "Exit Interview";
-            if (header) header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
-            addMessage(t.interview_start, 'bot');
-            if (isVoiceEnabled) speakText(t.interview_start);
-        } else {
-            interviewBtn.style.color = 'var(--text-muted)';
-            interviewBtn.title = "Interview Mode";
-            if (header) header.style.background = 'rgba(10, 15, 28, 0.9)';
-            addMessage(t.interview_end, 'bot');
-        }
-    }
-
+    // --- Voice Input Logic (Corrigida) ---
     function startVoiceInput() {
+        // 1. Definição única da API de reconhecimento
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+        // 2. Verificação de suporte
         if (!SpeechRecognition) {
             console.error("CRITICAL: Browser does not support Speech API");
+            showToast("Browser does not support voice recognition.");
             alert("Voice features are optimized for Chrome and Edge. Please switch browsers for the best experience.");
             return;
         }
 
+        // 3. Inicialização
         const recognition = new SpeechRecognition();
         const t = translations[currentLang] || translations['en'];
 
-        // Set recognition language
         recognition.lang = currentLang;
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // Visual indicator: Start Red Pulse
-        micBtn.classList.add('pulse-red');
-        micBtn.style.color = ''; // Remove inline override if any
+        // 4. Indicadores Visuais (Reset e Ativação)
+        micBtn.style.color = ''; // Remove overrides inline
         micBtn.style.borderColor = '';
+        micBtn.classList.add('pulse-red'); // Classe CSS que faz o botão piscar
+        
+        showToast(t.listening || "Listening...");
 
-        showToast(t.listening);
-
+        // 5. Iniciar reconhecimento (try/catch para evitar crashes)
         try {
             recognition.start();
         } catch (e) {
             console.error("Recognition Start Error:", e);
             micBtn.classList.remove('pulse-red');
+            showToast("Error starting microphone");
         }
 
+        // --- Event Handlers da API ---
+        
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
-            input.value = speechResult;
+            if (input) input.value = speechResult;
 
-            // Reset Visuals
             micBtn.classList.remove('pulse-red');
-
-            // Auto-send
+            
+            // Envio automático após falar
             sendMessage();
         };
 
@@ -223,9 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
             micBtn.classList.remove('pulse-red');
 
             if (event.error === 'not-allowed') {
+                 // Chama o Modal se a permissão for negada
+                 showToast(t.error_mic || "Mic permission denied");
                  showMicModal();
             } else if (event.error === 'no-speech') {
-                 // Mic is open but silence
                  showToast("No speech detected. Please speak clearly.");
             } else {
                  showToast("Error: " + event.error);
@@ -237,105 +151,51 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    // --- Message Logic ---
     async function sendMessage() {
-        let text = input.value.trim();
+        const text = input.value.trim();
         if (!text) return;
 
-        addMessage(text, 'user');
+        // Exibe mensagem do usuário
+        appendMessage('user', text);
         input.value = '';
 
-        const t = translations[currentLang] || translations['en'];
-
-        // Status
-        statusText.innerText = t.exploring;
-        statusDiv.style.display = 'flex';
-
-        // Audio Accessibility
-        if (isVoiceEnabled) {
-            speakText(t.exploring);
-        }
-
         try {
-            const response = await fetch('/chatbot/message', {
+            // Ajuste a URL '/chat' conforme sua rota no backend (main.py)
+            const response = await fetch('/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: text,
-                    mode: isInterviewMode ? 'interview' : 'standard',
-                    lang: currentLang // Send selected language
-                })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: text })
             });
 
-            if (!response.ok) {
-                throw new Error(`Server Error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json();
-
-            statusDiv.style.display = 'none';
-            addMessage(data.response, 'bot');
-
-            // Visual Alerts
-            if (localStorage.getItem('visual-alerts') === 'true') {
-                triggerVisualAlert();
-            }
-
-            // TTS with correct language
-            if (isVoiceEnabled) {
-                speakText(data.response);
-            }
+            // Supondo que o backend retorna { response: "..." } ou { message: "..." }
+            const botResponse = data.response || data.message || "No response received";
+            
+            appendMessage('bot', botResponse);
 
         } catch (error) {
-            statusDiv.style.display = 'none';
-            console.error("Chatbot Error:", error);
-            showToast(t.error_ai);
-            addMessage(t.error_ai, 'bot');
-            if (isVoiceEnabled) speakText(t.error_ai);
+            console.error('Error sending message:', error);
+            appendMessage('bot', "Sorry, I encountered an error connecting to the server.");
         }
     }
 
-    function speakText(text) {
-        if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
-
-        window.speechSynthesis.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = currentLang; // Use selected language
-        utterance.rate = 1.1;
-
-        window.speechSynthesis.speak(utterance);
+    function appendMessage(sender, text) {
+        if (!messagesArea) return;
+        
+        const msgDiv = document.createElement('div');
+        // Classes CSS esperadas: 'message user' ou 'message bot'
+        msgDiv.className = `message ${sender}`; 
+        
+        // Se quiser renderizar HTML no bot, use innerHTML com cuidado, senão textContent
+        msgDiv.textContent = text;
+        
+        messagesArea.appendChild(msgDiv);
+        // Scroll para o final
+        messagesArea.scrollTop = messagesArea.scrollHeight;
     }
-
-    function addMessage(text, sender) {
-        const div = document.createElement('div');
-        div.className = `message ${sender}`;
-        div.innerText = text;
-        messagesContainer.appendChild(div);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function showToast(message) {
-        let toast = document.getElementById('chatbot-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'chatbot-toast';
-            toast.className = 'chatbot-toast';
-            document.body.appendChild(toast);
-        }
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    function triggerVisualAlert() {
-        const flash = document.createElement('div');
-        flash.className = 'visual-flash-overlay';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 500);
-    }
-
-    // Run Init
-    init();
 });
