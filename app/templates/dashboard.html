@@ -19,23 +19,50 @@
 
     <!-- HEALTH & ERGONOMICS -->
     <div class="card health-monitor" id="tour-health">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <h3>🩺 Health & Ergonomics</h3>
-                <!-- Pulsing Dot -->
-                <div id="health-indicator" style="display: none; width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88; animation: pulse 1s infinite;"></div>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+             <h3>🩺 Health & Ergonomics</h3>
+             <!-- Global Indicator -->
+             <div id="health-indicator" style="display: none; width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88; animation: pulse 1s infinite;"></div>
+        </div>
 
-            <!-- Toggle Switch -->
+        <!-- Posture -->
+        <div class="health-row">
+            <div class="health-info">
+                 <span class="health-label">Posture AI</span>
+                 <small style="color: #6b7280; display: block;">Camera analysis every 5m</small>
+            </div>
             <label class="switch">
-                <input type="checkbox" id="posture-toggle" onchange="togglePostureCheck()">
+                <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
                 <span class="slider round"></span>
             </label>
         </div>
-        <p style="color: #9ca3af; font-size: 0.9em; margin-top: 5px;">
-            AI-powered posture analysis. We'll check your posture every 5 minutes and alert you if you're slouching.
-            <br><small style="color: #64748b;">(Camera access required. Images are processed and discarded.)</small>
-        </p>
+
+        <!-- 20-20-20 -->
+        <div class="health-row">
+             <div class="health-info">
+                 <span class="health-label" title="Alert every 20 mins to look away">20-20-20 Rule ℹ️</span>
+                 <small style="color: #6b7280; display: block;">Eye strain prevention</small>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+        <!-- Hydration -->
+        <div class="health-row" style="border-bottom: none;">
+             <div class="health-info">
+                 <span class="health-label">Hydration</span>
+                 <select id="hydration-interval" class="mini-select" onchange="HealthModule.updateHydrationInterval()">
+                     <option value="30">30m</option>
+                     <option value="60">60m</option>
+                 </select>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
+                <span class="slider round"></span>
+            </label>
+        </div>
     </div>
 
     <!-- ACCESSIBILITY SPOTLIGHT (NEW) -->
@@ -75,7 +102,62 @@
         </div>
     </div>
 
+    <!-- PiP Container (Draggable) -->
+    <div id="pip-container" style="display: none;">
+        <div id="pip-container-header">
+            <span style="font-size: 0.8rem; font-weight: bold;">Posture AI</span>
+            <button onclick="HealthModule.stopPostureCheck()" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
+        </div>
+        <video id="pip-video" playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+    </div>
+
     <style>
+        /* Health Module Styles */
+        .health-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .health-label {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .mini-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-soft);
+            color: #9ca3af;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        /* PiP Styles */
+        #pip-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: #000;
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 9999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            flex-direction: column;
+        }
+        #pip-container-header {
+            padding: 5px 10px;
+            background: rgba(0, 243, 255, 0.2);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
         .btn-action {
             display: flex;
             align-items: center;
@@ -281,98 +363,8 @@ input:checked + .slider:before { transform: translateX(24px); }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+<script src="/static/js/health.js"></script>
 <script>
-// Posture Check Logic
-let postureInterval = null;
-let stream = null;
-
-async function togglePostureCheck() {
-    const toggle = document.getElementById('posture-toggle');
-    const indicator = document.getElementById('health-indicator');
-
-    // SAVE STATE
-    localStorage.setItem('posture-check', toggle.checked);
-
-    if (toggle.checked) {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-
-            // Create hidden video element to hold stream
-            let video = document.getElementById('posture-video');
-            if (!video) {
-                video = document.createElement('video');
-                video.id = 'posture-video';
-                video.style.display = 'none';
-                document.body.appendChild(video);
-            }
-            video.srcObject = stream;
-            await video.play();
-
-            indicator.style.display = 'block';
-
-            // Initial check
-            setTimeout(captureAndAnalyze, 2000); // Wait for camera warm up
-
-            // Start interval (5 minutes = 300000 ms)
-            postureInterval = setInterval(captureAndAnalyze, 300000);
-
-            showToast("Posture Check Enabled", "success");
-
-        } catch (err) {
-            console.error("Camera Error:", err);
-            toggle.checked = false;
-            indicator.style.display = 'none';
-            alert("Could not access camera. Please allow camera permissions to use this feature.");
-        }
-    } else {
-        // Disable
-        if (postureInterval) clearInterval(postureInterval);
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
-        indicator.style.display = 'none';
-        showToast("Posture Check Disabled", "info");
-    }
-}
-
-async function captureAndAnalyze() {
-    const video = document.getElementById('posture-video');
-    if (!video || !stream) return;
-
-    try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-
-        // Low quality to save bandwidth
-        const base64 = canvas.toDataURL('image/jpeg', 0.5);
-
-        // Send to backend
-        const res = await fetch('/api/v1/monitoring/analyze-posture', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 })
-        });
-
-        if (res.status === 401) {
-            showToast("Session expired. Please login again.", "warning");
-            return;
-        }
-
-        const data = await res.json();
-
-        if (data.status === 'poor_posture') {
-            showToast(data.message, "warning");
-        }
-
-    } catch (e) {
-        console.error("Analysis failed:", e);
-    }
-}
-
 function showToast(msg, type) {
     const toast = document.createElement('div');
     toast.innerText = msg;
@@ -403,12 +395,8 @@ function showToast(msg, type) {
 
 // Tour Logic
 document.addEventListener('DOMContentLoaded', () => {
-    // RESTORE POSTURE STATE
-    const savedPosture = localStorage.getItem('posture-check');
-    if (savedPosture === 'true') {
-        const toggle = document.getElementById('posture-toggle');
-        if (toggle) toggle.checked = true;
-    }
+    // Initialize Health Module
+    HealthModule.init();
 
     const hasSeenTour = localStorage.getItem('hasSeenTour_v1');
 
