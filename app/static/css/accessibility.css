@@ -158,6 +158,7 @@ html.big-targets input[type="checkbox"] + .slider::before { width: 26px !importa
 html.big-targets input[type="checkbox"]:checked + .slider::before { transform: translateX(30px) !important; }
 
 /* Vision A11y: Color Blindness Filters (SVG-based logic simulations) */
+/* Verified mapping: Protanopia -> #protanopia, Deuteranopia -> #deuteranopia */
 html[data-color-filter="protanopia"] body { filter: url('/static/filters.svg#protanopia'); }
 html[data-color-filter="deuteranopia"] body { filter: url('/static/filters.svg#deuteranopia'); }
 html[data-color-filter="tritanopia"] body { filter: url('/static/filters.svg#tritanopia'); }
