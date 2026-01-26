@@ -9,20 +9,26 @@
             <span class="header-title">CareerDev AI</span>
         </div>
         <div class="header-controls">
+            <!-- Language Selector -->
+            <select id="chat-lang-selector" aria-label="Select Language" style="background: transparent; color: var(--text-muted); border: 1px solid var(--accent-color); border-radius: 4px; padding: 2px; font-size: 0.8rem; margin-right: 5px;">
+                <option value="en">EN</option>
+                <option value="pt-BR">PT</option>
+                <option value="es">ES</option>
+            </select>
             <!-- Interview Mode Toggle -->
-            <button id="interview-toggle" onclick="toggleInterview()" aria-label="Interview Mode" title="Simulate Interview" style="font-size: 0.9rem;">
+            <button id="interview-toggle" aria-label="Interview Mode" title="Simulate Interview" style="font-size: 0.9rem;">
                 🎙️
             </button>
             <!-- Voice Toggle -->
-            <button id="voice-toggle" onclick="toggleVoice()" aria-label="Enable voice" title="Enable voice">
+            <button id="voice-toggle" aria-label="Enable voice" title="Enable voice">
                 🔇
             </button>
-            <button onclick="toggleChat()" aria-label="Close chat" title="Close chat" class="close-btn">✖</button>
+            <button id="btn-close-chat" aria-label="Close chat" title="Close chat" class="close-btn">✖</button>
         </div>
     </div>
 
     <div id="chatbot-messages" class="chatbot-messages" aria-live="polite" role="log">
-        <div class="message bot">
+        <div id="chatbot-welcome-msg" class="message bot">
             Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub.
         </div>
     </div>
@@ -33,19 +39,21 @@
     </div>
 
     <div class="chatbot-input">
-        <input type="text" id="chat-input" placeholder="Ask something..." onkeypress="handleEnter(event)" aria-label="Type your message">
-        <button id="btn-mic" onclick="startVoiceInput()" aria-label="Speak message" title="Speak message" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); margin-right: 5px;">🎙️</button>
-        <button onclick="sendMessage()" aria-label="Send message">➤</button>
+        <input type="text" id="chat-input" placeholder="Ask something..." aria-label="Type your message">
+        <button id="btn-mic" aria-label="Speak message" title="Speak message" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); margin-right: 5px;">🎙️</button>
+        <button id="btn-send" aria-label="Send message">➤</button>
     </div>
 </div>
 
 <!-- Chatbot Toggle Button -->
-<button id="chatbot-toggle" onclick="toggleChat()" class="chatbot-toggle-btn" aria-label="Open career assistant">
+<button id="chatbot-toggle" class="chatbot-toggle-btn" aria-label="Open career assistant">
     <div class="neural-icon small">
         <div class="node center"></div>
         <div class="pulse-ring"></div>
     </div>
 </button>
+
+<script src="/static/js/chatbot.js" defer></script>
 
 <style>
     .chatbot-widget {
@@ -300,237 +308,3 @@
     }
 </style>
 
-<script>
-    let isVoiceEnabled = false;
-    let isInterviewMode = false;
-    // Force EN for simplified version
-    let currentLang = 'en';
-
-    function showToast(message) {
-        let toast = document.getElementById('chatbot-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'chatbot-toast';
-            toast.className = 'chatbot-toast';
-            document.body.appendChild(toast);
-        }
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    function toggleChat() {
-        const widget = document.getElementById('chatbot-widget');
-        const btn = document.getElementById('chatbot-toggle');
-        const input = document.getElementById('chat-input');
-
-        if (widget.style.display === 'none' || widget.style.display === '') {
-            widget.style.display = 'flex';
-            btn.style.display = 'none';
-            input.focus();
-        } else {
-            widget.style.display = 'none';
-            btn.style.display = 'flex'; // Changed to flex to keep icon centered
-        }
-    }
-
-    function toggleVoice() {
-        isVoiceEnabled = !isVoiceEnabled;
-        const btn = document.getElementById('voice-toggle');
-
-        if (isVoiceEnabled) {
-            btn.innerHTML = '🔊';
-            btn.setAttribute('aria-label', "Disable voice");
-            btn.title = "Disable voice";
-            // Welcome message if turning on
-            speakText("Voice mode enabled.");
-        } else {
-            btn.innerHTML = '🔇';
-            btn.setAttribute('aria-label', "Enable voice");
-            btn.title = "Enable voice";
-            window.speechSynthesis.cancel();
-        }
-    }
-
-    function handleEnter(e) {
-        if (e.key === 'Enter') sendMessage();
-    }
-
-    function startVoiceInput() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            showToast("Your browser does not support voice recognition.");
-            return;
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        const btnMic = document.getElementById('btn-mic');
-        // Visual indicator
-        btnMic.style.color = 'var(--error-color)';
-        btnMic.style.borderColor = 'var(--error-color)';
-        showToast("Listening...");
-
-        recognition.start();
-
-        recognition.onresult = (event) => {
-            const speechResult = event.results[0][0].transcript;
-            const input = document.getElementById('chat-input');
-            input.value = speechResult;
-
-            btnMic.style.color = 'var(--primary-color)';
-            btnMic.style.borderColor = 'var(--primary-color)';
-
-            // Auto-send
-            sendMessage();
-        };
-
-        recognition.onspeechend = () => {
-            recognition.stop();
-            btnMic.style.color = 'var(--primary-color)';
-            btnMic.style.borderColor = 'var(--primary-color)';
-        };
-
-        recognition.onerror = (event) => {
-            console.error("Speech Recognition Error:", event.error);
-            btnMic.style.color = 'var(--primary-color)';
-            btnMic.style.borderColor = 'var(--primary-color)';
-
-            if (event.error === 'not-allowed') {
-                 showToast("Microphone access required for voice mode.");
-            } else {
-                 showToast("Voice recognition error: " + event.error);
-            }
-        };
-    }
-
-    async function sendMessage() {
-        const input = document.getElementById('chat-input');
-        let text = input.value.trim();
-        if (!text) return;
-
-        addMessage(text, 'user');
-        input.value = '';
-
-        // A11y: Simplified Communication Injection (Client-side prompt engineering)
-        if (localStorage.getItem('simple-text') === 'true') {
-             // We invisibly append this instruction for the LLM
-             text += " [SYSTEM: Respond EXTREMELY SIMPLY, DIRECTLY and OBJECTIVELY. Use accessible vocabulary.]";
-        }
-
-        // Status "Exploring..."
-        const status = document.getElementById('chatbot-status');
-        const statusText = document.getElementById('status-text');
-
-        statusText.innerText = "Exploring...";
-        status.style.display = 'block';
-
-        // Audio Accessibility: Speak "Exploring..." immediately if voice is on
-        if (isVoiceEnabled) {
-            speakText("Exploring...");
-        }
-
-        try {
-            // Include mode in request
-            const response = await fetch('/chatbot/message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: text,
-                    mode: isInterviewMode ? 'interview' : 'standard'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Server Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            status.style.display = 'none';
-            addMessage(data.response, 'bot');
-
-            // A11y: Visual Alerts (Flash)
-            if (localStorage.getItem('visual-alerts') === 'true') {
-                triggerVisualAlert();
-            }
-
-            if (isVoiceEnabled) {
-                speakText(data.response);
-            }
-
-        } catch (error) {
-            status.style.display = 'none';
-            console.error("Chatbot Error:", error);
-            showToast("Connection Error: AI Unavailable");
-            addMessage("Error connecting to AI.", 'bot');
-            if (isVoiceEnabled) speakText("Connection error.");
-        }
-    }
-
-    // Visual Alert Animation Trigger
-    function triggerVisualAlert() {
-        const flash = document.createElement('div');
-        flash.className = 'visual-flash-overlay';
-        document.body.appendChild(flash);
-        // Remove after animation (0.5s)
-        setTimeout(() => flash.remove(), 500);
-    }
-
-    function addMessage(text, sender) {
-        const div = document.createElement('div');
-        div.className = `message ${sender}`;
-        div.innerText = text;
-        const container = document.getElementById('chatbot-messages');
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function speakText(text) {
-        if (!isVoiceEnabled) return;
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Stop current speech
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = 1.1; // Slightly faster for modern feel
-
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    function toggleInterview() {
-        isInterviewMode = !isInterviewMode;
-        const btn = document.getElementById('interview-toggle');
-        const header = document.querySelector('.chatbot-header');
-
-        if (isInterviewMode) {
-            btn.style.color = 'var(--secondary-color)';
-            btn.title = "Exit Interview";
-            // Visual cue - Ensure header class is targeted correctly or use inline
-            header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
-            addMessage("🎙️ Interview Mode Activated. I am your Senior Tech Lead. Say 'Start' when ready.", 'bot');
-            if (isVoiceEnabled) speakText("Interview Mode Activated. Say Start.");
-        } else {
-            btn.style.color = 'var(--text-muted)';
-            btn.title = "Interview Mode";
-            header.style.background = 'rgba(10, 15, 28, 0.9)'; // Reset
-            addMessage("Interview mode ended.", 'bot');
-        }
-    }
-
-    // Initialize UI Text
-    document.addEventListener("DOMContentLoaded", () => {
-        const voiceBtn = document.getElementById('voice-toggle');
-        voiceBtn.setAttribute('aria-label', "Enable voice");
-        voiceBtn.title = "Enable voice";
-
-    });
-</script>
