@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById('chatbot-input');
     const messagesArea = document.getElementById('chatbot-messages');
 
-    // Variáveis de Estado (Defina conforme sua lógica de tradução existente)
+    // Variáveis de Estado
     let currentLang = document.documentElement.lang || 'en'; 
     
     // Objeto de traduções simples para fallback
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Modal Events (Adicionado conforme o diff) ---
+    // --- Modal Events ---
     const closeMicBtn = document.getElementById('btn-close-mic-modal');
     const dismissMicBtn = document.getElementById('btn-dismiss-mic-modal');
     
@@ -60,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showToast(message) {
-        // Cria o elemento toast dinamicamente se não existir, ou usa um existente
         let toast = document.getElementById('chatbot-toast');
         if (!toast) {
             toast = document.createElement('div');
@@ -71,15 +70,14 @@ document.addEventListener("DOMContentLoaded", () => {
         toast.textContent = message;
         toast.classList.add('show');
         
-        // Remove após 3 segundos
         setTimeout(() => {
             toast.classList.remove('show');
         }, 3000);
     }
 
-    // --- Voice Input Logic (Corrigida) ---
+    // --- Voice Input Logic (Corrigida e Estabilizada) ---
     function startVoiceInput() {
-        // 1. Definição única da API de reconhecimento
+        // 1. Definição única da API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         // 2. Verificação de suporte
@@ -98,14 +96,14 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // 4. Indicadores Visuais (Reset e Ativação)
-        micBtn.style.color = ''; // Remove overrides inline
+        // 4. Indicadores Visuais
+        micBtn.style.color = ''; 
         micBtn.style.borderColor = '';
-        micBtn.classList.add('pulse-red'); // Classe CSS que faz o botão piscar
+        micBtn.classList.add('pulse-red');
         
         showToast(t.listening || "Listening...");
 
-        // 5. Iniciar reconhecimento (try/catch para evitar crashes)
+        // 5. Iniciar reconhecimento com segurança
         try {
             recognition.start();
         } catch (e) {
@@ -122,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             micBtn.classList.remove('pulse-red');
             
-            // Envio automático após falar
+            // Envio automático
             sendMessage();
         };
 
@@ -136,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
             micBtn.classList.remove('pulse-red');
 
             if (event.error === 'not-allowed') {
-                 // Chama o Modal se a permissão for negada
                  showToast(t.error_mic || "Mic permission denied");
                  showMicModal();
             } else if (event.error === 'no-speech') {
@@ -156,12 +153,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const text = input.value.trim();
         if (!text) return;
 
-        // Exibe mensagem do usuário
         appendMessage('user', text);
         input.value = '';
 
         try {
-            // Ajuste a URL '/chat' conforme sua rota no backend (main.py)
             const response = await fetch('/chat', {
                 method: 'POST',
                 headers: {
@@ -173,7 +168,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json();
-            // Supondo que o backend retorna { response: "..." } ou { message: "..." }
             const botResponse = data.response || data.message || "No response received";
             
             appendMessage('bot', botResponse);
@@ -188,14 +182,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!messagesArea) return;
         
         const msgDiv = document.createElement('div');
-        // Classes CSS esperadas: 'message user' ou 'message bot'
         msgDiv.className = `message ${sender}`; 
-        
-        // Se quiser renderizar HTML no bot, use innerHTML com cuidado, senão textContent
         msgDiv.textContent = text;
         
         messagesArea.appendChild(msgDiv);
-        // Scroll para o final
         messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 });
