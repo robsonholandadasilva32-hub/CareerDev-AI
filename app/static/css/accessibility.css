@@ -159,10 +159,10 @@ html.big-targets input[type="checkbox"]:checked + .slider::before { transform: t
 
 /* Vision A11y: Color Blindness Filters (SVG-based logic simulations) */
 /* Verified mapping: Protanopia -> #protanopia, Deuteranopia -> #deuteranopia */
-html[data-color-filter="protanopia"] body { filter: url('/static/filters.svg#protanopia'); }
-html[data-color-filter="deuteranopia"] body { filter: url('/static/filters.svg#deuteranopia'); }
-html[data-color-filter="tritanopia"] body { filter: url('/static/filters.svg#tritanopia'); }
-html[data-color-filter="achromatopsia"] body { filter: grayscale(100%); }
+.a11y-protanopia body { filter: url('/static/filters.svg#protanopia'); }
+.a11y-deuteranopia body { filter: url('/static/filters.svg#deuteranopia'); }
+.a11y-tritanopia body { filter: url('/static/filters.svg#tritanopia'); }
+.a11y-achromatopsia body { filter: grayscale(100%); }
 
 /* Hearing A11y: Visual Flash Alert */
 @keyframes flash-anim {
