@@ -199,8 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
             micBtn.style.color = 'var(--primary-color)';
             micBtn.style.borderColor = 'var(--primary-color)';
 
-            if (event.error === 'not-allowed') {
-                 showToast(t.error_mic);
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                 alert("MICROPHONE BLOCKED: You are likely on HTTP or have denied permission. Please reload directly with HTTPS.");
             } else {
                  showToast("Error: " + event.error);
             }
