@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusText = document.getElementById('status-text');
 
     // --- Translations ---
-    const translations = {
+    const translations = { 
         'en': {
             placeholder: "Ask something...",
             listening: "Listening...",
