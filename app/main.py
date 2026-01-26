@@ -3,6 +3,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -155,7 +156,8 @@ app.add_middleware(
     max_age=1800 # 30 minutes session invalidation
 )
 
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)
 static_dir = BASE_DIR / "static"
