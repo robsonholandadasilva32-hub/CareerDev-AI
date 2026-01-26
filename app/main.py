@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -154,6 +155,12 @@ app.add_middleware(
     https_only=settings.ENVIRONMENT == "production" or os.getenv("Render", "False") == "True" or os.getenv("DYNO") is not None, # Auto-detect prod envs (Render/Heroku/Railway)
     max_age=1800 # 30 minutes session invalidation
 )
+
+# HTTPS Strategy: ProxyHeaders runs FIRST (outermost) to decode X-Forwarded-Proto.
+# Then HTTPSRedirect runs to enforce secure connection.
+# We only enable this in Production to avoid localhost loops.
+if settings.ENVIRONMENT == "production" or os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 

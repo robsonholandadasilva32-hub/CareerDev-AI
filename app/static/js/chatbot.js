@@ -170,9 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // Visual indicator
-        micBtn.style.color = 'var(--error-color)';
-        micBtn.style.borderColor = 'var(--error-color)';
+        // Visual indicator: Listening (Red Pulse)
+        micBtn.classList.add('pulse-red');
         showToast(t.listening);
 
         recognition.start();
@@ -181,8 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const speechResult = event.results[0][0].transcript;
             input.value = speechResult;
 
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.classList.remove('pulse-red');
 
             // Auto-send
             sendMessage();
@@ -190,21 +188,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onspeechend = () => {
             recognition.stop();
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.classList.remove('pulse-red');
         };
 
         recognition.onerror = (event) => {
             console.error("Speech Recognition Error:", event.error);
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.classList.remove('pulse-red');
 
             if (event.error === 'not-allowed') {
-                 showToast(t.error_mic);
+                 const modal = document.getElementById('permission-modal');
+                 if (modal) {
+                     modal.style.display = 'flex';
+                     modal.setAttribute('aria-hidden', 'false');
+                 }
             } else {
-                 showToast("Error: " + event.error);
+                 triggerShake();
+                 if (event.error === 'no-speech') {
+                     showToast("No speech detected.");
+                 } else {
+                     showToast("Error: " + event.error);
+                 }
             }
         };
+    }
+
+    function triggerShake() {
+        const btn = document.getElementById('btn-mic');
+        if (btn) {
+            btn.classList.add('shake');
+            setTimeout(() => btn.classList.remove('shake'), 500);
+        }
     }
 
     async function sendMessage() {
@@ -216,9 +229,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const t = translations[currentLang] || translations['en'];
 
-        // Status
+        // Status & Visual Feedback
         statusText.innerText = t.exploring;
         statusDiv.style.display = 'flex';
+        micBtn.classList.add('pulse-green'); // Thinking Mode
 
         // Audio Accessibility
         if (isVoiceEnabled) {
@@ -243,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             statusDiv.style.display = 'none';
+            micBtn.classList.remove('pulse-green');
             addMessage(data.response, 'bot');
 
             // Visual Alerts
@@ -257,6 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (error) {
             statusDiv.style.display = 'none';
+            micBtn.classList.remove('pulse-green');
             console.error("Chatbot Error:", error);
             showToast(t.error_ai);
             addMessage(t.error_ai, 'bot');
