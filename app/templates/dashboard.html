@@ -290,6 +290,9 @@ async function togglePostureCheck() {
     const toggle = document.getElementById('posture-toggle');
     const indicator = document.getElementById('health-indicator');
 
+    // SAVE STATE
+    localStorage.setItem('posture-check', toggle.checked);
+
     if (toggle.checked) {
         try {
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -400,6 +403,13 @@ function showToast(msg, type) {
 
 // Tour Logic
 document.addEventListener('DOMContentLoaded', () => {
+    // RESTORE POSTURE STATE
+    const savedPosture = localStorage.getItem('posture-check');
+    if (savedPosture === 'true') {
+        const toggle = document.getElementById('posture-toggle');
+        if (toggle) toggle.checked = true;
+    }
+
     const hasSeenTour = localStorage.getItem('hasSeenTour_v1');
 
     if (!hasSeenTour) {
