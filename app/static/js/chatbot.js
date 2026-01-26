@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messagesArea = document.getElementById('chatbot-messages');
 
     // Variáveis de Estado
-    let currentLang = document.documentElement.lang || 'en'; 
+    let currentLang = document.documentElement.lang || 'en';
     
     // Objeto de traduções simples para fallback
     const translations = {
