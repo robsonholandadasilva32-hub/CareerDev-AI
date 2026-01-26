@@ -1,150 +1,311 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const msgBox = document.getElementById("chatbot-message");
-  const input = document.getElementById("chatbot-input");
+    // State
+    let isVoiceEnabled = false;
+    let isInterviewMode = false;
+    let currentLang = 'en'; // Default
 
-  const btnHelp = document.getElementById("btn-help");
-  const btnRepeat = document.getElementById("btn-repeat");
-  const btnSend = document.getElementById("btn-send");
-  const btnVoice = document.getElementById("btn-voice");
+    // UI Elements
+    const widget = document.getElementById('chatbot-widget');
+    const toggleBtn = document.getElementById('chatbot-toggle');
+    const closeBtn = document.getElementById('btn-close-chat');
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-send');
+    const micBtn = document.getElementById('btn-mic');
+    const voiceToggleBtn = document.getElementById('voice-toggle');
+    const interviewBtn = document.getElementById('interview-toggle');
+    const langSelect = document.getElementById('chat-lang-selector');
+    const messagesContainer = document.getElementById('chatbot-messages');
+    const statusDiv = document.getElementById('chatbot-status');
+    const statusText = document.getElementById('status-text');
 
-  if (!msgBox || !input) return;
+    // Translations
+    const translations = {
+        'en': {
+            placeholder: "Ask something...",
+            listening: "Listening...",
+            exploring: "Exploring...",
+            error_mic: "Microphone access required.",
+            error_ai: "Connection Error: AI Unavailable",
+            interview_start: "🎙️ Interview Mode Activated. I am your Senior Tech Lead. Say 'Start' when ready.",
+            interview_end: "Interview mode ended.",
+            voice_enabled: "Voice mode enabled.",
+            welcome: "Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub."
+        },
+        'pt-BR': {
+            placeholder: "Pergunte algo...",
+            listening: "Ouvindo...",
+            exploring: "Explorando...",
+            error_mic: "Acesso ao microfone necessário.",
+            error_ai: "Erro de Conexão: IA Indisponível",
+            interview_start: "🎙️ Modo Entrevista Ativado. Sou seu Líder Técnico. Diga 'Começar' quando estiver pronto.",
+            interview_end: "Modo entrevista encerrado.",
+            voice_enabled: "Modo de voz ativado.",
+            welcome: "Olá! Sou seu assistente de carreira. Pergunte sobre Rust, Go ou como conectar seu GitHub."
+        },
+        'es': {
+            placeholder: "Pregunta algo...",
+            listening: "Escuchando...",
+            exploring: "Explorando...",
+            error_mic: "Se requiere acceso al micrófono.",
+            error_ai: "Error de conexión: IA no disponible",
+            interview_start: "🎙️ Modo Entrevista Activado. Soy tu Líder Técnico. Di 'Comenzar' cuando estés listo.",
+            interview_end: "Modo entrevista finalizado.",
+            voice_enabled: "Modo de voz activado.",
+            welcome: "¡Hola! Soy tu asistente de carrera. Pregunta sobre Rust, Go o cómo conectar tu GitHub."
+        }
+    };
 
-  let lastMessage = msgBox.textContent || "";
+    // --- Initialization ---
+    function init() {
+        // Detect Language from Browser
+        const browserLang = navigator.language || 'en';
+        if (browserLang.startsWith('pt')) currentLang = 'pt-BR';
+        else if (browserLang.startsWith('es')) currentLang = 'es';
+        else currentLang = 'en';
 
-  /* =====================================================
-     🔊 TEXT TO SPEECH (TTS)
-  ===================================================== */
-  function speak(text) {
-    if (!("speechSynthesis" in window)) return;
+        // Set Selector
+        if (langSelect) {
+            // Check if option exists, otherwise default to EN
+            const options = Array.from(langSelect.options).map(o => o.value);
+            if (!options.includes(currentLang)) currentLang = 'en';
 
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = document.documentElement.lang || "pt-BR";
+            langSelect.value = currentLang;
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
-  }
+            langSelect.addEventListener('change', (e) => {
+                currentLang = e.target.value;
+                updateUIText();
+            });
+        }
 
-  /* =====================================================
-     💬 SET MESSAGE (centralizado)
-  ===================================================== */
-  function setMessage(text, speakIt = true) {
-    msgBox.textContent = text;
-    lastMessage = text;
-
-    // Acessibilidade para leitores de tela
-    msgBox.setAttribute("aria-live", "polite");
-
-    if (speakIt) speak(text);
-  }
-
-  /* =====================================================
-     🧠 RESPOSTAS CONTEXTUAIS BÁSICAS
-     (base para IA futura)
-  ===================================================== */
-  function getContextualResponse(userText) {
-    const lang = document.documentElement.lang;
-
-    const lower = userText.toLowerCase();
-
-    if (lower.includes("login") || lower.includes("entrar")) {
-      return lang === "en"
-        ? "To sign in, enter your email and password. If your email is not confirmed, you must confirm it first."
-        : lang === "es"
-        ? "Para iniciar sesión, introduce tu correo y contraseña. Si tu correo no está confirmado, primero debes confirmarlo."
-        : "Para entrar, informe seu e-mail e senha. Se o e-mail não estiver confirmado, é necessário confirmá-lo primeiro.";
+        updateUIText();
+        attachEventListeners();
     }
 
-    if (lower.includes("cadastro") || lower.includes("register")) {
-      return lang === "en"
-        ? "Create an account by filling in your name, email and password. A confirmation code will be sent."
-        : lang === "es"
-        ? "Crea una cuenta ingresando tu nombre, correo y contraseña. Se enviará un código de confirmación."
-        : "Crie sua conta informando nome, e-mail e senha. Um código de confirmação será enviado.";
+    function updateUIText() {
+        const t = translations[currentLang] || translations['en'];
+        if (input) input.placeholder = t.placeholder;
+
+        // Update welcome message
+        const welcomeMsg = document.getElementById('chatbot-welcome-msg');
+        if (welcomeMsg) {
+             welcomeMsg.innerText = t.welcome;
+        }
     }
 
-    if (lower.includes("ajuda") || lower.includes("help")) {
-      return lang === "en"
-        ? "I can help you with login, registration, accessibility and navigation."
-        : lang === "es"
-        ? "Puedo ayudarte con inicio de sesión, registro, accesibilidad y navegación."
-        : "Posso ajudar com login, cadastro, acessibilidade e navegação.";
+    function attachEventListeners() {
+        if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
+        if (closeBtn) closeBtn.addEventListener('click', toggleChat);
+        if (voiceToggleBtn) voiceToggleBtn.addEventListener('click', toggleVoice);
+        if (interviewBtn) interviewBtn.addEventListener('click', toggleInterview);
+        if (micBtn) micBtn.addEventListener('click', startVoiceInput);
+        if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
     }
 
-    return lang === "en"
-      ? "I understood your message. Soon I will be able to assist you in a more intelligent way."
-      : lang === "es"
-      ? "Entendí tu mensaje. Pronto podré ayudarte de forma más inteligente."
-      : "Entendi sua mensagem. Em breve poderei ajudar de forma mais inteligente.";
-  }
+    // --- Core Logic ---
 
-  /* =====================================================
-     📤 SEND (TEXTO)
-  ===================================================== */
-  if (btnSend) {
-    btnSend.onclick = () => {
-      const text = input.value.trim();
-      if (!text) return;
+    function toggleChat() {
+        if (widget.style.display === 'none' || widget.style.display === '') {
+            widget.style.display = 'flex';
+            toggleBtn.style.display = 'none';
+            input.focus();
+        } else {
+            widget.style.display = 'none';
+            toggleBtn.style.display = 'flex';
+        }
+    }
 
-      const response = getContextualResponse(text);
-      setMessage(response);
+    function toggleVoice() {
+        isVoiceEnabled = !isVoiceEnabled;
+        const t = translations[currentLang] || translations['en'];
 
-      input.value = "";
-    };
-  }
+        if (isVoiceEnabled) {
+            voiceToggleBtn.innerHTML = '🔊';
+            voiceToggleBtn.setAttribute('aria-label', "Disable voice");
+            voiceToggleBtn.title = "Disable voice";
+            speakText(t.voice_enabled);
+        } else {
+            voiceToggleBtn.innerHTML = '🔇';
+            voiceToggleBtn.setAttribute('aria-label', "Enable voice");
+            voiceToggleBtn.title = "Enable voice";
+            window.speechSynthesis.cancel();
+        }
+    }
 
-  /* =====================================================
-     ❓ HELP
-  ===================================================== */
-  if (btnHelp) {
-    btnHelp.onclick = () => {
-      const lang = document.documentElement.lang;
+    function toggleInterview() {
+        isInterviewMode = !isInterviewMode;
+        const header = document.querySelector('.chatbot-header');
+        const t = translations[currentLang] || translations['en'];
 
-      setMessage(
-        lang === "en"
-          ? "Hello! I'm your CareerDev AI assistant. I can guide you through login, security and accessibility."
-          : lang === "es"
-          ? "¡Hola! Soy tu asistente CareerDev AI. Puedo guiarte en inicio de sesión, seguridad y accesibilidad."
-          : "Olá! Sou o assistente do CareerDev AI. Posso orientar sobre login, segurança e acessibilidade."
-      );
-    };
-  }
+        if (isInterviewMode) {
+            interviewBtn.style.color = 'var(--secondary-color)';
+            interviewBtn.title = "Exit Interview";
+            if (header) header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
+            addMessage(t.interview_start, 'bot');
+            if (isVoiceEnabled) speakText(t.interview_start);
+        } else {
+            interviewBtn.style.color = 'var(--text-muted)';
+            interviewBtn.title = "Interview Mode";
+            if (header) header.style.background = 'rgba(10, 15, 28, 0.9)';
+            addMessage(t.interview_end, 'bot');
+        }
+    }
 
-  /* =====================================================
-     🔁 REPEAT
-  ===================================================== */
-  if (btnRepeat) {
-    btnRepeat.onclick = () => {
-      if (lastMessage) speak(lastMessage);
-    };
-  }
+    function startVoiceInput() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast("Browser does not support voice recognition.");
+            return;
+        }
 
-  /* =====================================================
-     🎤 VOICE (STT)
-  ===================================================== */
-  if ("webkitSpeechRecognition" in window && btnVoice) {
-    const rec = new webkitSpeechRecognition();
-    rec.lang = document.documentElement.lang || "pt-BR";
-    rec.continuous = false;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        const t = translations[currentLang] || translations['en'];
 
-    btnVoice.onclick = () => {
-      setMessage(
-        document.documentElement.lang === "en"
-          ? "Listening..."
-          : document.documentElement.lang === "es"
-          ? "Escuchando..."
-          : "Ouvindo...",
-        false
-      );
-      rec.start();
-    };
+        // Set recognition language
+        recognition.lang = currentLang;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
 
-    rec.onresult = (e) => {
-      const spokenText = e.results[0][0].transcript;
-      input.value = spokenText;
-      btnSend.click();
-    };
-  } else if (btnVoice) {
-    btnVoice.disabled = true;
-  }
+        // Visual indicator
+        micBtn.style.color = 'var(--error-color)';
+        micBtn.style.borderColor = 'var(--error-color)';
+        showToast(t.listening);
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+            const speechResult = event.results[0][0].transcript;
+            input.value = speechResult;
+
+            micBtn.style.color = 'var(--primary-color)';
+            micBtn.style.borderColor = 'var(--primary-color)';
+
+            // Auto-send
+            sendMessage();
+        };
+
+        recognition.onspeechend = () => {
+            recognition.stop();
+            micBtn.style.color = 'var(--primary-color)';
+            micBtn.style.borderColor = 'var(--primary-color)';
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech Recognition Error:", event.error);
+            micBtn.style.color = 'var(--primary-color)';
+            micBtn.style.borderColor = 'var(--primary-color)';
+
+            if (event.error === 'not-allowed') {
+                 showToast(t.error_mic);
+            } else {
+                 showToast("Error: " + event.error);
+            }
+        };
+    }
+
+    async function sendMessage() {
+        let text = input.value.trim();
+        if (!text) return;
+
+        addMessage(text, 'user');
+        input.value = '';
+
+        const t = translations[currentLang] || translations['en'];
+
+        // Status
+        statusText.innerText = t.exploring;
+        statusDiv.style.display = 'flex';
+
+        // Audio Accessibility
+        if (isVoiceEnabled) {
+            speakText(t.exploring);
+        }
+
+        try {
+            const response = await fetch('/chatbot/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: text,
+                    mode: isInterviewMode ? 'interview' : 'standard',
+                    lang: currentLang // Send selected language
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            statusDiv.style.display = 'none';
+            addMessage(data.response, 'bot');
+
+            // Visual Alerts
+            if (localStorage.getItem('visual-alerts') === 'true') {
+                triggerVisualAlert();
+            }
+
+            // TTS with correct language
+            if (isVoiceEnabled) {
+                speakText(data.response);
+            }
+
+        } catch (error) {
+            statusDiv.style.display = 'none';
+            console.error("Chatbot Error:", error);
+            showToast(t.error_ai);
+            addMessage(t.error_ai, 'bot');
+            if (isVoiceEnabled) speakText(t.error_ai);
+        }
+    }
+
+    function speakText(text) {
+        if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = currentLang; // Use selected language
+        utterance.rate = 1.1;
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        div.innerText = text;
+        messagesContainer.appendChild(div);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function showToast(message) {
+        let toast = document.getElementById('chatbot-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'chatbot-toast';
+            toast.className = 'chatbot-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    function triggerVisualAlert() {
+        const flash = document.createElement('div');
+        flash.className = 'visual-flash-overlay';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 500);
+    }
+
+    // Run Init
+    init();
 });
-
