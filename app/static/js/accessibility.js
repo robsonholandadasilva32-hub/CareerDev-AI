@@ -60,9 +60,15 @@ document.addEventListener("DOMContentLoaded", () => {
         rangeEl.value = savedSize;
     }
 
-    // Restore Reading Guide state (optional, usually per-session, but let's reset it to off to avoid annoyance,
-    // OR we can leave it off as per original code which initialized false.
-    // The original code didn't save Reading Guide to localStorage, so we keep it ephemeral.)
+    // Restore Reading Guide state
+    if (localStorage.getItem('readingGuide') === 'active') {
+        const guideCheck = document.getElementById('a11y-guide');
+        if (guideCheck) guideCheck.checked = true;
+        // Force enable without toggling
+        if (typeof window.toggleReadingGuide === 'function') {
+            window.toggleReadingGuide(true);
+        }
+    }
 });
 
 
@@ -92,8 +98,15 @@ window.updateFontSize = function(val) {
 
 // --- READING GUIDE ---
 let guideActive = false;
-window.toggleReadingGuide = function() {
-    guideActive = !guideActive;
+window.toggleReadingGuide = function(forceState) {
+    if (typeof forceState === 'boolean') {
+        guideActive = forceState;
+    } else {
+        guideActive = !guideActive;
+    }
+
+    localStorage.setItem('readingGuide', guideActive ? 'active' : 'inactive');
+
     let bar = document.getElementById('reading-guide-bar');
 
     // Create bar if missing (e.g. on pages other than accessibility.html if we want it global)
