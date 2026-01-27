@@ -43,6 +43,14 @@ def test_dashboard_render_user_context(mock_career_engine):
     # Setup mocks for career_engine
     mock_career_engine.analyze_profile.return_value = {"level": "Junior", "focus": "Backend", "trends": {}}
     mock_career_engine.generate_plan.return_value = []
+    mock_career_engine.get_career_dashboard_data.return_value = {
+        "market_trends": {},
+        "skill_gap": [],
+        "weekly_plan": [],
+        "radar_data": {"labels": [], "datasets": []},
+        "doughnut_data": {"labels": [], "datasets": []},
+        "market_alignment_score": 50
+    }
 
     # Make request
     # Note: TestClient raises exceptions from the app by default.
@@ -50,7 +58,8 @@ def test_dashboard_render_user_context(mock_career_engine):
     try:
         response = client.get("/dashboard")
         assert response.status_code == 200
-        assert "test@example.com" in response.text
+        # Template prefers name over email
+        assert "Test User" in response.text
     except Exception as e:
         # If we catch the specific Jinja error, we know we reproduced it.
         # Failing the test with the error message is what we want for "reproduction".

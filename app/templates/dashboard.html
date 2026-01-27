@@ -56,8 +56,16 @@
                 </div>
             </div>
 
+            <!-- WIDGET A2: REPO COMPOSITION -->
+            <div class="card repo-composition-card">
+                <h3><span class="icon">🥧</span> REPO COMPOSITION</h3>
+                <div class="chart-container" style="position: relative; height: 200px; display: flex; justify-content: center;">
+                    <canvas id="repoDoughnutChart"></canvas>
+                </div>
+            </div>
+
             <!-- GAP ANALYSIS -->
-            <div class="card gap-analysis-card">
+            <div class="card gap-analysis-card" style="grid-column: span 2;">
                 <h3><span class="icon">⚠️</span> DETECTED GAPS</h3>
                 <div class="gap-list" id="gap-list-container">
                     <!-- JS Injected -->
@@ -468,35 +476,28 @@
 
     // --- MOCK DATA FOR CHART.JS ---
     // Injected from Backend
-    const CAREER_DATA = {{ career_data | tojson }};
+    let CAREER_DATA = {{ career_data | tojson }};
     const PROFILE_DATA = {{ profile | tojson }};
 
-    // Use injected radar data if available, otherwise fallback (or fail, but we expect data)
-    const MARKET_DATA = CAREER_DATA.radar_data || {
-        labels: ['Rust', 'Go', 'Python', 'AI/ML', 'System Design', 'React'],
-        datasets: [{
-            label: 'Your Skills',
-            data: [40, 30, 90, 60, 50, 80],
-            backgroundColor: 'rgba(0, 243, 255, 0.2)',
-            borderColor: '#00f3ff',
-            pointBackgroundColor: '#00f3ff',
-        }, {
-            label: 'Market Demand',
-            data: [90, 85, 80, 95, 85, 70],
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            borderColor: '#6b7280',
-            borderDash: [5, 5],
-            pointBackgroundColor: 'transparent'
-        }]
-    };
+    // Chart Instances (to destroy/update)
+    let radarChartInstance = null;
+    let doughnutChartInstance = null;
 
-    // --- INITIALIZATION ---
-    document.addEventListener("DOMContentLoaded", () => {
-        // 1. Render Radar Chart (Widget A)
+    // --- RENDER FUNCTIONS ---
+    function renderCharts() {
+        // Radar Data
+        const MARKET_DATA = CAREER_DATA.radar_data;
+        // Doughnut Data
+        const DOUGHNUT_DATA = CAREER_DATA.doughnut_data || {
+            labels: [], datasets: []
+        };
+
         try {
             if (typeof Chart !== 'undefined') {
-                const ctx = document.getElementById('marketRadarChart').getContext('2d');
-                new Chart(ctx, {
+                // 1. Radar
+                const ctxRadar = document.getElementById('marketRadarChart').getContext('2d');
+                if (radarChartInstance) radarChartInstance.destroy();
+                radarChartInstance = new Chart(ctxRadar, {
                     type: 'radar',
                     data: MARKET_DATA,
                     options: {
@@ -513,15 +514,40 @@
                         }
                     }
                 });
+
+                // 2. Doughnut (Repo Composition)
+                const ctxDoughnut = document.getElementById('repoDoughnutChart').getContext('2d');
+                if (doughnutChartInstance) doughnutChartInstance.destroy();
+                doughnutChartInstance = new Chart(ctxDoughnut, {
+                    type: 'doughnut',
+                    data: DOUGHNUT_DATA,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#e2e8f0', font: { family: 'Courier New', size: 10 } }
+                            }
+                        },
+                        elements: {
+                            arc: { borderWidth: 0 }
+                        }
+                    }
+                });
+
             } else {
-                console.warn("Chart.js not loaded. Radar chart skipped.");
+                console.warn("Chart.js not loaded.");
             }
         } catch (e) {
-            console.error("Radar Chart Error:", e);
+            console.error("Chart Render Error:", e);
         }
+    }
 
-        // 2. Render Gaps (Using career_data)
+    function renderWidgets() {
+        // 1. Render Gaps
         const gapContainer = document.getElementById('gap-list-container');
+        gapContainer.innerHTML = '';
         CAREER_DATA.skill_gap.forEach(gap => {
             const div = document.createElement('div');
             div.className = 'gap-item';
@@ -529,24 +555,37 @@
             gapContainer.appendChild(div);
         });
 
-        // 3. Render Current Upskilling Sprint (Widget B)
+        // 2. Render Current Upskilling Sprint (Kanban)
         const roadContainer = document.getElementById('roadmap-container');
+        roadContainer.innerHTML = '';
         CAREER_DATA.weekly_plan.forEach(item => {
+            const isCompleted = item.status === 'completed';
             const div = document.createElement('div');
-            div.className = `roadmap-item ${item.status === 'completed' ? '' : 'high-prio'}`;
+            div.className = `roadmap-item ${isCompleted ? '' : 'high-prio'}`;
+            div.style.opacity = isCompleted ? '0.5' : '1';
+
+            let actionBtn = '';
+            if (!isCompleted && item.id) {
+                actionBtn = `<button onclick="completeTask(${item.id})" style="margin-left:auto; background:var(--neon-green); color:black; border:none; border-radius:4px; padding:5px 10px; cursor:pointer; font-weight:bold;">DONE</button>`;
+            } else if (isCompleted) {
+                actionBtn = `<span style="margin-left:auto; color:var(--neon-green);">✓</span>`;
+            }
+
             div.innerHTML = `
-                <div class="roadmap-week">${item.day}</div>
-                <div class="roadmap-content">
+                <div class="roadmap-week">${item.day || 'TODO'}</div>
+                <div class="roadmap-content" style="flex-grow:1;">
                     <h4>${item.task}</h4>
                     <p>Status: ${item.status}</p>
                 </div>
+                ${actionBtn}
             `;
             roadContainer.appendChild(div);
         });
 
-        // 4. Render Market Pulse (Widget C)
+        // 3. Render Market Pulse
         const tickerContainer = document.getElementById('market-ticker-content');
-        const trends = CAREER_DATA.market_trends; // Object { "Edge AI": "High Demand", ... }
+        tickerContainer.innerHTML = '';
+        const trends = CAREER_DATA.market_trends;
 
         for (const [tech, val] of Object.entries(trends)) {
             const span = document.createElement('span');
@@ -555,12 +594,43 @@
             let trendClass = '';
             if (val.includes('+')) trendClass = 'trend-positive';
             if (val.includes('-')) trendClass = 'trend-negative';
-            if (val.toLowerCase().includes('high demand')) trendClass = 'trend-positive'; // Custom logic for new data
-            if (val.toLowerCase().includes('low demand')) trendClass = 'trend-negative'; // Custom logic
+            if (val.toLowerCase().includes('high demand')) trendClass = 'trend-positive';
+            if (val.toLowerCase().includes('low demand')) trendClass = 'trend-negative';
 
             span.innerHTML = `${tech.toUpperCase()}: <span class="${trendClass}">${val}</span>`;
             tickerContainer.appendChild(span);
         }
+    }
+
+    // --- API INTERACTION ---
+    async function completeTask(taskId) {
+        window.showToast("Syncing with Neural Net...", "success");
+        try {
+            const response = await fetch(`/api/dashboard/complete-task/${taskId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                const updatedData = await response.json();
+                CAREER_DATA = updatedData;
+                renderCharts();
+                renderWidgets();
+                window.showToast("Task Complete. Score Updated.", "success");
+            } else {
+                window.showToast("Sync Failed.", "error");
+            }
+        } catch (e) {
+            console.error(e);
+            window.showToast("Network Error.", "error");
+        }
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener("DOMContentLoaded", () => {
+        renderCharts();
+        renderWidgets();
+
 
         // 5. Hide Global Chatbot Floating Widget (if present)
         const globalChat = document.getElementById('chatbot-widget');

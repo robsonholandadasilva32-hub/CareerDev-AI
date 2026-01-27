@@ -5,6 +5,7 @@ from app.db.declarative import Base
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
 from app.db.models.gamification import UserBadge  # noqa: F401
+from app.db.models.security import AuditLog, UserSession # noqa: F401
 from app.services.career_engine import career_engine
 
 # Use an in-memory SQLite database for testing
