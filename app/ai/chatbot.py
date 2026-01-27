@@ -16,30 +16,44 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
     if not user:
         return "", CAREER_ASSISTANT_SYSTEM_PROMPT
 
+    # Safe attribute access within the synchronous thread to prevent DetachedInstanceError
     profile = user.career_profile
     plans = user.learning_plans
+    
     skills = profile.skills_snapshot if profile else {}
     target_role = profile.target_role if profile else 'Software Engineer'
+    # List active plans for context
     active_plans = [p.title for p in plans if p.status != 'completed']
 
+    # --- Mode Selection ---
     if mode == "interview":
+        # Generates the dynamic Interviewer Persona
         system_prompt = get_interviewer_system_prompt(
             {"target_role": target_role, "skills": skills},
             user.name
         )
-        context_str = ""
+        context_str = f"Candidate Name: {user.name}\nTarget Role: {target_role}"
     else:
+        # Standard Career OS Persona
         system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
+        
+        # Enhanced Context Structure for the "Gap Analysis Engine"
         context_str = f"""
-        **User Context:**
-        - Name: {user.name}
-        - Premium Status: {user.is_premium}
-        - Current Skills: {json.dumps(skills)}
-        - Active Learning Plan: {', '.join(active_plans)}
-        - Focus: {target_role}
-
-        Use this context to give personalized advice. If Premium is False and they ask for advanced resume checks, suggest upgrading.
+        [USER DATA CONTEXT]
+        Name: {user.name}
+        Premium Status: {user.is_premium}
+        Target Role: {target_role}
+        
+        [CURRENT SKILL SNAPSHOT]
+        {json.dumps(skills, indent=2)}
+        
+        [ACTIVE PROJECTS/PLANS]
+        {json.dumps(active_plans) if active_plans else "None (Suggest a micro-project)"}
+        
+        [INSTRUCTION]
+        Use this data to perform Gap Analysis. If Premium is False and they ask for deep Resume parsing, suggest upgrading.
         """
+        
     return context_str, system_prompt
 
 class ChatbotService:
@@ -58,6 +72,7 @@ class ChatbotService:
         context_str = ""
         system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
 
+        # If we have a user and db, fetch context in a separate thread to avoid blocking the event loop
         if user_id and db:
             context_str, system_prompt = await asyncio.to_thread(
                 _fetch_user_and_build_context, user_id, db, mode
@@ -69,29 +84,38 @@ class ChatbotService:
             return await self._llm_response(message, lang, context_str, system_prompt)
 
     def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
+        """
+        Offline fallback. STRICT ENGLISH ONLY as per new Prime Directive.
+        """
         msg = message.lower()
 
+        # --- Simulated Interview Mode ---
         if mode == "interview":
-             if "start" in msg:
-                 return "Let's start. Explain the difference between TCP and UDP."
-             return "Good answer (Simulated). Next: What is Dependency Injection?"
+             if "start" in msg or "begin" in msg:
+                 return "Let's begin the mock interview. Question 1: Explain the difference between TCP and UDP regarding packet reliability."
+             return "[Simulated Evaluation] Grade: B+. Technical Accuracy: Good. \n\nNext Question: How would you handle a race condition in a multi-threaded Python application?"
 
-        if "my plan" in msg or "meu plano" in msg:
-            if "Active Learning Plan" in context:
-                 plan_name = context.split("Active Learning Plan:")[1].split("- Focus")[0].strip()
-                 return "Based on your profile, you should focus on: " + plan_name
-            return "You don't have an active plan yet. Go to the dashboard to generate one."
+        # --- Simulated Career OS Mode ---
+        if "plan" in msg:
+            if "Active Learning Plan" in context or "ACTIVE PROJECTS" in context:
+                 # Extract plan name roughly or return generic
+                 return "Based on your profile, you should continue your active micro-project. Shall we review your GitHub commit history?"
+            return "You don't have an active plan yet. Please go to the dashboard to generate a 'Gap Analysis' plan."
 
         if "rust" in msg:
-            return "Rust is a language focused on safety and performance. Great for embedded systems and critical services."
+            return "Rust ensures memory safety without a garbage collector. It is a high-value skill for Edge Computing. Would you like a micro-project to build a CLI tool in Rust?"
+        
         elif "go" in msg or "golang" in msg:
-            return "Go is excellent for microservices and cloud applications due to its lightweight concurrency."
-        elif "career" in msg or "carreira" in msg:
-            return "To advance your career, CareerDev AI suggests focusing on T-Shaped skills and connecting your GitHub for gap analysis."
-        elif "login" in msg or "entrar" in msg:
-            return "You can login using Email/Password, GitHub or LinkedIn for a complete experience."
+            return "Go (Golang) is the standard for Cloud Native infrastructure. It offers excellent concurrency primitives (Goroutines). I recommend building a gRPC service to practice."
+        
+        elif "career" in msg:
+            return "To advance your career, I recommend focusing on 'T-Shaped' skills. Let's analyze your GitHub repository to find your niche gaps."
+        
+        elif "login" in msg:
+            return "You can login using Email, GitHub, or LinkedIn to unlock the full Career OS experience."
 
-        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
+        # Default fallback (English Only)
+        return "I am operating in Simulated Mode (Offline). I can discuss 'Rust', 'Go', 'Career Strategy', or check your 'Plan'. For live intelligence, please connect to the internet."
 
     async def verify_connection(self):
         """
@@ -124,12 +148,14 @@ class ChatbotService:
         }
 
         # O1 models and gpt-5-mini do not support temperature
+        # Note: o1-preview often requires max_completion_tokens instead of max_tokens
         if not (primary_model.startswith("o1-") or primary_model == "gpt-5-mini"):
             params["temperature"] = 0.7
 
         try:
             response = await self.async_client.chat.completions.create(**params)
             return response.choices[0].message.content
+        
         except (openai.NotFoundError, openai.BadRequestError) as e:
             print(f"WARNING: Primary model {settings.OPENAI_MODEL} failed (Error: {e}). Switching to fallback: {settings.OPENAI_FALLBACK_MODEL}.")
             try:
@@ -141,10 +167,11 @@ class ChatbotService:
                 return response.choices[0].message.content
             except Exception as e_fallback:
                 print(f"CRITICAL: Fallback model {settings.OPENAI_FALLBACK_MODEL} also failed: {e_fallback}")
-                return "Error communicating with AI (Fallback failed)."
+                return "System Error: Unable to reach AI services. Please check your connection or API quotas."
+        
         except Exception as e:
             print(f"OpenAI Error: {e}")
-            return "Error communicating with AI (Check API Key)."
+            return "Error communicating with AI. Please check the system logs."
 
 # Global Instance
 chatbot_service = ChatbotService()
