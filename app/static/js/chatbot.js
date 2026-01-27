@@ -96,7 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update welcome message
         const welcomeMsg = document.getElementById('chatbot-welcome-msg');
         if (welcomeMsg) {
-             welcomeMsg.innerText = t.welcome;
+             // Context-Aware Greeting: Use server-provided message if available
+             const serverGreeting = welcomeMsg.getAttribute('data-server-greeting');
+             if (serverGreeting && serverGreeting.trim() !== '') {
+                 welcomeMsg.innerText = serverGreeting;
+             } else {
+                 welcomeMsg.innerText = t.welcome;
+             }
         }
     }
 
@@ -323,7 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US'; // Use selected language
-        utterance.rate = 1.1;
+        utterance.rate = 0.9;     // Slower speech rate for better comprehension
+        utterance.pitch = 1.0;    // Natural pitch
 
         window.speechSynthesis.speak(utterance);
     }

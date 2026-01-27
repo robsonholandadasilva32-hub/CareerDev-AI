@@ -61,6 +61,18 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # New AI Brain Data
     career_data = career_engine.get_career_dashboard_data(db, user)
 
+    # Logic for Context-Aware Greeting
+    skills_dict = profile_data.get('skills', {})
+    greeting_skill = "your career"
+    if skills_dict:
+        try:
+            # Sort by value descending and pick top
+            greeting_skill = sorted(skills_dict.items(), key=lambda item: item[1], reverse=True)[0][0]
+        except (IndexError, AttributeError):
+            pass
+
+    greeting_message = f"Hello! I noticed you've been working on {greeting_skill}. How can we level up your code today?"
+
     # 5️⃣ Renderiza o dashboard
     return templates.TemplateResponse(
         "dashboard.html",
@@ -73,6 +85,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "plan": plan_items, # List of LearningPlan objects
             "badges": user.badges, # Pass UserBadges to template
             "career_data": career_data, # NEW
+            "greeting_message": greeting_message,
         }
     )
 
