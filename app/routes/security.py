@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from datetime import datetime
 import user_agents
 
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
+from app.db.models.audit import LoginHistory
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, get_all_user_sessions, revoke_session, log_audit
@@ -62,25 +64,26 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     current_device = parse_agent(current_ua_string)
     current_ip = get_client_ip(request)
 
-    # Fetch Real Sessions (History)
-    raw_sessions = get_all_user_sessions(db, user.id)
+    # Fetch Real Sessions (History from Audit Log)
+    history = db.query(LoginHistory).filter(LoginHistory.user_id == user.id).order_by(desc(LoginHistory.login_timestamp)).limit(20).all()
 
     # Process Sessions for Display
     processed_sessions = []
-    for s in raw_sessions:
-        is_current = (str(s.id) == str(current_sid))
+    for h in history:
+        is_current = (str(h.session_id) == str(current_sid))
         status = "Expired"
-        if s.is_active:
+        if h.is_active_session:
              status = "Current" if is_current else "Active"
 
         processed_sessions.append({
-            "id": s.id,
-            "device": parse_agent(s.user_agent),
-            "ip_address": s.ip_address,
-            "last_active": s.last_active_at,
+            "id": h.session_id, # Use session_id for revocation
+            "device": f"{h.device_type} ({h.browser})",
+            "ip_address": h.ip_address,
+            "last_active": h.login_timestamp, # Using Login Timestamp
             "is_current": is_current,
             "status": status,
-            "raw_ua": s.user_agent # For icon determination if needed
+            "raw_ua": h.user_agent_raw,
+            "os": h.os
         })
 
     return templates.TemplateResponse(
@@ -135,6 +138,67 @@ def delete_account(
     response.delete_cookie("access_token")
     return response
 
+@router.get("/api/security/sessions")
+def get_login_history(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    # Get current session ID
+    token = request.cookies.get("access_token")
+    payload = decode_token(token) if token else {}
+    current_sid = payload.get("sid")
+
+    history = db.query(LoginHistory).filter(LoginHistory.user_id == user.id).order_by(desc(LoginHistory.login_timestamp)).limit(20).all()
+
+    response_data = []
+    for h in history:
+        status = "Expired"
+        if h.is_active_session:
+            status = "Current" if str(h.session_id) == str(current_sid) else "Active"
+
+        response_data.append({
+            "device": f"{h.device_type} ({h.browser})",
+            "ip": h.ip_address,
+            "location": "Unknown",
+            "date": h.login_timestamp.strftime("%Y-%m-%d %H:%M"),
+            "status": status,
+            "os": h.os
+        })
+
+    return JSONResponse(content=response_data)
+
+@router.post("/dashboard/security/revoke_all")
+def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    # Get current session ID
+    token = request.cookies.get("access_token")
+    payload = decode_token(token) if token else {}
+    current_sid = payload.get("sid")
+
+    if not current_sid:
+        return RedirectResponse("/login", status_code=302)
+
+    # Revoke all UserSessions except current
+    db.query(UserSession).filter(
+        UserSession.user_id == user.id,
+        UserSession.id != current_sid
+    ).update({UserSession.is_active: False}, synchronize_session=False)
+
+    # Revoke all LoginHistory except current
+    db.query(LoginHistory).filter(
+        LoginHistory.user_id == user.id,
+        LoginHistory.session_id != current_sid
+    ).update({LoginHistory.is_active_session: False}, synchronize_session=False)
+
+    db.commit()
+    log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions")
+
+    return RedirectResponse("/dashboard/security", status_code=303)
+
 @router.post("/dashboard/security/revoke/{session_id}")
 def revoke_user_session_route(session_id: str, request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -145,6 +209,9 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
     session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
     if session_to_revoke:
         revoke_session(db, session_id)
+        # Also revoke LoginHistory
+        db.query(LoginHistory).filter(LoginHistory.session_id == session_id).update({LoginHistory.is_active_session: False})
+        db.commit()
         log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
 
     return RedirectResponse("/dashboard/security", status_code=303)
