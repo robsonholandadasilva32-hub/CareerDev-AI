@@ -27,6 +27,8 @@ import asyncio
 import json
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
+import user_agents
+from app.db.models.audit import LoginHistory
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +106,26 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     user_agent = request.headers.get("user-agent", "unknown")
     logger.info(f"Creating session for user {user.id} | IP: {ip} | UA: {user_agent[:30]}...")
     sid = create_user_session(db, user.id, ip, user_agent)
+
+    # Security: Persistent Audit Log (Forensic History)
+    try:
+        ua_parsed = user_agents.parse(user_agent)
+        login_history = LoginHistory(
+            user_id=user.id,
+            session_id=sid,
+            ip_address=ip,
+            user_agent_raw=user_agent,
+            device_type="Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop",
+            browser=f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}",
+            os=f"{ua_parsed.os.family} {ua_parsed.os.version_string}",
+            login_timestamp=datetime.utcnow(),
+            is_active_session=True,
+            auth_method="social"
+        )
+        db.add(login_history)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to record LoginHistory: {e}")
 
     # Security: Audit Log
     log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
