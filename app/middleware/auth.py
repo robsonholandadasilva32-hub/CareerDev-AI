@@ -53,7 +53,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         db.close()
             except Exception as e:
                 logger.debug(f"Auth Middleware Error: {e}")
+                # Pass through to allow call_next to handle unauthenticated state (or handle it in endpoints)
                 pass
 
+        # Fall through: Always ensure we return the result of call_next if no early return occurred
         response = await call_next(request)
         return response
