@@ -9,6 +9,8 @@ from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
 import logging
+import openai
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +69,52 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         "user": user,
         "data": analytics_data,
     })
+
+@router.post("/generate-linkedin-post", response_class=JSONResponse)
+async def generate_linkedin_post(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # Re-query user to avoid DetachedInstanceError from AuthMiddleware
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+
+    profile = user.career_profile
+
+    # Determine Top Skill
+    skill = "Software Engineering"
+    if profile and profile.skills_snapshot:
+        skills = profile.skills_snapshot
+        if skills:
+            # Sort by value descending
+            skill = max(skills, key=skills.get)
+
+    prompt = f"Write a short, professional, yet humble LinkedIn post announcing that I just received my Career Strategy Report. Mention my top skill ({skill}) and include a hashtag #CareerDevAI."
+
+    if not settings.OPENAI_API_KEY:
+        # Mock Response
+        return JSONResponse({
+            "post": f"Excited to share that I just received my Career Strategy Report from CareerDev AI! 🚀\n\nIt confirmed that my focus on {skill} is paying off. Looking forward to the next steps in my journey.\n\n#CareerDevAI #CareerGrowth #{skill.replace(' ', '')}"
+        })
+
+    try:
+        openai.api_key = settings.OPENAI_API_KEY
+        response = await asyncio.to_thread(
+            openai.chat.completions.create,
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a professional career coach helper."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        content = response.choices[0].message.content
+        return JSONResponse({"post": content.strip().strip('"')})
+    except Exception as e:
+        logger.error(f"Error generating LinkedIn post: {e}")
+        return JSONResponse({"error": "Failed to generate post"}, status_code=500)
