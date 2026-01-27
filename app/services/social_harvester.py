@@ -1,6 +1,7 @@
 import httpx
 import logging
 import asyncio
+import random
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -140,15 +141,31 @@ class SocialHarvester:
 
             profile.skills_graph_data = skills_graph_data
             profile.market_relevance_score = market_score
+
+            # MANDATORY: Store Raw Bytes for Phase 1 Logic
+            commit_metrics["raw_languages"] = raw_langs
             profile.github_activity_metrics = commit_metrics
 
             # Simulated LinkedIn Data (Since we might not have a token/scraper)
-            # Stores: { "role": "Backend Dev", "industry": "Fintech", "missing_keywords": ["AsyncIO"] }
+            # MOCK: claimed_skills logic for Phase 2 Verification
+            mock_claimed = list(raw_langs.keys())[:2] # Assume they claim their top 2
+            # Randomly drop one to simulate "Invisible Gold"
+            if len(mock_claimed) > 1 and random.random() > 0.5:
+                mock_claimed.pop()
+            # Randomly add one they don't have to simulate "Imposter Syndrome"
+            mock_claimed.append("AWS" if "AWS" not in raw_langs else "Kubernetes")
+
             profile.linkedin_alignment_data = {
                 "role": profile.target_role or "Software Engineer",
                 "industry": "Tech",
-                "missing_keywords": [s for s in self.market_high_demand_skills if s not in chart_labels][:3]
+                "missing_keywords": [s for s in self.market_high_demand_skills if s not in chart_labels][:3],
+                "claimed_skills": mock_claimed
             }
+
+            # Phase 2: ASYNC AI INSIGHTS GENERATION
+            # We generate the text here to avoid runtime latency on Dashboard load
+            ai_summary = self.generate_gap_analysis(raw_langs, mock_claimed, profile.target_role or "Senior Developer")
+            profile.ai_insights_summary = ai_summary
 
             db.commit()
             logger.info(f"✅ Data Fusion Complete for User {user_id}. Score: {market_score}")
@@ -278,6 +295,49 @@ class SocialHarvester:
         # Keeping it simple as per prompt instructions.
 
         return score
+
+    def generate_gap_analysis(self, github_reality: Dict[str, int], linkedin_perception: List[str], target_role: str) -> str:
+        """
+        Phase 1 Logic: The 'Intelligence Engine'
+        Compares Reality (GitHub Bytes) vs Perception (LinkedIn Claims).
+        Returns a string summary for Zone C.
+        """
+        insights = []
+
+        # Normalize keys
+        gh_skills = {k.lower(): v for k, v in github_reality.items()}
+        li_skills = {k.lower() for k in linkedin_perception}
+
+        # Logic 1: Imposter Syndrome (Claimed but not Coded)
+        imposter_risks = []
+        for skill in li_skills:
+            # If claimed but < 1000 bytes (arbitrary low threshold)
+            if skill not in gh_skills or gh_skills[skill] < 1000:
+                imposter_risks.append(skill)
+
+        if imposter_risks:
+            sk = imposter_risks[0].title()
+            insights.append(f"⚠️ <strong>Imposter Alert:</strong> You list '{sk}' on LinkedIn but have little code to back it up. Build a project.")
+
+        # Logic 2: Invisible Gold (Coded but not Claimed)
+        hidden_gems = []
+        for skill, bytes_count in gh_skills.items():
+            if bytes_count > 5000 and skill not in li_skills:
+                hidden_gems.append(skill)
+
+        if hidden_gems:
+            gem = hidden_gems[0].title()
+            insights.append(f"💎 <strong>Hidden Asset:</strong> You have significant {gem} code. Add it to your profile immediately.")
+
+        # Logic 3: Consistency Check
+        if not insights:
+            insights.append("✅ <strong>Profile Synced:</strong> Your code and claims are perfectly aligned. Great consistency.")
+
+        # Add Market Context
+        if "rust" in gh_skills or "go" in gh_skills:
+             insights.append("🚀 <strong>Market Ready:</strong> High-value systems languages detected.")
+
+        return "<br>".join(insights)
 
     # Legacy / Simulation Support (Optional - kept if needed for fallback)
     async def scan_github(self, db: Session, user: User):

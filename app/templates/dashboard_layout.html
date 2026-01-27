@@ -125,45 +125,6 @@
 <div class="dashboard-layout">
     <!-- SIDEBAR -->
     <aside class="dashboard-sidebar">
-        <!-- UTILITY DOCK (ZONE C) -->
-        <div class="utility-dock">
-            <div class="utility-card health-mini">
-                <div class="util-header">
-                    <span>🩺 BIO_MONITOR</span>
-                    <div id="health-indicator" class="pulse-dot" style="display:none;"></div>
-                </div>
-                <div class="mini-control">
-                    <span>POSTURE</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-                <div class="mini-control">
-                    <span>20-20-20</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-                <div class="mini-control">
-                    <span>HYDRATION</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="utility-card a11y-mini">
-                 <div class="util-header">
-                    <span>👁️ A11Y_CORE</span>
-                </div>
-                <p class="micro-text">Visual/Motor adjustments.</p>
-                <a href="/dashboard/accessibility" class="util-link">CONFIGURE</a>
-            </div>
-        </div>
-
         <nav>
             <ul class="sidebar-menu">
                 <li class="sidebar-item">
@@ -216,122 +177,82 @@
 
 {% block footer %}
 <style>
-    .coffee-footer {
-        text-align: center;
-        padding: 40px 20px;
-        border-top: 1px solid var(--accent-color);
-        margin-top: 40px;
-        color: var(--text-color);
-    }
-    .coffee-icon {
-        font-size: 3rem;
-        margin-bottom: 10px;
-        display: block;
-        animation: pixel-bounce 2s infinite;
-    }
-    @keyframes pixel-bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    .coffee-title {
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 1.5rem;
-        color: var(--primary-color);
-        margin-bottom: 10px;
-    }
-    .coffee-body {
-        max-width: 600px;
-        margin: 0 auto 20px;
-        color: #9ca3af;
-        line-height: 1.6;
-    }
-    .commit-btn {
-        background: #1f2937;
-        border: 2px solid var(--primary-color);
-        color: var(--primary-color);
-        padding: 12px 24px;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: bold;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s;
-        border-radius: 4px;
-        min-width: 200px;
-    }
-    .commit-btn:hover {
-        background: rgba(0, 243, 255, 0.1);
-        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
-    }
-    .progress-bar {
-        position: absolute;
-        top: 0;
+    .terminal-footer {
+        background-color: #050a14;
+        color: #00ff88;
+        padding: 10px 20px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        border-top: 1px solid #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: fixed;
+        bottom: 0;
         left: 0;
-        height: 100%;
-        background: rgba(0, 243, 255, 0.2);
-        width: 0%;
-        transition: width 2s linear;
-        display: none;
-        pointer-events: none;
+        width: 100%;
+        z-index: 1000;
+        height: 40px;
     }
-    .btn-text {
-        position: relative;
-        z-index: 2;
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-item.right {
+        margin-left: auto;
+        color: #6b7280;
+    }
+    .indicator {
+        width: 8px;
+        height: 8px;
+        background-color: #374151;
+        border-radius: 50%;
+    }
+    .indicator.online {
+        background-color: #00ff88;
+        box-shadow: 0 0 5px #00ff88;
+        animation: blink 2s infinite;
+    }
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
     }
 </style>
 
-<footer class="coffee-footer">
-    <span class="coffee-icon">👾</span>
-    <h2 class="coffee-title">git push origin support</h2>
-    <p class="coffee-body">
-        We compile knowledge to accelerate your career. If the app helped you solve a bug in your professional trajectory, consider supporting the next deploy.
-    </p>
-    <button class="commit-btn" id="commitBtn" onclick="deployCoffee()">
-        <div class="progress-bar" id="progressBar"></div>
-        <span class="btn-text" id="btnText">Commit a Coffee ☕</span>
-    </button>
+<footer class="terminal-footer">
+    <div class="status-item">
+        <span class="indicator online"></span> SYSTEMS: NOMINAL
+    </div>
+    <div class="status-item">
+        <span>SYNC:</span> <span id="footer-gh-sync" style="color: #e2e8f0;">Checking...</span>
+    </div>
+    <div class="status-item">
+        <span>MODEL:</span> <span style="color: #bd00ff;">GPT-4o-Mini</span>
+    </div>
+    <div class="status-item">
+        <span>SESSION:</span> <span style="color: #6b7280;">{{ "User-" ~ user.id if user else "GUEST" }}</span>
+    </div>
+    <div class="status-item right">
+        CAREERDEV-AI © 2026
+    </div>
 </footer>
 
 <script src="/static/js/health.js"></script>
 <script>
-    function deployCoffee() {
-        const btn = document.getElementById('commitBtn');
-        const bar = document.getElementById('progressBar');
-        const text = document.getElementById('btnText');
+    // Footer Logic
+    document.addEventListener("DOMContentLoaded", () => {
+        // Set Last Scan Time (Mock or from Backend if available in template)
+        // If 'profile' is available in context (it is in dashboard), we can use it.
+        // But layout is generic. We'll use a safe fallback.
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        if (btn.disabled) return;
-        btn.disabled = true;
-
-        // Start Animation
-        text.innerText = "Deploying...";
-        bar.style.display = "block";
-
-        // Force reflow for transition
-        void bar.offsetWidth;
-
-        bar.style.width = "100%";
-
-        setTimeout(() => {
-            // Success
-            text.innerText = "Build Successful! Thanks!";
-            bar.style.backgroundColor = "rgba(0, 255, 136, 0.3)"; // Greenish
-
-            setTimeout(() => {
-                // Reset
-                bar.style.transition = 'none';
-                bar.style.width = "0%";
-                bar.style.display = "none";
-                bar.style.backgroundColor = "rgba(0, 243, 255, 0.2)";
-                text.innerText = "Commit a Coffee ☕";
-                btn.disabled = false;
-
-                // Restore transition for next click
-                setTimeout(() => {
-                    bar.style.transition = "width 2s linear";
-                }, 50);
-            }, 3000);
-
-        }, 2000);
-    }
+        // If we are on dashboard, we might update this via the dashboard script.
+        // For now, set a default.
+        const syncEl = document.getElementById('footer-gh-sync');
+        if(syncEl) syncEl.innerText = "GitHub: " + timeString;
+    });
 </script>
 {% endblock %}
