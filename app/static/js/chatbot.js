@@ -297,7 +297,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            const response = await fetch('/chatbot/message', {
+            // Force HTTPS if not localhost
+            const apiUrl = (window.location.hostname === 'localhost') ? '/chatbot/message' : 'https://' + window.location.host + '/chatbot/message';
+
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
