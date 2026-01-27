@@ -149,6 +149,19 @@
             </div>
         </div>
 
+        <!-- PRO SUITE (New) -->
+        <div class="card pro-suite-node">
+            <h3><span class="icon">💼</span> PRO SUITE</h3>
+            <div style="display: grid; gap: 10px;">
+                <a href="/api/export/passport" target="_blank" class="btn-scan" style="text-align: center; text-decoration: none; display: block; background: rgba(0, 255, 136, 0.1); color: var(--neon-green); border-color: var(--neon-green);">
+                     📄 DOWNLOAD PASSPORT
+                </a>
+                <button onclick="copyBadgeCode()" class="btn-scan" style="width: 100%;">
+                     🛡️ COPY BADGE MARKDOWN
+                </button>
+            </div>
+        </div>
+
         <!-- NETWORKING NODE (Moved) -->
         <div class="card networking-node">
             <h3><span class="icon">🌐</span> NETWORKING_NODE</h3>
@@ -515,6 +528,7 @@
     // Injected from Backend
     let CAREER_DATA = {{ career_data | tojson }};
     const PROFILE_DATA = {{ profile | tojson }};
+    const USER_ID = {{ user.id }};
 
     // Chart Instances (to destroy/update)
     let radarChartInstance = null;
@@ -691,6 +705,20 @@
              document.getElementById('res-gaps').innerHTML = "<li>Recommended: Rust Basics</li><li>Recommended: Go Concurrency</li>";
              btn.innerText = "Done";
         }, 1500);
+    }
+
+    // --- PRO SUITE LOGIC ---
+    function copyBadgeCode() {
+        const host = window.location.origin;
+        const code = `[![CareerDev Badge](${host}/api/badge/${USER_ID})](${host}/)`;
+
+        navigator.clipboard.writeText(code).then(() => {
+            window.showToast("Badge Code Copied to Clipboard!", "success");
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            // Fallback
+            prompt("Copy this markdown:", code);
+        });
     }
 </script>
 {% endblock %}
