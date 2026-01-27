@@ -9,3 +9,4 @@ from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.gamification import Badge, UserBadge
 # BackgroundJob removed
 from app.db.models.security import AuditLog, UserSession
+from app.db.models.audit import LoginHistory
