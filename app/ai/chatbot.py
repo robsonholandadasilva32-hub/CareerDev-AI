@@ -71,69 +71,27 @@ class ChatbotService:
     def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
         msg = message.lower()
 
-        # Helper for simple multilingual return
-        def reply(en, pt, es):
-            if lang == 'pt-BR' or lang == 'pt': return pt
-            if lang == 'es': return es
-            return en
-
         if mode == "interview":
              if "start" in msg:
-                 return reply(
-                     "Let's start. Explain the difference between TCP and UDP.",
-                     "Vamos começar. Explique a diferença entre TCP e UDP.",
-                     "Empecemos. Explica la diferencia entre TCP y UDP."
-                 )
-             return reply(
-                 "Good answer (Simulated). Next: What is Dependency Injection?",
-                 "Boa resposta (Simulado). Próxima: O que é Injeção de Dependência?",
-                 "Buena respuesta (Simulado). Siguiente: ¿Qué es la Inyección de Dependencias?"
-             )
+                 return "Let's start. Explain the difference between TCP and UDP."
+             return "Good answer (Simulated). Next: What is Dependency Injection?"
 
         if "my plan" in msg or "meu plano" in msg:
             if "Active Learning Plan" in context:
                  plan_name = context.split("Active Learning Plan:")[1].split("- Focus")[0].strip()
-                 return reply(
-                     "Based on your profile, you should focus on: " + plan_name,
-                     "Com base no seu perfil, você deve focar em: " + plan_name,
-                     "Basado en tu perfil, deberías enfocarte en: " + plan_name
-                 )
-            return reply(
-                "You don't have an active plan yet. Go to the dashboard to generate one.",
-                "Você ainda não tem um plano ativo. Vá ao dashboard para gerar um.",
-                "Aún no tienes un plan activo. Ve al panel para generar uno."
-            )
+                 return "Based on your profile, you should focus on: " + plan_name
+            return "You don't have an active plan yet. Go to the dashboard to generate one."
 
         if "rust" in msg:
-            return reply(
-                "Rust is a language focused on safety and performance. Great for embedded systems and critical services.",
-                "Rust é uma linguagem focada em segurança e performance. Ótima para sistemas embarcados e serviços críticos.",
-                "Rust es un lenguaje enfocado en seguridad y rendimiento. Genial para sistemas integrados y servicios críticos."
-            )
+            return "Rust is a language focused on safety and performance. Great for embedded systems and critical services."
         elif "go" in msg or "golang" in msg:
-            return reply(
-                "Go is excellent for microservices and cloud applications due to its lightweight concurrency.",
-                "Go é excelente para microsserviços e aplicações em nuvem devido à sua concorrência leve.",
-                "Go es excelente para microservicios y aplicaciones en la nube debido a su concurrencia ligera."
-            )
+            return "Go is excellent for microservices and cloud applications due to its lightweight concurrency."
         elif "career" in msg or "carreira" in msg:
-            return reply(
-                "To advance your career, CareerDev AI suggests focusing on T-Shaped skills and connecting your GitHub for gap analysis.",
-                "Para avançar na carreira, o CareerDev AI sugere focar em habilidades T-Shaped e conectar seu GitHub para análise de lacunas.",
-                "Para avanzar en tu carrera, CareerDev AI sugiere enfocarse en habilidades T-Shaped y conectar tu GitHub para análisis de brechas."
-            )
+            return "To advance your career, CareerDev AI suggests focusing on T-Shaped skills and connecting your GitHub for gap analysis."
         elif "login" in msg or "entrar" in msg:
-            return reply(
-                "You can login using Email/Password, GitHub or LinkedIn for a complete experience.",
-                "Você pode entrar usando E-mail/Senha, GitHub ou LinkedIn para uma experiência completa.",
-                "Puedes iniciar sesión usando Email/Contraseña, GitHub o LinkedIn para una experiencia completa."
-            )
+            return "You can login using Email/Password, GitHub or LinkedIn for a complete experience."
 
-        return reply(
-            "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!",
-            "Operando em modo simulado. Pergunte sobre 'Rust', 'Go', 'Carreira' ou 'Meu Plano'. Tente o Modo Entrevista!",
-            "Operando en modo simulado. Pregunta sobre 'Rust', 'Go', 'Carrera' o 'Mi Plan'. ¡Prueba el Modo Entrevista!"
-        )
+        return "Operating in simulated mode. Ask about 'Rust', 'Go', 'Career' or 'My Plan'. Try Interview Mode!"
 
     async def verify_connection(self):
         """
@@ -153,15 +111,8 @@ class ChatbotService:
             raise Exception(f"OpenAI Connection Failed: {e}")
 
     async def _llm_response(self, message: str, lang: str, context: str, system_prompt: str) -> str:
-        lang_instruction = f"Reply in {lang}."
-        if lang == 'pt-BR' or lang == 'pt':
-             lang_instruction = "Responda em Português do Brasil."
-        elif lang == 'es':
-             lang_instruction = "Responda em Espanhol."
-
         messages = [
             {"role": "system", "content": system_prompt + "\n" + context},
-            {"role": "system", "content": lang_instruction},
             {"role": "user", "content": message}
         ]
 
