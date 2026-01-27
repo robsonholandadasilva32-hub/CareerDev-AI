@@ -181,8 +181,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function startVoiceInput() {
-        console.log("STT: Initializing...");
-
         // Polyfill Strategy
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -205,12 +203,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         showToast(t.listening);
 
-        console.log("STT: Started. Waiting for audio...");
         recognition.start();
 
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
-            console.log("STT: Result received: ", speechResult);
             input.value = speechResult;
 
             resetMicButton();
@@ -220,13 +216,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         recognition.onspeechend = () => {
-            console.log("STT: Speech ended.");
             recognition.stop();
             resetMicButton();
         };
 
         recognition.onerror = function(event) {
-            console.log("STT: Error: ", event.error);
             resetMicButton(); // Reset UI immediately
 
             if (event.error === 'not-allowed') {
@@ -323,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US'; // Use selected language
-        utterance.rate = 1.1;
+        utterance.rate = 0.9;
 
         window.speechSynthesis.speak(utterance);
     }
@@ -357,6 +351,16 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.appendChild(flash);
         setTimeout(() => flash.remove(), 500);
     }
+
+    // Expose Challenge Mode Trigger
+    window.startChatbotChallenge = function() {
+        if (widget.style.display === 'none' || widget.style.display === '') {
+            toggleChat();
+        }
+        // Send hidden command or simulated user text
+        input.value = "Test My Weakness";
+        sendMessage();
+    };
 
     // Run Init
     init();

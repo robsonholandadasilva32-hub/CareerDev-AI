@@ -19,6 +19,7 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
     profile = user.career_profile
     plans = user.learning_plans
     skills = profile.skills_snapshot if profile else {}
+    gh_metrics = profile.github_activity_metrics if profile else {}
     target_role = profile.target_role if profile else 'Software Engineer'
     active_plans = [p.title for p in plans if p.status != 'completed']
 
@@ -35,6 +36,7 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         - Name: {user.name}
         - Premium Status: {user.is_premium}
         - Current Skills: {json.dumps(skills)}
+        - GitHub Metrics: {json.dumps(gh_metrics)}
         - Active Learning Plan: {', '.join(active_plans)}
         - Focus: {target_role}
 
@@ -89,6 +91,15 @@ class ChatbotService:
                  "Boa resposta (Simulado). Próxima: O que é Injeção de Dependência?",
                  "Buena respuesta (Simulado). Siguiente: ¿Qué es la Inyección de Dependencias?"
              )
+
+        if "test my weakness" in msg:
+            # Logic: Parse context for GitHub Metrics and find lowest
+            # Simplified for simulation:
+            return reply(
+                "I see you rarely commit SQL code. Explain the difference between LEFT JOIN and INNER JOIN.",
+                "Vejo que você raramente commita código SQL. Explique a diferença entre LEFT JOIN e INNER JOIN.",
+                "Veo que raramente haces commits de código SQL. Explica la diferencia entre LEFT JOIN e INNER JOIN."
+            )
 
         if "my plan" in msg or "meu plano" in msg:
             if "Active Learning Plan" in context:

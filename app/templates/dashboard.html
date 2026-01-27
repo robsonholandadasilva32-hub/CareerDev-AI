@@ -98,6 +98,11 @@
             <div class="insight-content" id="ai-insight-content" style="line-height: 1.6; color: #e2e8f0; padding: 10px; border-left: 3px solid var(--neon-green); background: rgba(0, 255, 136, 0.05);">
                 <!-- JS Injected -->
             </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button onclick="window.startChatbotChallenge()" class="btn-outline-sm" style="border-color: var(--neon-purple); color: var(--neon-purple);">
+                    <span style="margin-right:5px;">🎤</span> Test My Weakness
+                </button>
+            </div>
         </div>
 
     </main>
@@ -146,6 +151,19 @@
             <div id="embedded-chatbot-target" style="height: 100%; display: flex; flex-direction: column;">
                 <!-- Placeholder for injection -->
                 <div style="padding: 20px; color: #6b7280; text-align: center;">Initializing Neural Link...</div>
+            </div>
+        </div>
+
+        <!-- PRO SUITE -->
+        <div class="card pro-suite">
+            <h3><span class="icon">💼</span> PRO_SUITE</h3>
+            <div class="network-grid">
+                <a href="/api/export/passport" target="_blank" class="net-link" style="width: 100%; justify-content: center;">
+                    <span class="net-icon">📄</span> Export Passport (PDF)
+                </a>
+                <button onclick="openBadgeModalForUser()" class="net-link" style="width: 100%; justify-content: center; cursor: pointer; background: transparent;">
+                    <span class="net-icon">🏆</span> Live Market Score
+                </button>
             </div>
         </div>
 
@@ -674,7 +692,60 @@
         document.getElementById('badge-desc-display').innerText = desc;
         document.getElementById('badge-icon-display').innerText = icon;
         document.getElementById('badge-modal').style.display = 'flex';
+        // Hide Markdown area if reusing modal
+        const mdArea = document.getElementById('badge-markdown-area');
+        if(mdArea) mdArea.style.display = 'none';
     }
+
+    function openBadgeModalForUser() {
+        const userId = {{ user.id }};
+        const domain = window.location.origin;
+        const badgeUrl = `${domain}/api/badge/${userId}`;
+        const dashboardUrl = `${domain}`;
+        const markdown = `[![CareerDev Score](${badgeUrl})](${dashboardUrl})`;
+
+        document.getElementById('badge-name-display').innerText = "CareerDev Score";
+        document.getElementById('badge-desc-display').innerText = "Embed this badge in your GitHub README to show off your verified skill alignment.";
+        document.getElementById('badge-icon-display').innerHTML = `<img src="${badgeUrl}" style="height:40px;">`; // Preview
+
+        // Show Markdown
+        let mdArea = document.getElementById('badge-markdown-area');
+        if(!mdArea) {
+            mdArea = document.createElement('div');
+            mdArea.id = 'badge-markdown-area';
+            mdArea.style.marginTop = '15px';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = markdown;
+            input.style.width = '100%';
+            input.style.padding = '8px';
+            input.style.background = '#000';
+            input.style.color = '#00ff88';
+            input.style.border = '1px solid #333';
+            input.readOnly = true;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.innerText = "Copy Markdown";
+            copyBtn.className = "btn-action";
+            copyBtn.style.width = "100%";
+            copyBtn.style.marginTop = "5px";
+            copyBtn.onclick = function() {
+                input.select();
+                document.execCommand('copy');
+                window.showToast("Copied to clipboard!", "success");
+            };
+
+            mdArea.appendChild(input);
+            mdArea.appendChild(copyBtn);
+            document.querySelector('#badge-modal .card').appendChild(mdArea);
+        }
+        mdArea.querySelector('input').value = markdown;
+        mdArea.querySelector('img').src = badgeUrl;
+        mdArea.style.display = 'block';
+
+        document.getElementById('badge-modal').style.display = 'flex';
+    }
+
     function shareBadge(platform) {
         const text = `I just earned the badge "${currentBadgeName}" on CareerDev AI!`;
         alert(`Simulating share to ${platform}: ${text}`);
