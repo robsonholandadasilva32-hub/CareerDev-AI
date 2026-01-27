@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
 from app.db.session import get_db
 from app.services.social_harvester import social_harvester
@@ -359,7 +359,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
              return RedirectResponse("/login?error=missing_linkedin_email")
 
         # 1. Check by Email (Fix: Prioritize Email to prevent loop)
-        user = get_user_by_email(db, email)
+        user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
         if user:
             logger.info(f"DEBUG: Found existing user: {user.id}")
             # Update ID if missing
@@ -380,7 +380,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
         # 2. Check by ID (Legacy/Fallback)
-        user = get_user_by_linkedin_id(db, linkedin_id)
+        user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
         if user:
             # Trigger Harvest (even for existing users)
             if token.get('access_token'):
@@ -405,15 +405,19 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             user.terms_accepted = True
             user.terms_accepted_at = datetime.utcnow()
             db.commit()
+
+            # FIX: Reload user with profile to prevent DetachedInstanceError in background task
+            user = db.query(User).options(joinedload(User.career_profile)).filter(User.id == user.id).first()
+
             logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
 
         except IntegrityError:
             # Race condition: User created in parallel
             db.rollback()
             logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
-            user = get_user_by_email(db, email)
+            user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
             if not user:
-                 user = get_user_by_linkedin_id(db, linkedin_id)
+                 user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
             if not user:
                  raise Exception("IntegrityError caught but user not found on retry.")
 
