@@ -2,483 +2,642 @@
 
 {% block dashboard_content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="dashboard-grid">
-    <!-- SECURITY HEADER -->
-    <div class="card security-status" id="tour-security">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h3>🔒 Security Active</h3>
-                <p style="color: #00ff88; font-size: 0.9em;">Your account is protected.</p>
-            </div>
-            <div>
-                <a href="/dashboard/security" class="btn-outline">Manage Security</a>
-            </div>
-        </div>
-    </div>
+<div class="career-os-wrapper">
 
-    <!-- HEALTH & ERGONOMICS -->
-    <div class="card health-monitor" id="tour-health">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-             <h3>🩺 Health & Ergonomics</h3>
-             <!-- Global Indicator -->
-             <div id="health-indicator" style="display: none; width: 10px; height: 10px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88; animation: pulse 1s infinite;"></div>
-        </div>
+    <!-- COL 2: CAREER PULSE (MAIN) -->
+    <main class="career-main">
 
-        <!-- Posture -->
-        <div class="health-row">
-            <div class="health-info">
-                 <span class="health-label">Posture AI</span>
-                 <small style="color: #6b7280; display: block;">Camera analysis every 5m</small>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
-                <span class="slider round"></span>
-            </label>
-        </div>
-
-        <!-- 20-20-20 -->
-        <div class="health-row">
-             <div class="health-info">
-                 <span class="health-label" title="Alert every 20 mins to look away">20-20-20 Rule ℹ️</span>
-                 <small style="color: #6b7280; display: block;">Eye strain prevention</small>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
-                <span class="slider round"></span>
-            </label>
-        </div>
-
-        <!-- Hydration -->
-        <div class="health-row" style="border-bottom: none;">
-             <div class="health-info">
-                 <span class="health-label">Hydration</span>
-                 <select id="hydration-interval" class="mini-select" onchange="HealthModule.updateHydrationInterval()">
-                     <option value="30">30m</option>
-                     <option value="60">60m</option>
-                 </select>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
-                <span class="slider round"></span>
-            </label>
-        </div>
-    </div>
-
-    <!-- ACCESSIBILITY SPOTLIGHT (NEW) -->
-    <div class="card a11y-spotlight" id="tour-a11y">
-        <div class="a11y-spotlight-content">
-            <div class="a11y-spotlight-icon">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            </div>
-            <div class="a11y-spotlight-text">
-                <h4>Accessibility Spotlight</h4>
-                <p>
-                    Customize your experience with our new accessibility tools.
-                </p>
-            </div>
-            <a href="/dashboard/accessibility" class="btn-outline a11y-btn">
-                Go to Accessibility
-            </a>
-        </div>
-    </div>
-
-    <!-- QUICK ACTIONS -->
-    <div class="card actions" style="margin-top: 20px;">
-        <h3>⚡ Quick Actions</h3>
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
-            <a href="/dashboard/security" class="btn-action">
-                <span>🔐</span> Manage Account Security
-            </a>
-            <a href="/career/analytics" class="btn-action">
-                <span>📊</span> Advanced Analytics
-            </a>
-            <a href="#" class="btn-action" onclick="document.getElementById('resume-modal').style.display='flex'">
-                <span>📄</span> Analyze Resume
-            </a>
-            <a href="/logout" class="btn-action danger">
-                <span>🚪</span> Secure Logout
-            </a>
-        </div>
-    </div>
-
-    <!-- PiP Container (Draggable) -->
-    <div id="pip-container" style="display: none;">
-        <div id="pip-container-header">
-            <span style="font-size: 0.8rem; font-weight: bold;">Posture AI</span>
-            <button onclick="HealthModule.stopPostureCheck()" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
-        </div>
-        <video id="pip-video" playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-    </div>
-
-    <style>
-        /* Health Module Styles */
-        .health-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .health-label {
-            font-weight: 500;
-            color: var(--text-color);
-        }
-        .mini-select {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-soft);
-            color: #9ca3af;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-top: 4px;
-        }
-
-        /* PiP Styles */
-        #pip-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 200px;
-            height: 150px;
-            background: #000;
-            border: 1px solid var(--primary-color);
-            border-radius: 8px;
-            overflow: hidden;
-            z-index: 9999;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            flex-direction: column;
-        }
-        #pip-container-header {
-            padding: 5px 10px;
-            background: rgba(0, 243, 255, 0.2);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-        }
-
-        .btn-action {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--accent-color);
-            border-radius: 8px;
-            color: var(--text-color);
-            transition: all 0.2s;
-            font-size: 0.9rem;
-        }
-        .btn-action:hover {
-            background: rgba(0, 243, 255, 0.1);
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-            text-decoration: none;
-            transform: translateY(-2px);
-        }
-        .btn-action.danger:hover {
-            background: rgba(255, 0, 85, 0.1);
-            border-color: var(--error-color);
-            color: var(--error-color);
-        }
-    </style>
-
-    <!-- USER IDENTITY -->
-    <div class="card user-identity" style="margin-top: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <h2>
-                    Welcome, {{ email }}
-                    {% if user.is_premium %}
-                        <span style="font-size: 0.6em; background: gold; color: black; padding: 2px 8px; border-radius: 10px; vertical-align: middle;">PREMIUM</span>
+        <!-- IDENTITY HEADER -->
+        <div class="os-header card">
+            <div class="identity-flex">
+                <div class="identity-info">
+                    <h1 class="glitch-text" data-text="STATUS: ONLINE">STATUS: ONLINE</h1>
+                    <p class="user-handle">OPERATOR: {{ user.name or email }} <span class="badge-level">LVL {{ profile.level }}</span></p>
+                    <div class="stat-line">
+                        <span>FOCUS: <span class="highlight-cyan">{{ profile.focus }}</span></span>
+                        <span>TOKENS: <span class="highlight-gold">{% if user.is_premium %}UNLIMITED{% else %}10/100{% endif %}</span></span>
+                    </div>
+                </div>
+                <!-- BADGES MINI -->
+                <div class="badges-mini">
+                    {% if badges %}
+                        {% for ub in badges[:4] %}
+                        <span class="mini-badge" title="{{ ub.badge.name }}">{{ ub.badge.icon }}</span>
+                        {% endfor %}
+                        {% if badges|length > 4 %}<span class="more-badges">+{{ badges|length - 4 }}</span>{% endif %}
                     {% else %}
-                         <a href="/subscription/checkout" style="font-size: 0.5em; background: #374151; color: white; padding: 4px 8px; border-radius: 10px; text-decoration: none; vertical-align: middle; border: 1px solid gold;">Upgrade to Premium</a>
-                    {% endif %}
-                </h2>
-                <div class="stats-row" style="display: flex; gap: 20px; margin-top: 15px;">
-                    <div class="stat-item">
-                        <span class="label">Level</span>
-                        <span class="value">{{ profile.level }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Focus Area</span>
-                        <span class="value">{{ profile.focus }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">AI Tokens</span>
-                        {% if user.is_premium %}
-                            <span class="value" style="color: gold;">∞ Unlimited</span>
-                        {% else %}
-                            <span class="value">10/100</span>
-                        {% endif %}
-                    </div>
-                     {% if user.is_premium %}
-                    <div class="stat-item">
-                        <span class="label">Support</span>
-                        <span class="value" style="color: var(--secondary-color);">VIP ★</span>
-                    </div>
+                        <span class="text-muted">No badges yet.</span>
                     {% endif %}
                 </div>
             </div>
-
-            <!-- BADGES HALL -->
-            <div class="badges-hall" style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px;">
-                {% if badges %}
-                    {% for ub in badges %}
-                    <div class="badge-item"
-                         onclick="openBadgeModal('{{ ub.badge.name }}', '{{ ub.badge.description }}', '{{ ub.badge.icon }}')"
-                         title="{{ ub.badge.name }}: {{ ub.badge.description }}"
-                         style="font-size: 1.5rem; cursor: pointer; transition: transform 0.2s;">
-                        {{ ub.badge.icon }}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <span style="color: #6b7280; font-size: 0.8rem;">Earn badges by completing tasks!</span>
-                {% endif %}
+            <div class="xp-bar-container">
+                <div class="xp-bar" style="width: 78%;"></div>
             </div>
         </div>
 
-        <div class="progress-container" style="margin-top: 15px; background: #374151; height: 10px; border-radius: 5px;">
-            <div class="progress-bar" style="width: 78%; background: var(--primary-color); height: 100%; border-radius: 5px; box-shadow: 0 0 10px var(--primary-color);"></div>
-        </div>
-    </div>
+        <!-- DASHBOARD GRID -->
+        <div class="os-grid">
 
-    <!-- CAREER TRENDS (DYNAMIC) -->
-    <div class="card trends" style="margin-top: 20px;">
-        <h3>Market Trends</h3>
-        <p style="color: #9ca3af; font-size: 0.9em; margin-bottom: 15px;">Real-time market monitoring for your profile.</p>
-
-        <div class="trends-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-            {% for tech, demand in profile.trends.items() %}
-            <div class="trend-card" style="background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 8px; border: 1px solid var(--border-soft);">
-                <h4 style="color: {% if demand == 'Very High' %}#00ff88{% elif demand == 'High' %}#00f3ff{% else %}#fbbf24{% endif %}; margin: 0 0 10px 0;">
-                    {{ tech }}
-                </h4>
-                <p style="margin: 0; font-size: 0.9rem;">Demand: <strong>{{ demand }}</strong></p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- AI GENERATED PLAN -->
-    <div class="card projects" style="margin-top: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>Personalized Plan (AI Driven)</h3>
-            <span class="badge">Updated Weekly</span>
-        </div>
-
-        <div class="plan-list" style="margin-top: 15px; display: grid; gap: 15px;">
-            {% for item in plan %}
-            <div class="plan-item" style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary-color);">
-                <div style="display: flex; justify-content: space-between;">
-                    <h4 style="margin: 0;">{{ item.title }}</h4>
-                    <span style="font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.1);">
-                        {{ item.technology }}
-                    </span>
-                </div>
-                <p style="color: #d1d5db; font-size: 0.9rem; margin: 8px 0;">{{ item.description }}</p>
-
-                {% if item.resources %}
-                <div style="margin-top: 10px; font-size: 0.85rem;">
-                    <strong>📚 Resources:</strong>
-                    {% for res in item.resources %}
-                        <a href="{{ res }}" target="_blank" style="color: var(--accent-blue);">Link {{ loop.index }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <div style="margin-top: 10px; text-align: right;">
-                    <small style="color: #6b7280;">Deadline: {{ item.due_date.strftime('%d/%m') if item.due_date else 'No deadline' }}</small>
+            <!-- MARKET RADAR -->
+            <div class="card market-radar-card">
+                <h3><span class="icon">📡</span> MARKET RADAR</h3>
+                <div class="chart-container">
+                    <canvas id="marketRadarChart"></canvas>
                 </div>
             </div>
-            {% else %}
-            <p>Generating your AI personalized plan...</p>
-            {% endfor %}
-        </div>
-    </div>
 
-    <!-- NETWORKING & COMMUNITY -->
-    <div class="card networking" style="margin-top: 20px;">
-        <h3>🤝 Networking & Community</h3>
-        <p>Suggested connections based on your focus in <strong>{{ profile.focus }}</strong>:</p>
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
-             <a href="https://discord.gg/rust-lang" target="_blank" class="btn-action">Rust Discord</a>
-             <a href="https://gophers.slack.com/" target="_blank" class="btn-action">Gophers Slack</a>
+            <!-- GAP ANALYSIS -->
+            <div class="card gap-analysis-card">
+                <h3><span class="icon">⚠️</span> SKILL GAPS</h3>
+                <div class="gap-list" id="gap-list-container">
+                    <!-- JS Injected -->
+                </div>
+                <button class="btn-scan" onclick="document.getElementById('resume-modal').style.display='flex'">
+                    SCAN RESUME_DATA
+                </button>
+            </div>
+
         </div>
-    </div>
+
+        <!-- INTELLIGENT UPSKILLING -->
+        <div class="card upskilling-engine">
+            <div class="card-header-flex">
+                <h3><span class="icon">🚀</span> UPSKILLING_PROTOCOL</h3>
+                <div class="kanban-controls">
+                    <span class="active">TIMELINE</span>
+                    <span>KANBAN</span>
+                </div>
+            </div>
+
+            <div class="roadmap-container" id="roadmap-container">
+                <!-- JS Injected -->
+            </div>
+        </div>
+
+        <!-- NETWORKING NODE -->
+        <div class="card networking-node">
+            <h3><span class="icon">🌐</span> NETWORKING_NODE</h3>
+            <div class="network-grid">
+                <a href="https://discord.gg/rust-lang" target="_blank" class="net-link">
+                    <span class="net-icon">👾</span> RUST_DISCORD
+                </a>
+                <a href="https://gophers.slack.com/" target="_blank" class="net-link">
+                    <span class="net-icon">🐹</span> GOPHERS_SLACK
+                </a>
+                 <a href="#" class="net-link">
+                    <span class="net-icon">🧠</span> AI_ETHICS_FORUM
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- COL 3: ASSISTANT ZONE (RIGHT) -->
+    <aside class="assistant-zone">
+
+        <!-- UTILITY STACK -->
+        <div class="utility-stack">
+            <!-- SECURITY -->
+            <div class="utility-card security-mini" id="tour-security">
+                <div class="util-header">
+                    <span>🔒 SEC_LEVEL</span>
+                    <span class="status-ok">ACTIVE</span>
+                </div>
+                <a href="/dashboard/security" class="util-link">MANAGE_KEYS</a>
+            </div>
+
+            <!-- HEALTH -->
+            <div class="utility-card health-mini" id="tour-health">
+                <div class="util-header">
+                    <span>🩺 BIO_MONITOR</span>
+                    <div id="health-indicator" class="pulse-dot"></div>
+                </div>
+
+                <div class="mini-control">
+                    <span>POSTURE_AI</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-control">
+                    <span>20-20-20</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-control">
+                    <span>HYDRATION</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ACCESSIBILITY -->
+            <div class="utility-card a11y-mini" id="tour-a11y">
+                 <div class="util-header">
+                    <span>👁️ A11Y_CORE</span>
+                </div>
+                <p class="micro-text">Visual/Motor adjustments active.</p>
+                <a href="/dashboard/accessibility" class="util-link">CONFIGURE</a>
+            </div>
+        </div>
+
+        <!-- EMBEDDED CHATBOT -->
+        <div class="embedded-chat-container">
+            <div class="chat-terminal-header">
+                <span>AI_MENTOR_V2.0</span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="dashboard-interview-toggle" style="border: 1px solid var(--neon-cyan); background: transparent; color: var(--neon-cyan); font-family: 'Courier New'; cursor: pointer; font-size: 0.7rem; padding: 2px 8px;">START_SIMULATION</button>
+                    <span id="interview-status-indicator" style="font-size: 0.7em; color: #6b7280;">READY</span>
+                </div>
+            </div>
+            <!-- The Chatbot JS will target this container -->
+            <div id="embedded-chatbot-target" style="height: 100%; display: flex; flex-direction: column;">
+                <!-- Placeholder for injection -->
+                <div style="padding: 20px; color: #6b7280; text-align: center;">Initializing Neural Link...</div>
+            </div>
+        </div>
+
+    </aside>
+
 </div>
 
-<!-- BADGE SHARE MODAL -->
+<!-- MODALS (Hidden) -->
 <div id="badge-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10001; align-items: center; justify-content: center;">
     <div class="card" style="width: 90%; max-width: 400px; background: #0f172a; border: 1px solid var(--secondary-color); text-align: center;">
         <div id="badge-icon-display" style="font-size: 4rem; margin-bottom: 10px;">🏆</div>
         <h3 id="badge-name-display" style="margin: 0; color: var(--secondary-color);">Badge Name</h3>
         <p id="badge-desc-display" style="color: #cbd5e1; font-size: 0.9rem; margin: 10px 0;">Description</p>
-
         <div style="margin-top: 20px; display: grid; gap: 10px;">
-            <button onclick="shareBadge('linkedin')" class="btn-action" style="justify-content: center; background: #0077b5; border: none; color: white;">
-                Share on LinkedIn
-            </button>
-            <button onclick="shareBadge('twitter')" class="btn-action" style="justify-content: center; background: #1da1f2; border: none; color: white;">
-                Share on X (Twitter)
-            </button>
+            <button onclick="shareBadge('linkedin')" class="btn-action">Share on LinkedIn</button>
+            <button onclick="shareBadge('twitter')" class="btn-action">Share on X</button>
         </div>
-
         <button onclick="document.getElementById('badge-modal').style.display='none'" class="btn-outline" style="margin-top: 15px; width: 100%;">Close</button>
     </div>
 </div>
 
-<!-- RESUME ANALYZER MODAL -->
 <div id="resume-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
     <div class="card" style="width: 90%; max-width: 600px; background: #0f172a; border: 1px solid var(--primary-color);">
         <h3 style="margin-top: 0; color: var(--primary-color);">🤖 Smart Resume Analysis</h3>
-        <p style="font-size: 0.9rem; color: #cbd5e1;">Paste your resume text below. Our AI will identify gaps for your target role.</p>
-
+        <p style="font-size: 0.9rem; color: #cbd5e1;">Paste your resume text below.</p>
         <textarea id="resume-text" rows="10" style="width: 100%; background: #1e293b; color: white; border: 1px solid #334155; border-radius: 6px; padding: 10px;" placeholder="Paste your CV here..."></textarea>
-
         <div id="resume-result" style="display: none; margin-top: 15px; padding: 10px; background: rgba(0, 255, 136, 0.1); border-radius: 6px;">
             <h4 id="res-score" style="margin: 0; color: var(--secondary-color);">Score: 0/100</h4>
             <p id="res-feedback" style="font-size: 0.9rem;"></p>
             <ul id="res-gaps" style="font-size: 0.85rem; color: #fbbf24;"></ul>
         </div>
-
         <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
             <button onclick="document.getElementById('resume-modal').style.display='none'" class="btn-outline">Close</button>
-            <button onclick="analyzeResume()" class="btn">Analyze & Update Plan</button>
+            <button onclick="analyzeResume()" class="btn">Analyze</button>
         </div>
     </div>
 </div>
 
+<!-- PiP Container (Draggable) - Preserved -->
+<div id="pip-container" style="display: none;">
+    <div id="pip-container-header">
+        <span style="font-size: 0.8rem; font-weight: bold;">Posture AI</span>
+        <button onclick="HealthModule.stopPostureCheck()" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
+    </div>
+    <video id="pip-video" playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+</div>
+
+<!-- STYLES -->
 <style>
-@keyframes pulse { 0% { opacity: 0.5; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: scale(0.9); } }
-@keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-/* Switch Styles */
-.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: #00f3ff; }
-input:checked + .slider:before { transform: translateX(24px); }
+    /* VARIABLES */
+    :root {
+        --cyber-black: #050a14;
+        --cyber-dark: #0f172a;
+        --cyber-gray: #1e293b;
+        --neon-cyan: #00f3ff;
+        --neon-green: #00ff88;
+        --neon-purple: #bd00ff;
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+    }
+
+    /* GLOBAL OVERRIDES FOR DASHBOARD */
+    .dashboard-content-area {
+        padding: 0 !important;
+        max-width: none !important;
+        height: 100%;
+    }
+
+    /* LAYOUT GRID */
+    .career-os-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 20px;
+        height: calc(100vh - 120px); /* Adjust for header/footer */
+        overflow: hidden; /* Main scroll handling */
+    }
+
+    @media (max-width: 1200px) {
+        .career-os-wrapper {
+            grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
+        }
+        .assistant-zone {
+            height: auto;
+        }
+        .embedded-chat-container {
+            height: 500px; /* Fixed height on mobile */
+        }
+    }
+
+    /* MAIN COLUMN */
+    .career-main {
+        overflow-y: auto;
+        padding-right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* ASSISTANT COLUMN */
+    .assistant-zone {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        height: 100%;
+    }
+
+    /* CARDS GENERIC */
+    .card {
+        background: var(--cyber-dark);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .card h3 {
+        margin: 0 0 15px 0;
+        font-family: 'Courier New', monospace;
+        color: var(--neon-cyan);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+    }
+
+    /* HEADER */
+    .os-header {
+        border-left: 4px solid var(--neon-cyan);
+        background: linear-gradient(90deg, rgba(15,23,42,1) 0%, rgba(5,10,20,1) 100%);
+    }
+    .identity-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    .glitch-text {
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        margin: 0;
+        color: var(--neon-green);
+        text-shadow: 0 0 5px rgba(0,255,136,0.5);
+    }
+    .user-handle {
+        margin: 5px 0;
+        color: var(--text-main);
+        font-size: 1.1rem;
+    }
+    .badge-level {
+        background: var(--neon-purple);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: white;
+        margin-left: 10px;
+    }
+    .stat-line {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 5px;
+        display: flex;
+        gap: 20px;
+    }
+    .highlight-cyan { color: var(--neon-cyan); }
+    .highlight-gold { color: gold; }
+    .xp-bar-container {
+        margin-top: 15px;
+        background: rgba(255,255,255,0.1);
+        height: 4px;
+        border-radius: 2px;
+    }
+    .xp-bar {
+        background: var(--neon-cyan);
+        height: 100%;
+        box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* OS GRID (Radar + Gap) */
+    .os-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    @media (max-width: 900px) { .os-grid { grid-template-columns: 1fr; } }
+
+    .gap-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .gap-item {
+        background: rgba(255, 0, 85, 0.1);
+        border-left: 3px solid var(--error-color);
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    .gap-item strong { display: block; color: #ff8fa3; }
+    .btn-scan {
+        margin-top: 15px;
+        width: 100%;
+        background: transparent;
+        border: 1px solid var(--neon-cyan);
+        color: var(--neon-cyan);
+        padding: 10px;
+        font-family: 'Courier New', monospace;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-scan:hover { background: rgba(0,243,255,0.1); }
+
+    /* UPSKILLING */
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .kanban-controls span {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-left: 10px;
+        cursor: pointer;
+    }
+    .kanban-controls span.active { color: var(--neon-cyan); text-decoration: underline; }
+
+    .roadmap-item {
+        display: flex;
+        gap: 15px;
+        background: rgba(255,255,255,0.03);
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 3px solid var(--text-muted);
+        transition: transform 0.2s;
+    }
+    .roadmap-item:hover { transform: translateX(5px); }
+    .roadmap-item.high-prio { border-color: var(--neon-green); }
+    .roadmap-week {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: var(--text-muted);
+        min-width: 60px;
+    }
+    .roadmap-content h4 { margin: 0; color: var(--text-main); }
+    .roadmap-content p { margin: 5px 0 0 0; font-size: 0.85rem; color: #94a3b8; }
+
+    /* UTILITY STACK */
+    .utility-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .utility-card {
+        background: #111827;
+        border: 1px solid #374151;
+        border-radius: 6px;
+        padding: 12px;
+    }
+    .util-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+    .status-ok { color: var(--neon-green); font-size: 0.75rem; }
+    .pulse-dot {
+        width: 8px; height: 8px; background: var(--neon-green);
+        border-radius: 50%;
+        box-shadow: 0 0 5px var(--neon-green);
+        animation: pulse 2s infinite;
+    }
+    .util-link {
+        font-size: 0.75rem;
+        color: var(--neon-cyan);
+        text-transform: uppercase;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    .mini-control {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: #d1d5db;
+    }
+    .micro-text { font-size: 0.75rem; color: #6b7280; margin: 0; }
+
+    /* MINI SWITCH */
+    .switch-mini { position: relative; display: inline-block; width: 34px; height: 18px; }
+    .switch-mini input { opacity: 0; width: 0; height: 0; }
+    .slider-mini { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 18px; }
+    .slider-mini:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider-mini { background-color: var(--neon-cyan); }
+    input:checked + .slider-mini:before { transform: translateX(16px); }
+
+    /* EMBEDDED CHAT */
+    .embedded-chat-container {
+        flex-grow: 1;
+        background: #000;
+        border: 1px solid var(--neon-cyan);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .chat-terminal-header {
+        background: rgba(0, 243, 255, 0.1);
+        padding: 8px 15px;
+        border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--neon-cyan);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* NETWORK GRID */
+    .network-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+    .net-link {
+        background: rgba(255,255,255,0.05);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        color: var(--text-main);
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .net-link:hover { border-color: var(--neon-cyan); background: rgba(0,243,255,0.1); }
 </style>
 
+<!-- JS LOGIC -->
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
 <script src="/static/js/health.js"></script>
 <script>
-function showToast(msg, type) {
-    const toast = document.createElement('div');
-    toast.innerText = msg;
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.right = '20px';
-    toast.style.padding = '15px 25px';
-    toast.style.borderRadius = '8px';
-    toast.style.color = 'white';
-    toast.style.zIndex = '10000';
-    toast.style.fontWeight = 'bold';
-    toast.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
-    toast.style.animation = 'slideIn 0.3s ease-out';
+    // --- TOAST UTILITY ---
+    window.showToast = function(msg, type) {
+        const toast = document.createElement('div');
+        toast.innerText = msg;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.right = '20px';
+        toast.style.padding = '15px 25px';
+        toast.style.borderRadius = '8px';
+        toast.style.color = 'white';
+        toast.style.zIndex = '10000';
+        toast.style.fontWeight = 'bold';
+        toast.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+        toast.style.animation = 'slideIn 0.3s ease-out';
+        toast.style.background = (type === 'warning' || type === 'error') ? '#ff0055' :
+                                 (type === 'success') ? '#00ff88' : '#374151';
+        if (type === 'success') toast.style.color = 'black';
 
-    if (type === 'warning') toast.style.background = '#ff0055';
-    else if (type === 'success') toast.style.background = '#00ff88';
-    else toast.style.background = '#374151';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    };
 
-    if (type === 'success') toast.style.color = 'black';
+    // --- CONFIG ---
+    window.CAREER_OS_EMBEDDED_CHAT = true;
 
-    document.body.appendChild(toast);
+    // --- MOCK DATA FOR CHART.JS ---
+    const MARKET_DATA = {
+        labels: ['Rust', 'Go', 'Python', 'AI/ML', 'System Design', 'React'],
+        datasets: [{
+            label: 'Your Skills',
+            data: [40, 30, 90, 60, 50, 80],
+            backgroundColor: 'rgba(0, 243, 255, 0.2)',
+            borderColor: '#00f3ff',
+            pointBackgroundColor: '#00f3ff',
+        }, {
+            label: 'Market Demand',
+            data: [90, 85, 80, 95, 85, 70],
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderColor: '#6b7280',
+            borderDash: [5, 5],
+            pointBackgroundColor: 'transparent'
+        }]
+    };
 
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
-}
+    const GAP_DATA = [
+        { skill: "Rust (Ownership)", missing: "Critical", desc: "Required for High-Perf Systems roles (+15% Salary)" },
+        { skill: "Kubernetes", missing: "Medium", desc: "Essential for Cloud-Native tracks." }
+    ];
 
-// Tour Logic
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Health Module
-    HealthModule.init();
+    const ROADMAP_DATA = [
+        { week: "W1", title: "Rust Ownership Model", desc: "Deep dive into Borrow Checker & Lifetimes.", prio: "high" },
+        { week: "W2", title: "Build a CLI Tool", desc: "Apply Rust concepts to build a 'grep' clone.", prio: "normal" },
+        { week: "W3", title: "AsyncIO in Python", desc: "Master event loops and coroutines.", prio: "normal" }
+    ];
 
-    const hasSeenTour = localStorage.getItem('hasSeenTour_v1');
-
-    if (!hasSeenTour) {
-        const driver = window.driver.js.driver;
-
-        const driverObj = driver({
-            showProgress: true,
-            steps: [
-                { popover: { title: 'Welcome to CareerDev AI! 🚀', description: 'Let\'s take a quick tour of your new career hub.' } },
-                { element: '#tour-security', popover: { title: 'Security First', description: 'Monitor your account status and manage credentials here.' } },
-                { element: '#tour-a11y', popover: { title: 'Universal Accessibility', description: 'Our dedicated panel to adapt the platform to your needs (Vision, Hearing, Motor).' } },
-                { element: '#chatbot-toggle', popover: { title: 'AI Assistant', description: 'Need study tips or interview simulation? Call our AI here.' } },
-                { element: '.badges-hall', popover: { title: 'Your Achievements', description: 'Complete tasks and earn badges to share on LinkedIn!' } }
-            ],
-            onDestroyed: () => {
-                localStorage.setItem('hasSeenTour_v1', 'true');
+    // --- INITIALIZATION ---
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1. Render Radar Chart
+        const ctx = document.getElementById('marketRadarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: MARKET_DATA,
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255,255,255,0.1)' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        pointLabels: { color: '#94a3b8', font: { family: 'Courier New' } },
+                        ticks: { display: false, backdropColor: 'transparent' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } }
+                }
             }
         });
 
-        driverObj.drive();
-    }
-});
-
-// Badge Logic
-let currentBadgeName = "";
-
-function openBadgeModal(name, desc, icon) {
-    currentBadgeName = name;
-    document.getElementById('badge-name-display').innerText = name;
-    document.getElementById('badge-desc-display').innerText = desc;
-    document.getElementById('badge-icon-display').innerText = icon;
-    document.getElementById('badge-modal').style.display = 'flex';
-}
-
-function shareBadge(platform) {
-    const text = `I just earned the badge "${currentBadgeName}" on CareerDev AI! 🚀 Accelerating my tech career with AI. #CareerDevAI #TechCareer`;
-    let url = "";
-
-    if (platform === 'linkedin') {
-        url = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
-    } else if (platform === 'twitter') {
-        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    }
-
-    window.open(url, '_blank', 'width=600,height=400');
-}
-
-async function analyzeResume() {
-    const text = document.getElementById('resume-text').value;
-    if (!text) return alert("Please paste the resume text.");
-
-    const btn = document.querySelector('#resume-modal .btn');
-    btn.disabled = true;
-    btn.innerText = "Analyzing...";
-
-    const formData = new FormData();
-    formData.append('resume_text', text);
-
-    try {
-        const res = await fetch('/career/analyze-resume', {
-            method: 'POST',
-            body: formData
+        // 2. Render Gaps
+        const gapContainer = document.getElementById('gap-list-container');
+        GAP_DATA.forEach(gap => {
+            const div = document.createElement('div');
+            div.className = 'gap-item';
+            div.innerHTML = `<strong>${gap.skill} <span style="float:right; font-size:0.7em; background:#374151; padding:2px 6px; border-radius:4px;">${gap.missing}</span></strong> ${gap.desc}`;
+            gapContainer.appendChild(div);
         });
-        const data = await res.json();
 
-        document.getElementById('resume-result').style.display = 'block';
-        document.getElementById('res-score').innerText = `Score: ${data.score}/100`;
-        document.getElementById('res-feedback').innerText = data.feedback;
+        // 3. Render Roadmap
+        const roadContainer = document.getElementById('roadmap-container');
+        ROADMAP_DATA.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `roadmap-item ${item.prio === 'high' ? 'high-prio' : ''}`;
+            div.innerHTML = `
+                <div class="roadmap-week">${item.week}</div>
+                <div class="roadmap-content">
+                    <h4>${item.title}</h4>
+                    <p>${item.desc}</p>
+                </div>
+            `;
+            roadContainer.appendChild(div);
+        });
 
-        const gapsList = document.getElementById('res-gaps');
-        gapsList.innerHTML = "<strong>Gaps Added to Plan:</strong><br>" +
-            (data.added_plans.length ? data.added_plans.join(", ") : "No critical gaps found.");
+        // 4. Init Health
+        HealthModule.init();
 
-        btn.innerText = "Done!";
-        setTimeout(() => location.reload(), 3000); // Reload to show new plans
+        // 5. Hide Global Chatbot Floating Widget (if present)
+        const globalChat = document.getElementById('chatbot-widget');
+        const globalToggle = document.getElementById('chatbot-toggle');
+        if(globalChat) globalChat.style.display = 'none';
+        if(globalToggle) globalToggle.style.display = 'none';
+    });
 
-    } catch (e) {
-        alert("Analysis error.");
-        btn.disabled = false;
-        btn.innerText = "Analyze";
+    // Badge Share Mock
+    let currentBadgeName = "";
+    function openBadgeModal(name, desc, icon) {
+        currentBadgeName = name;
+        document.getElementById('badge-name-display').innerText = name;
+        document.getElementById('badge-desc-display').innerText = desc;
+        document.getElementById('badge-icon-display').innerText = icon;
+        document.getElementById('badge-modal').style.display = 'flex';
     }
-}
+    function shareBadge(platform) {
+        const text = `I just earned the badge "${currentBadgeName}" on CareerDev AI!`;
+        alert(`Simulating share to ${platform}: ${text}`);
+    }
+
+    // Resume Logic Stub
+    function analyzeResume() {
+        const btn = document.querySelector('#resume-modal .btn');
+        btn.innerText = "Scanning...";
+        setTimeout(() => {
+             document.getElementById('resume-result').style.display = 'block';
+             document.getElementById('res-score').innerText = "Score: 78/100";
+             document.getElementById('res-feedback').innerText = "Good Python experience. Lack of statically typed languages detected.";
+             document.getElementById('res-gaps').innerHTML = "<li>Recommended: Rust Basics</li><li>Recommended: Go Concurrency</li>";
+             btn.innerText = "Done";
+        }, 1500);
+    }
 </script>
 {% endblock %}

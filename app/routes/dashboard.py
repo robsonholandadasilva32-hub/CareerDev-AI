@@ -24,7 +24,10 @@ def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
     user_id = request.state.user.id
     user = (
         db.query(User)
-        .options(joinedload(User.badges).joinedload(UserBadge.badge))
+        .options(
+            joinedload(User.badges).joinedload(UserBadge.badge),
+            joinedload(User.career_profile)
+        )
         .filter(User.id == user_id)
         .first()
     )
