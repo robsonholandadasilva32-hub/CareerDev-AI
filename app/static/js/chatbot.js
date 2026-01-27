@@ -32,28 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
             interview_end: "Interview mode ended.",
             voice_enabled: "Voice mode enabled.",
             welcome: "Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub."
-        },
-        'pt-BR': {
-            placeholder: "Pergunte algo...",
-            listening: "Ouvindo...",
-            exploring: "Explorando...",
-            error_mic: "Acesso ao microfone necessário.",
-            error_ai: "Erro de Conexão: IA Indisponível",
-            interview_start: "🎙️ Modo Entrevista Ativado. Sou seu Líder Técnico. Diga 'Começar' quando estiver pronto.",
-            interview_end: "Modo entrevista encerrado.",
-            voice_enabled: "Modo de voz ativado.",
-            welcome: "Olá! Sou seu assistente de carreira. Pergunte sobre Rust, Go ou como conectar seu GitHub."
-        },
-        'es': {
-            placeholder: "Pregunta algo...",
-            listening: "Escuchando...",
-            exploring: "Explorando...",
-            error_mic: "Se requiere acceso al micrófono.",
-            error_ai: "Error de conexión: IA no disponible",
-            interview_start: "🎙️ Modo Entrevista Activado. Soy tu Líder Técnico. Di 'Comenzar' cuando estés listo.",
-            interview_end: "Modo entrevista finalizado.",
-            voice_enabled: "Modo de voz activado.",
-            welcome: "¡Hola! Soy tu asistente de carrera. Pregunta sobre Rust, Go o cómo conectar tu GitHub."
         }
     };
 
@@ -99,25 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Detect Language from Browser
-        const browserLang = navigator.language || 'en';
-        if (browserLang.startsWith('pt')) currentLang = 'pt-BR';
-        else if (browserLang.startsWith('es')) currentLang = 'es';
-        else currentLang = 'en';
-
-        // Set Selector
-        if (langSelect) {
-            // Check if option exists, otherwise default to EN
-            const options = Array.from(langSelect.options).map(o => o.value);
-            if (!options.includes(currentLang)) currentLang = 'en';
-
-            langSelect.value = currentLang;
-
-            langSelect.addEventListener('change', (e) => {
-                currentLang = e.target.value;
-                updateUIText();
-            });
-        }
+        // Enforce English Only
+        currentLang = 'en';
 
         updateUIText();
         attachEventListeners();
@@ -225,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const t = translations[currentLang] || translations['en'];
 
         // Set recognition language
-        recognition.lang = currentLang;
+        recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
@@ -344,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = currentLang; // Use selected language
+        utterance.lang = 'en-US'; // Use selected language
         utterance.rate = 1.1;
 
         window.speechSynthesis.speak(utterance);
