@@ -240,8 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const speechResult = event.results[0][0].transcript;
             input.value = speechResult;
 
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            resetMicButton();
 
             // Auto-send
             sendMessage();
@@ -249,21 +248,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
         recognition.onspeechend = () => {
             recognition.stop();
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+            resetMicButton();
         };
 
-        recognition.onerror = (event) => {
-            console.error("Speech Recognition Error:", event.error);
-            micBtn.style.color = 'var(--primary-color)';
-            micBtn.style.borderColor = 'var(--primary-color)';
+        recognition.onerror = function(event) {
+            console.error("Voice Error:", event.error);
+            resetMicButton(); // Reset UI and hide "Listening..." toast
 
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                 alert("MICROPHONE BLOCKED: You are likely on HTTP or have denied permission. Please reload directly with HTTPS.");
+                alert("⚠️ MICROPHONE BLOCKED!\n\nYour browser blocked access. Please:\n1. Click the 'Lock' icon in the URL bar.\n2. Allow Microphone.\n3. Reload the page.");
             } else {
-                 showToast("Error: " + event.error);
+                showToast("Error: " + event.error);
             }
         };
+    }
+
+    function resetMicButton() {
+        if (micBtn) {
+            micBtn.style.color = 'var(--primary-color)';
+            micBtn.style.borderColor = 'var(--primary-color)';
+        }
+        hideToast();
+    }
+
+    function hideToast() {
+        const toast = document.getElementById('chatbot-toast');
+        if (toast) {
+            toast.classList.remove('show');
+        }
     }
 
     async function sendMessage() {

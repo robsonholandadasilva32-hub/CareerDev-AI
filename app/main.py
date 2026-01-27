@@ -2,8 +2,8 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -158,7 +158,9 @@ app.add_middleware(
     max_age=1800 # 30 minutes session invalidation
 )
 
+# 2. If protocol is HTTP, Force Redirect to HTTPS
 app.add_middleware(HTTPSRedirectMiddleware)
+# 1. Trust the Proxy (Railway) to reveal the real protocol
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 @app.middleware("http")
