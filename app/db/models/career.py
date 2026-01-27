@@ -35,6 +35,9 @@ class CareerProfile(Base):
     # New AI Analysis Storage (Zone C)
     ai_insights_summary = Column(Text, default="")
 
+    # Active Challenge State (Stores {skill: "Docker", question: "...", timestamp: ...})
+    active_challenge = Column(JSON, nullable=True)
+
     # 0-100 Score calculated by intersecting Skills vs. Market Trends
     market_relevance_score = Column(Integer, default=0)
 

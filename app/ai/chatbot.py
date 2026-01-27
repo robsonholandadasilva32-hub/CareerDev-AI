@@ -1,11 +1,18 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 import openai
 import json
 import asyncio
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.ai.prompts import CAREER_ASSISTANT_SYSTEM_PROMPT, get_interviewer_system_prompt
+from app.ai.prompts import (
+    CAREER_ASSISTANT_SYSTEM_PROMPT,
+    get_interviewer_system_prompt,
+    CHALLENGE_GENERATOR_PROMPT,
+    CHALLENGE_GRADER_PROMPT
+)
 from app.db.models.user import User
+from app.db.models.career import CareerProfile
 
 def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple[str, str]:
     """
@@ -51,10 +58,27 @@ class ChatbotService:
             self.async_client = None
             self.simulated = True
 
-    async def get_response(self, message: str, lang: str = "en", user_id: int = None, db: Session = None, mode: str = "standard") -> str:
+    async def get_response(self, message: str, lang: str = "en", user_id: int = None, db: Session = None, mode: str = "standard") -> Dict[str, Any]:
         """
-        Mode can be 'standard' or 'interview'.
+        Mode can be 'standard', 'interview', or 'challenge'.
+        Returns Dict with 'message' and 'meta'.
         """
+
+        profile = None
+        if user_id and db:
+             user = db.query(User).filter(User.id == user_id).first()
+             if user:
+                 profile = user.career_profile
+
+        # 1. TRIGGER CHALLENGE
+        if message == "/trigger_challenge" and profile:
+             return await self._handle_challenge_trigger(profile, db, lang)
+
+        # 2. GRADE CHALLENGE
+        if mode == "challenge" and profile:
+             return await self._handle_challenge_grading(message, profile, db, lang)
+
+        # 3. STANDARD / INTERVIEW
         context_str = ""
         system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
 
@@ -63,10 +87,75 @@ class ChatbotService:
                 _fetch_user_and_build_context, user_id, db, mode
             )
 
+        response_text = ""
         if self.simulated:
-            return self._simulated_response(message, lang, context_str, mode)
+            response_text = self._simulated_response(message, lang, context_str, mode)
         else:
-            return await self._llm_response(message, lang, context_str, system_prompt)
+            response_text = await self._llm_response(message, lang, context_str, system_prompt)
+
+        return {"message": response_text, "meta": {"mode": mode}}
+
+    def _find_weakness(self, profile: CareerProfile) -> str:
+        try:
+            metrics = profile.github_activity_metrics or {}
+            raw_langs = metrics.get("raw_languages", {})
+            if not raw_langs:
+                return "General Engineering"
+
+            total = sum(raw_langs.values())
+            if total == 0:
+                return "General Engineering"
+
+            lowest_skill = None
+            lowest_pct = 100
+
+            for skill, bytes_count in raw_langs.items():
+                pct = (bytes_count / total) * 100
+                if 0 < pct < lowest_pct:
+                    lowest_pct = pct
+                    lowest_skill = skill
+
+            return lowest_skill or "General Engineering"
+        except Exception:
+            return "General Engineering"
+
+    async def _handle_challenge_trigger(self, profile: CareerProfile, db: Session, lang: str) -> Dict[str, Any]:
+        skill = self._find_weakness(profile)
+
+        question = ""
+        if self.simulated:
+            question = f"Challenge Mode (Simulated): Explain the core concept of {skill} and why it matters."
+        else:
+            prompt = CHALLENGE_GENERATOR_PROMPT.format(skill=skill)
+            # We call LLM directly
+            question = await self._llm_response("", lang, "", prompt)
+
+        # Save State
+        profile.active_challenge = {
+            "skill": skill,
+            "question": question,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        db.commit()
+
+        return {"message": question, "meta": {"mode": "challenge"}}
+
+    async def _handle_challenge_grading(self, answer: str, profile: CareerProfile, db: Session, lang: str) -> Dict[str, Any]:
+        active = profile.active_challenge or {}
+        question = active.get("question", "Unknown")
+
+        grade = ""
+        if self.simulated:
+            grade = "Rating: ⭐⭐⭐\nCorrection: Good attempt (Simulated).\nFollow-up: Try diving deeper into the docs."
+        else:
+            prompt = CHALLENGE_GRADER_PROMPT.format(question=question, answer=answer)
+            grade = await self._llm_response("", lang, "", prompt)
+
+        # Clear State
+        profile.active_challenge = None
+        db.commit()
+
+        return {"message": grade, "meta": {"mode": "standard"}}
 
     def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
         msg = message.lower()
@@ -161,9 +250,10 @@ class ChatbotService:
 
         messages = [
             {"role": "system", "content": system_prompt + "\n" + context},
-            {"role": "system", "content": lang_instruction},
-            {"role": "user", "content": message}
+            {"role": "system", "content": lang_instruction}
         ]
+        if message:
+            messages.append({"role": "user", "content": message})
 
         # Determine params based on model name
         primary_model = settings.OPENAI_MODEL

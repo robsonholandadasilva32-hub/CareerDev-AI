@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // State
     let isVoiceEnabled = false;
     let isInterviewMode = false;
+    let isChallengeMode = false;
     let isEmbedded = false;
     let currentLang = 'en'; // Default
 
@@ -37,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Initialization ---
     function init() {
+        // Expose Challenge Trigger Global
+        window.triggerChallenge = triggerChallenge;
+
         // Check for Embedded Mode (Career OS Dashboard)
         const embeddedTarget = document.getElementById('embedded-chatbot-target');
         if (embeddedTarget && (window.CAREER_OS_EMBEDDED_CHAT || document.body.classList.contains('career-os-mode'))) {
@@ -155,6 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleInterview() {
         isInterviewMode = !isInterviewMode;
+        isChallengeMode = false; // Reset challenge if toggling interview
         const header = document.querySelector('.chatbot-header') || document.querySelector('.chat-terminal-header');
         const t = translations[currentLang] || translations['en'];
 
@@ -183,6 +188,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (header) header.style.background = 'rgba(10, 15, 28, 0.9)';
             addMessage(t.interview_end, 'bot');
+        }
+    }
+
+    // --- Challenge Mode Logic ---
+    async function triggerChallenge() {
+        // 1. Open Chat
+        if (!isEmbedded && widget.style.display === 'none') {
+            toggleChat();
+        }
+
+        // 2. UI Feedback
+        const t = translations[currentLang] || translations['en'];
+        statusText.innerText = "Analyzing weakness...";
+        statusDiv.style.display = 'flex';
+
+        try {
+            const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '/chatbot/message' : 'https://' + window.location.host + '/chatbot/message';
+
+            // Send hidden trigger
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: "/trigger_challenge",
+                    mode: "standard",
+                    lang: currentLang
+                })
+            });
+
+            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+
+            const data = await response.json();
+            statusDiv.style.display = 'none';
+
+            handleBotResponse(data);
+
+        } catch (error) {
+            statusDiv.style.display = 'none';
+            console.error("Challenge Error:", error);
+            showToast(t.error_ai);
+        }
+    }
+
+    function handleBotResponse(data) {
+        addMessage(data.response, 'bot');
+
+        // Check Meta for Mode
+        const meta = data.meta || {};
+
+        if (meta.mode === 'challenge') {
+            isChallengeMode = true;
+            // Override UI to show we are in a special mode?
+            // Optionally change status text
+        } else if (meta.mode === 'standard') {
+            isChallengeMode = false;
+        }
+
+        // Visual Alerts
+        if (localStorage.getItem('visual-alerts') === 'true') {
+            triggerVisualAlert();
+        }
+
+        // TTS & Auto-Listen Logic
+        if (isVoiceEnabled || isChallengeMode) {
+            // NOTE: Requirement says "automatically trigger speakText... even if voice was previously off"
+            // So we force voice on if in challenge mode?
+
+            if (meta.mode === 'challenge' && !isVoiceEnabled) {
+                // Temporarily enable voice or just speak once?
+                // "Change the UI state to 'Listening...' immediately after the AI finishes speaking" implies STT.
+                // STT works better if voice is enabled conceptually, but let's just speak.
+            }
+
+            speakText(data.response, () => {
+                // Callback after speech ends
+                if (meta.mode === 'challenge') {
+                    // Auto-start listening
+                    startVoiceInput();
+                }
+            });
         }
     }
 
@@ -280,17 +365,22 @@ document.addEventListener("DOMContentLoaded", () => {
             speakText(t.exploring);
         }
 
+        // Determine Mode
+        let modeToSend = 'standard';
+        if (isInterviewMode) modeToSend = 'interview';
+        else if (isChallengeMode) modeToSend = 'challenge';
+
         try {
             // Force HTTPS if not localhost
-            const apiUrl = (window.location.hostname === 'localhost') ? '/chatbot/message' : 'https://' + window.location.host + '/chatbot/message';
+            const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '/chatbot/message' : 'https://' + window.location.host + '/chatbot/message';
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: text,
-                    mode: isInterviewMode ? 'interview' : 'standard',
-                    lang: currentLang // Send selected language
+                    mode: modeToSend,
+                    lang: currentLang
                 })
             });
 
@@ -301,17 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             statusDiv.style.display = 'none';
-            addMessage(data.response, 'bot');
-
-            // Visual Alerts
-            if (localStorage.getItem('visual-alerts') === 'true') {
-                triggerVisualAlert();
-            }
-
-            // TTS with correct language
-            if (isVoiceEnabled) {
-                speakText(data.response);
-            }
+            handleBotResponse(data);
 
         } catch (error) {
             statusDiv.style.display = 'none';
@@ -322,8 +402,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function speakText(text) {
-        if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+    function speakText(text, onEndCallback) {
+        if (!('speechSynthesis' in window)) return;
+
+        // If voice not enabled AND we are NOT in challenge mode (which forces it), return.
+        // But logic in handleBotResponse calls this if isVoiceEnabled OR isChallengeMode.
+        // So here we just check capability.
 
         window.speechSynthesis.cancel();
 
@@ -331,6 +415,10 @@ document.addEventListener("DOMContentLoaded", () => {
         utterance.lang = 'en-US'; // Use selected language
         utterance.rate = 0.9;     // Slower speech rate for better comprehension
         utterance.pitch = 1.0;    // Natural pitch
+
+        if (onEndCallback) {
+            utterance.onend = onEndCallback;
+        }
 
         window.speechSynthesis.speak(utterance);
     }
