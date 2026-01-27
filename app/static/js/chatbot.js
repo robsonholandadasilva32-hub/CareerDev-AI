@@ -80,6 +80,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Enforce English Only
         currentLang = 'en';
 
+        // Check Browser Support (UX Improvement)
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+             if (micBtn) micBtn.style.display = 'none';
+        }
+
         updateUIText();
         attachEventListeners();
     }
@@ -176,29 +181,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function startVoiceInput() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            showToast("Browser does not support voice recognition.");
+        console.log("STT: Initializing...");
+
+        // Polyfill Strategy
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition. Please use Chrome or Edge.");
             return;
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         const t = translations[currentLang] || translations['en'];
 
-        // Set recognition language
+        // Strict English Policy
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        // Visual indicator
-        micBtn.style.color = 'var(--error-color)';
-        micBtn.style.borderColor = 'var(--error-color)';
+        // Visual Feedback State
+        if (micBtn) {
+            micBtn.classList.add('listening');
+            micBtn.setAttribute('aria-label', "Stop listening");
+        }
         showToast(t.listening);
 
+        console.log("STT: Started. Waiting for audio...");
         recognition.start();
 
         recognition.onresult = (event) => {
             const speechResult = event.results[0][0].transcript;
+            console.log("STT: Result received: ", speechResult);
             input.value = speechResult;
 
             resetMicButton();
@@ -208,16 +220,19 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         recognition.onspeechend = () => {
+            console.log("STT: Speech ended.");
             recognition.stop();
             resetMicButton();
         };
 
         recognition.onerror = function(event) {
-            console.error("Voice Error:", event.error);
-            resetMicButton(); // Reset UI and hide "Listening..." toast
+            console.log("STT: Error: ", event.error);
+            resetMicButton(); // Reset UI immediately
 
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            if (event.error === 'not-allowed') {
                 alert("⚠️ MICROPHONE BLOCKED!\n\nYour browser blocked access. Please:\n1. Click the 'Lock' icon in the URL bar.\n2. Allow Microphone.\n3. Reload the page.");
+            } else if (event.error === 'service-not-allowed') {
+                alert("⚠️ SPEECH SERVICE BLOCKED!\n\nThis feature requires a secure HTTPS connection or localhost.");
             } else {
                 showToast("Error: " + event.error);
             }
@@ -226,8 +241,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function resetMicButton() {
         if (micBtn) {
+            micBtn.classList.remove('listening');
             micBtn.style.color = 'var(--primary-color)';
             micBtn.style.borderColor = 'var(--primary-color)';
+            micBtn.setAttribute('aria-label', "Speak message");
         }
         hideToast();
     }
