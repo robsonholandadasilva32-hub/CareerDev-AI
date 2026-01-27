@@ -155,3 +155,25 @@ class ChatbotService:
 
         try:
             response = await self.async_client.chat.completions.create(**params)
+            content = response.choices[0].message.content
+            return content if content else "AI returned an empty response."
+        
+        except (openai.NotFoundError, openai.BadRequestError) as e:
+            print(f"WARNING: Primary model {settings.OPENAI_MODEL} failed (Error: {e}). Switching to fallback: {settings.OPENAI_FALLBACK_MODEL}.")
+            try:
+                response = await self.async_client.chat.completions.create(
+                    model=settings.OPENAI_FALLBACK_MODEL or "gpt-3.5-turbo",
+                    messages=messages,
+                    temperature=0.7
+                )
+                return response.choices[0].message.content
+            except Exception as e_fallback:
+                print(f"CRITICAL: Fallback model also failed: {e_fallback}")
+                return "System Error: Unable to reach AI services. Please check your connection or API quotas."
+        
+        except Exception as e:
+            print(f"OpenAI Error: {e}")
+            return "Error communicating with AI. Please check the system logs."
+
+# Global Instance
+chatbot_service = ChatbotService()
