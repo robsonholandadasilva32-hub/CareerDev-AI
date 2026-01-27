@@ -6,7 +6,7 @@
 
 <div class="career-os-wrapper">
 
-    <!-- ZONE A: CAREER PULSE (CENTER) -->
+    <!-- ZONE A: CAREER COMMAND CENTER (CENTER) -->
     <main class="career-main">
 
         <!-- IDENTITY HEADER -->
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <!-- MARKET TICKER (New) -->
+        <!-- WIDGET C: MARKET PULSE (MARKET_FEED) -->
         <div class="market-ticker-bar">
             <span class="ticker-label">MARKET_FEED >></span>
             <div class="ticker-content" id="market-ticker-content">
@@ -48,7 +48,7 @@
         <!-- DASHBOARD GRID -->
         <div class="os-grid">
 
-            <!-- MARKET RADAR -->
+            <!-- WIDGET A: SKILLS RADAR -->
             <div class="card market-radar-card">
                 <h3><span class="icon">📡</span> SKILLS RADAR</h3>
                 <div class="chart-container">
@@ -69,10 +69,10 @@
 
         </div>
 
-        <!-- WEEKLY ROUTINE BOARD -->
+        <!-- WIDGET B: CURRENT UPSKILLING SPRINT (Roadmap) -->
         <div class="card upskilling-engine">
             <div class="card-header-flex">
-                <h3><span class="icon">📅</span> WEEKLY_ROUTINE_BOARD</h3>
+                <h3><span class="icon">📅</span> CURRENT UPSKILLING SPRINT</h3>
                 <div class="kanban-controls">
                     <span class="active">KANBAN_VIEW</span>
                 </div>
@@ -471,11 +471,12 @@
     const CAREER_DATA = {{ career_data | tojson }};
     const PROFILE_DATA = {{ profile | tojson }};
 
-    const MARKET_DATA = {
+    // Use injected radar data if available, otherwise fallback (or fail, but we expect data)
+    const MARKET_DATA = CAREER_DATA.radar_data || {
         labels: ['Rust', 'Go', 'Python', 'AI/ML', 'System Design', 'React'],
         datasets: [{
             label: 'Your Skills',
-            data: [40, 30, 90, 60, 50, 80], // Dynamic from profile in real app
+            data: [40, 30, 90, 60, 50, 80],
             backgroundColor: 'rgba(0, 243, 255, 0.2)',
             borderColor: '#00f3ff',
             pointBackgroundColor: '#00f3ff',
@@ -491,25 +492,33 @@
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
-        // 1. Render Radar Chart
-        const ctx = document.getElementById('marketRadarChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'radar',
-            data: MARKET_DATA,
-            options: {
-                scales: {
-                    r: {
-                        angleLines: { color: 'rgba(255,255,255,0.1)' },
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        pointLabels: { color: '#94a3b8', font: { family: 'Courier New' } },
-                        ticks: { display: false, backdropColor: 'transparent' }
+        // 1. Render Radar Chart (Widget A)
+        try {
+            if (typeof Chart !== 'undefined') {
+                const ctx = document.getElementById('marketRadarChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: MARKET_DATA,
+                    options: {
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255,255,255,0.1)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                pointLabels: { color: '#94a3b8', font: { family: 'Courier New' } },
+                                ticks: { display: false, backdropColor: 'transparent' }
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#e2e8f0' } }
+                        }
                     }
-                },
-                plugins: {
-                    legend: { labels: { color: '#e2e8f0' } }
-                }
+                });
+            } else {
+                console.warn("Chart.js not loaded. Radar chart skipped.");
             }
-        });
+        } catch (e) {
+            console.error("Radar Chart Error:", e);
+        }
 
         // 2. Render Gaps (Using career_data)
         const gapContainer = document.getElementById('gap-list-container');
@@ -520,7 +529,7 @@
             gapContainer.appendChild(div);
         });
 
-        // 3. Render Weekly Routine Board (Using career_data)
+        // 3. Render Current Upskilling Sprint (Widget B)
         const roadContainer = document.getElementById('roadmap-container');
         CAREER_DATA.weekly_plan.forEach(item => {
             const div = document.createElement('div');
@@ -535,9 +544,9 @@
             roadContainer.appendChild(div);
         });
 
-        // 4. Render Market Ticker
+        // 4. Render Market Pulse (Widget C)
         const tickerContainer = document.getElementById('market-ticker-content');
-        const trends = CAREER_DATA.market_trends; // Object { rust: "+15%", ... }
+        const trends = CAREER_DATA.market_trends; // Object { "Edge AI": "High Demand", ... }
 
         for (const [tech, val] of Object.entries(trends)) {
             const span = document.createElement('span');
@@ -546,6 +555,8 @@
             let trendClass = '';
             if (val.includes('+')) trendClass = 'trend-positive';
             if (val.includes('-')) trendClass = 'trend-negative';
+            if (val.toLowerCase().includes('high demand')) trendClass = 'trend-positive'; // Custom logic for new data
+            if (val.toLowerCase().includes('low demand')) trendClass = 'trend-negative'; // Custom logic
 
             span.innerHTML = `${tech.toUpperCase()}: <span class="${trendClass}">${val}</span>`;
             tickerContainer.appendChild(span);
@@ -558,8 +569,6 @@
         if(globalToggle) globalToggle.style.display = 'none';
 
         // Note: HealthModule.init() is now called in layout (or handled via health.js script load if it auto-runs)
-        // Check health.js: it has HealthModule.init() but needs to be called.
-        // I should call it here to be safe, or check if it's called elsewhere.
         if (window.HealthModule) HealthModule.init();
     });
 
