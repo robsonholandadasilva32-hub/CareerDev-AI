@@ -22,6 +22,11 @@ class CareerProfile(Base):
     github_stats = Column(JSON, default={}) # {"repos": 10, "top_lang": "Python"}
     linkedin_stats = Column(JSON, default={})
 
+    # Architecture Shift: Data Harvesting Fields
+    market_alignment_score = Column(Integer, default=0)  # 0-100
+    skills_graph_data = Column(JSON, default={})         # For Frontend Charting
+    pending_micro_projects = Column(JSON, default=[])    # Kanban/ToDo Widget
+
     updated_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="career_profile")

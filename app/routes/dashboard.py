@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, Form, BackgroundTasks
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 
@@ -71,6 +71,51 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "career_data": career_data, # NEW
         }
     )
+
+@router.get("/api/dashboard/stats", response_class=JSONResponse)
+def get_dashboard_stats(user: User = Depends(get_current_user_secure), db: Session = Depends(get_db)):
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    data = career_engine.get_career_dashboard_data(db, user)
+    return data
+
+@router.post("/api/dashboard/complete-task/{task_id}", response_class=JSONResponse)
+def complete_task(task_id: int, background_tasks: BackgroundTasks, user: User = Depends(get_current_user_secure), db: Session = Depends(get_db)):
+    if not user:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    profile = user.career_profile
+    if not profile or not profile.pending_micro_projects:
+        return JSONResponse({"error": "No tasks found"}, status_code=404)
+
+    # Update Status
+    tasks = list(profile.pending_micro_projects)
+    updated = False
+    for t in tasks:
+        if t.get("id") == task_id:
+            t["status"] = "completed"
+            updated = True
+            break
+
+    if updated:
+        # Re-assign to trigger SQLAlchemy detection of change
+        profile.pending_micro_projects = tasks
+
+        # Simulate Score Boost
+        if profile.market_alignment_score is None:
+            profile.market_alignment_score = 0
+        if profile.market_alignment_score < 100:
+             profile.market_alignment_score += 5
+
+        db.commit()
+
+        # Note: A real GitHub rescan requires an active Access Token.
+        # Since we don't persist tokens, we rely on the score boost simulation here
+        # until the next login/harvest cycle.
+
+    data = career_engine.get_career_dashboard_data(db, user)
+    return data
 
 # ==========================================
 # NOVAS ROTAS DE SEGURANÇA (Da Feature Branch)

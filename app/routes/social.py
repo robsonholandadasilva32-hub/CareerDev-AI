@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
+from app.services.social_harvester import social_harvester
 from app.db.crud.users import (
     get_user_by_email,
     get_user_by_github_id,
@@ -179,7 +180,7 @@ async def login_github(request: Request):
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/github/callback")
-async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
+async def auth_github_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     ip = get_client_ip(request)
 
     # EXTREME VERBOSITY LOGGING
@@ -267,6 +268,10 @@ async def auth_github_callback(request: Request, db: Session = Depends(get_db)):
         # Check Security Badge
         check_and_award_security_badge(db, current_user)
 
+        # TRIGGER DATA HARVEST
+        if token.get('access_token'):
+            background_tasks.add_task(social_harvester.harvest_github_data, db, current_user, token.get('access_token'))
+
         # Redirect Directly to Dashboard (Zero Touch)
         return RedirectResponse("/dashboard", status_code=303)
 
@@ -291,7 +296,7 @@ async def login_linkedin(request: Request):
     return await oauth.linkedin.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/linkedin/callback")
-async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)):
+async def auth_linkedin_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     ip = get_client_ip(request)
 
     # EXTREME VERBOSITY LOGGING
@@ -368,11 +373,18 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 # Check Security Badge
                 check_and_award_security_badge(db, user)
 
+            # Trigger Harvest
+            if token.get('access_token'):
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
+
             return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
         # 2. Check by ID (Legacy/Fallback)
         user = get_user_by_linkedin_id(db, linkedin_id)
         if user:
+            # Trigger Harvest (even for existing users)
+            if token.get('access_token'):
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
             return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
         # 3. Create User (with Idempotency Check)
@@ -411,6 +423,10 @@ async def auth_linkedin_callback(request: Request, db: Session = Depends(get_db)
                 db.commit()
                 # Check Security Badge
                 check_and_award_security_badge(db, user)
+
+        # Trigger Harvest (New User)
+        if token.get('access_token'):
+            background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
 
         logger.info(f"Strict Onboarding: New user created.")
         return login_user_and_redirect(request, user, db, redirect_url="/dashboard")

@@ -112,13 +112,13 @@ class CareerEngine:
         """
         Returns the structured JSON object for the new Dashboard AI brain.
         Includes Market Trends, Skill Gaps, and Weekly Micro-Projects.
-        INJECTED LOGIC: Returns specific data for Robson Holanda (Python/FastAPI -> Rust/Edge AI).
+        Combines Real Harvested Data with Simulation fallback.
         """
         # Ensure profile analysis runs first to populate data
         self.analyze_profile(db, user)
+        profile = user.career_profile
 
         # 1. Market Trends (Real-Time Trend Simulation)
-        # "High Demand: Edge AI / Low Demand: Basic CRUD"
         market_trends_data = {
             "Edge AI": "High Demand",
             "Basic CRUD": "Low Demand",
@@ -127,34 +127,32 @@ class CareerEngine:
         }
 
         # 2. Skill Gaps (Gap Analysis)
-        # Target_Job_Reqs - User_Skills = The_Gap
-        # Implied: Rust, AI, GraphDB
         gaps = ["Rust (Memory Safety)", "GraphDB (Neo4j)", "Edge Computing"]
 
-        # 3. Weekly Plan (Micro-Projects & Upskilling Sprint)
-        # Card 1: "Refactor Auth Middleware (Security)"
-        # Card 2: "Learn Rust Memory Safety"
-        weekly_plan_data = [
-            {"day": "Mon", "task": "Refactor Auth Middleware (Security)", "status": "pending"},
-            {"day": "Tue", "task": "Learn Rust Memory Safety", "status": "pending"},
-            {"day": "Wed", "task": "Implement Neo4j Recommendation Engine", "status": "pending"},
-            {"day": "Thu", "task": "Study WASM for 3D Avatars", "status": "pending"},
-            {"day": "Fri", "task": "Draft LinkedIn Post (Networking)", "status": "pending"}
-        ]
+        # 3. Weekly Plan / Micro Projects
+        # Prefer DB persisted plan, fallback to simulation
+        weekly_plan_data = profile.pending_micro_projects
+        if not weekly_plan_data:
+            weekly_plan_data = [
+                {"id": 1, "day": "Mon", "task": "Refactor Auth Middleware (Security)", "status": "pending"},
+                {"id": 2, "day": "Tue", "task": "Learn Rust Memory Safety", "status": "pending"},
+                {"id": 3, "day": "Wed", "task": "Implement Neo4j Recommendation Engine", "status": "pending"},
+                {"id": 4, "day": "Thu", "task": "Study WASM for 3D Avatars", "status": "pending"},
+                {"id": 5, "day": "Fri", "task": "Draft LinkedIn Post (Networking)", "status": "pending"}
+            ]
 
-        # 4. Skills Radar Data (Scarcity & Upskilling)
-        # Visual comparison of Robson's current Python skills vs. Market demand for Rust/AI.
+        # 4. Skills Radar Data (User vs Market)
         radar_data = {
             "labels": ['Rust', 'Python', 'AI/ML', 'System Design', 'WebAssembly', 'GraphDB'],
             "datasets": [{
-                "label": 'Robson (Current)',
-                "data": [30, 95, 40, 60, 20, 10], # High Python, Low Rust/AI
+                "label": 'You (Current)',
+                "data": [30, 95, 40, 60, 20, 10],
                 "backgroundColor": 'rgba(0, 243, 255, 0.2)',
                 "borderColor": '#00f3ff',
                 "pointBackgroundColor": '#00f3ff',
             }, {
-                "label": 'Market Demand (High Value)',
-                "data": [95, 60, 90, 85, 90, 80], # High Rust/AI, Lower "Basic" Python importance relative to niche
+                "label": 'Market Demand',
+                "data": [95, 60, 90, 85, 90, 80],
                 "backgroundColor": 'rgba(255, 255, 255, 0.05)',
                 "borderColor": '#6b7280',
                 "borderDash": [5, 5],
@@ -162,11 +160,25 @@ class CareerEngine:
             }]
         }
 
+        # 5. Repo Composition (Doughnut Chart) - Harvested Data
+        doughnut_data = profile.skills_graph_data
+        if not doughnut_data:
+            # Fallback Simulation
+            doughnut_data = {
+                "labels": ["Python", "JavaScript", "HTML/CSS"],
+                "datasets": [{
+                    "data": [70, 20, 10],
+                    "backgroundColor": ["#00f3ff", "#bd00ff", "#00ff88"]
+                }]
+            }
+
         return {
             "market_trends": market_trends_data,
             "skill_gap": gaps,
             "weekly_plan": weekly_plan_data,
-            "radar_data": radar_data
+            "radar_data": radar_data,
+            "doughnut_data": doughnut_data,
+            "market_alignment_score": profile.market_alignment_score or 33 # Default 33
         }
 
 career_engine = CareerEngine()
