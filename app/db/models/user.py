@@ -35,6 +35,10 @@ class User(Base):
     linkedin_id = Column(String, nullable=True, unique=True)
     avatar_url = Column(String, nullable=True)
 
+    # Access Tokens
+    github_token = Column(String, nullable=True)
+    linkedin_token = Column(String, nullable=True)
+
     # Residential Address
     address_street = Column(String, nullable=True)
     address_number = Column(String, nullable=True)

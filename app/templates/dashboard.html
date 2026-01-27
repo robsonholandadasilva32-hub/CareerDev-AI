@@ -109,7 +109,7 @@
                 <a href="https://gophers.slack.com/" target="_blank" class="net-link">
                     <span class="net-icon">🐹</span> GOPHERS_SLACK
                 </a>
-                 <a href="#" class="net-link">
+                <a href="https://github.com/topics/ethical-ai" target="_blank" class="net-link">
                     <span class="net-icon">🧠</span> AI_ETHICS_FORUM
                 </a>
             </div>
@@ -567,17 +567,27 @@
     async function completeTask(taskId) {
         window.showToast("Syncing with Neural Net...", "success");
         try {
-            const response = await fetch(`/api/dashboard/complete-task/${taskId}`, {
+            const response = await fetch(`/api/dashboard/tasks/${taskId}/complete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
 
             if (response.ok) {
-                const updatedData = await response.json();
-                CAREER_DATA = updatedData;
-                renderCharts();
-                renderWidgets();
-                window.showToast("Task Complete. Score Updated.", "success");
+                const status = await response.json();
+                window.showToast(status.message || "Task Completed", "success");
+
+                // Re-fetch dashboard stats to update UI
+                try {
+                    const statsResp = await fetch('/api/dashboard/stats');
+                    if (statsResp.ok) {
+                        const updatedData = await statsResp.json();
+                        CAREER_DATA = updatedData;
+                        renderCharts();
+                        renderWidgets();
+                    }
+                } catch (err) {
+                    console.warn("Stats fetch failed", err);
+                }
             } else {
                 window.showToast("Sync Failed.", "error");
             }

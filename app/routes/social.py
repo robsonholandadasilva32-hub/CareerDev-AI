@@ -252,6 +252,7 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
         # Update User
         current_user.github_id = github_id
+        current_user.github_token = token.get('access_token')
         if not current_user.avatar_url:
             current_user.avatar_url = avatar
 
@@ -367,11 +368,15 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
                 user.linkedin_id = linkedin_id
                 if not user.avatar_url:
                     user.avatar_url = picture
-                db.commit() # Fix: Sync commit
-                logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
 
-                # Check Security Badge
-                check_and_award_security_badge(db, user)
+            # Always update token
+            user.linkedin_token = token.get('access_token')
+            db.commit() # Fix: Sync commit
+            logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
+
+            # Check Security Badge
+            if user.linkedin_id == linkedin_id: # Only if freshly linked or already linked
+                 check_and_award_security_badge(db, user)
 
             # Trigger Harvest
             if token.get('access_token'):
@@ -382,6 +387,10 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         # 2. Check by ID (Legacy/Fallback)
         user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
         if user:
+            # Always update token
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+
             # Trigger Harvest (even for existing users)
             if token.get('access_token'):
                 background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
@@ -404,6 +413,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             # ZERO TOUCH: Implicit acceptance
             user.terms_accepted = True
             user.terms_accepted_at = datetime.utcnow()
+            user.linkedin_token = token.get('access_token')
             db.commit()
 
             # FIX: Reload user with profile to prevent DetachedInstanceError in background task
@@ -424,9 +434,12 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             # Update missing ID if needed
             if not user.linkedin_id:
                 user.linkedin_id = linkedin_id
-                db.commit()
-                # Check Security Badge
-                check_and_award_security_badge(db, user)
+
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+
+            # Check Security Badge
+            check_and_award_security_badge(db, user)
 
         # Trigger Harvest (New User)
         if token.get('access_token'):
