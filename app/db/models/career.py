@@ -32,6 +32,9 @@ class CareerProfile(Base):
     # Stores: { "role": "Backend Dev", "industry": "Fintech", "missing_keywords": ["AsyncIO"] }
     linkedin_alignment_data = Column(JSON, default={})
 
+    # New AI Analysis Storage (Zone C)
+    ai_insights_summary = Column(Text, default="")
+
     # 0-100 Score calculated by intersecting Skills vs. Market Trends
     market_relevance_score = Column(Integer, default=0)
 

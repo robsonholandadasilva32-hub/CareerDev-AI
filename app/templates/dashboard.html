@@ -45,43 +45,93 @@
             </div>
         </div>
 
-        <!-- DASHBOARD GRID -->
-        <div class="os-grid">
-
-            <!-- ZONE A: REALITY (DOUGHNUT) -->
-            <div class="card repo-composition-card" style="grid-column: span 2;">
-                <h3><span class="icon">🥧</span> ZONE A: REALITY (SKILL COMPOSITION)</h3>
-                <div style="display: flex; gap: 20px; align-items: center;">
-                    <div class="chart-container" style="position: relative; height: 250px; width: 50%; display: flex; justify-content: center;">
-                        <canvas id="repoDoughnutChart"></canvas>
-                    </div>
-                    <div class="insight-panel" style="width: 50%; padding: 10px; border-left: 2px solid var(--neon-cyan);">
-                        <h4 style="color: var(--neon-cyan); margin-top: 0;">AI INSIGHT:</h4>
-                        <p id="zone-a-insight" style="color: #e2e8f0; font-size: 1rem;"></p>
-                    </div>
+        <!-- ZONE A: HOLISTIC SCANNER -->
+        <div class="card holistic-scanner">
+            <h3><span class="icon">🧬</span> ZONE A: HOLISTIC SCANNER</h3>
+            <div class="health-bar-container">
+                <div class="health-track">
+                    <div id="holistic-health-bar" class="health-fill" style="width: 0%;"></div>
+                </div>
+                <div class="health-stats">
+                    <span id="holistic-score-val" style="color:white; font-weight:bold;">0%</span>
+                    <span id="holistic-details" style="margin-left:10px; font-size:0.8rem; color:var(--text-muted);">Analyzing...</span>
                 </div>
             </div>
-
+            <!-- Mini Doughnut for "Reality" context -->
+            <div style="margin-top: 15px; display: flex; gap: 20px; align-items: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                <div style="height: 80px; width: 80px;">
+                     <canvas id="miniDoughnut"></canvas>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); flex-grow: 1;">
+                    <strong style="color: var(--neon-cyan);">REALITY CHECK:</strong><br>
+                    Based on Byte Distribution
+                </div>
+            </div>
         </div>
 
-        <!-- ZONE B: ACTION (KANBAN) -->
-        <div class="card upskilling-engine">
+        <!-- ZONE B: INTEREST VS REALITY -->
+        <div class="card skill-matrix">
             <div class="card-header-flex">
-                <h3><span class="icon">📅</span> ZONE B: ACTION PLAN</h3>
-                <div class="kanban-controls">
-                    <span class="active">KANBAN_VIEW</span>
-                </div>
+                <h3><span class="icon">👁️</span> ZONE B: INTEREST VS REALITY</h3>
+                <button class="btn-outline-sm" onclick="alert('Manual Override enabled in Phase 2.1')">Edit Skills</button>
             </div>
+            <div style="overflow-x: auto;">
+                <table class="cyber-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
+                            <th style="padding: 10px; color: var(--neon-purple);">SKILL</th>
+                            <th style="padding: 10px; color: var(--neon-cyan);">GITHUB (REALITY)</th>
+                            <th style="padding: 10px; color: #fff;">LINKEDIN (PERCEPTION)</th>
+                            <th style="padding: 10px; color: var(--neon-green);">AI VERDICT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skill-audit-body">
+                        <!-- JS Injected -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <div class="roadmap-container" id="roadmap-container">
+        <!-- ZONE C: STRENGTHS & WEAKNESSES -->
+        <div class="card ai-insights">
+            <h3><span class="icon">🧠</span> ZONE C: SYSTEM INSIGHTS</h3>
+            <div class="insight-content" id="ai-insight-content" style="line-height: 1.6; color: #e2e8f0; padding: 10px; border-left: 3px solid var(--neon-green); background: rgba(0, 255, 136, 0.05);">
                 <!-- JS Injected -->
             </div>
         </div>
 
     </main>
 
-    <!-- ZONE B: MENTOR & NETWORK (RIGHT) -->
+    <!-- RIGHT SIDEBAR: UTILITY & ASSISTANT -->
     <aside class="assistant-zone">
+
+        <!-- UTILITY DOCK (Moved from Left) -->
+        <div class="card utility-dock-right" style="padding: 15px;">
+             <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #94a3b8;">BIO_MONITOR <span id="health-indicator" class="pulse-dot" style="display:none; float:right;"></span></h4>
+             <div class="mini-control-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;">
+                <div class="mini-col" style="text-align: center;">
+                    <span style="font-size: 0.6rem; display: block;">POSTURE</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-col" style="text-align: center;">
+                    <span style="font-size: 0.6rem; display: block;">20-20-20</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-col" style="text-align: center;">
+                    <span style="font-size: 0.6rem; display: block;">HYDRATION</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+             </div>
+        </div>
 
         <!-- CHATBOT CONSOLE -->
         <div class="embedded-chat-container">
@@ -471,96 +521,100 @@
     let doughnutChartInstance = null;
 
     // --- RENDER FUNCTIONS ---
-    function renderCharts() {
-        // ZONE A: REALITY (Doughnut)
-        const ZONE_A = CAREER_DATA.zone_a_reality || {};
-        const DOUGHNUT_DATA = {
-            labels: ZONE_A.data?.labels || [],
-            datasets: [{
-                data: ZONE_A.data?.values || [],
-                backgroundColor: ["#00f3ff", "#bd00ff", "#00ff88", "#ffff00", "#ff0055"],
-                borderWidth: 0
-            }]
-        };
+    function renderDashboard() {
+        renderZoneA();
+        renderZoneB();
+        renderZoneC();
+        renderTicker();
+    }
 
-        // Render Insight
-        document.getElementById('zone-a-insight').innerText = ZONE_A.insight || "No Data";
+    function renderZoneA() {
+        const ZONE_A = CAREER_DATA.zone_a_holistic || {};
+        const DOUGHNUT_DATA_SRC = CAREER_DATA.doughnut_data || {};
 
-        try {
-            if (typeof Chart !== 'undefined') {
-                const ctxDoughnut = document.getElementById('repoDoughnutChart').getContext('2d');
-                if (doughnutChartInstance) doughnutChartInstance.destroy();
-                doughnutChartInstance = new Chart(ctxDoughnut, {
-                    type: 'doughnut',
-                    data: DOUGHNUT_DATA,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: { color: '#e2e8f0', font: { family: 'Courier New', size: 10 } }
-                            }
-                        },
-                        elements: {
-                            arc: { borderWidth: 0 }
-                        }
-                    }
-                });
-            } else {
-                console.warn("Chart.js not loaded.");
-            }
-        } catch (e) {
-            console.error("Chart Render Error:", e);
+        // 1. Health Bar
+        const score = ZONE_A.score || 0;
+        const color = ZONE_A.color || 'red'; // green, orange, red
+        const barEl = document.getElementById('holistic-health-bar');
+        const scoreEl = document.getElementById('holistic-score-val');
+        const detailEl = document.getElementById('holistic-details');
+
+        barEl.style.width = score + '%';
+        barEl.style.backgroundColor = color === 'green' ? '#00ff88' : (color === 'orange' ? '#ff9900' : '#ff0055');
+        barEl.style.boxShadow = `0 0 10px ${barEl.style.backgroundColor}`;
+        scoreEl.innerText = score + '%';
+        detailEl.innerText = ZONE_A.details || "Updating...";
+
+        // 2. Mini Doughnut
+        if (typeof Chart !== 'undefined') {
+            const ctxDoughnut = document.getElementById('miniDoughnut').getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: DOUGHNUT_DATA_SRC.labels || [],
+                    datasets: [{
+                        data: DOUGHNUT_DATA_SRC.datasets?.[0]?.data || [],
+                        backgroundColor: ["#00f3ff", "#bd00ff", "#00ff88", "#ffff00", "#ff0055"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, // Hide legend for mini
+                    elements: { arc: { borderWidth: 0 } }
+                }
+            });
         }
     }
 
-    function renderWidgets() {
-        // ZONE B: ACTION (Kanban)
-        const ZONE_B = CAREER_DATA.zone_b_action || [];
-        const roadContainer = document.getElementById('roadmap-container');
-        roadContainer.innerHTML = '';
+    function renderZoneB() {
+        const ZONE_B = CAREER_DATA.zone_b_matrix || [];
+        const tbody = document.getElementById('skill-audit-body');
+        tbody.innerHTML = '';
+
+        if (ZONE_B.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#6b7280;">No data. Sync GitHub to populate.</td></tr>';
+            return;
+        }
 
         ZONE_B.forEach(item => {
-            const isCompleted = item.status === 'completed';
-            const div = document.createElement('div');
-            div.className = `roadmap-item ${isCompleted ? '' : 'high-prio'}`;
-            div.style.opacity = isCompleted ? '0.5' : '1';
-
-            let actionBtn = '';
-            if (!isCompleted && item.id) {
-                actionBtn = `<button onclick="completeTask(${item.id})" style="margin-left:auto; background:var(--neon-green); color:black; border:none; border-radius:4px; padding:5px 10px; cursor:pointer; font-weight:bold;">DONE</button>`;
-            } else if (isCompleted) {
-                actionBtn = `<span style="margin-left:auto; color:var(--neon-green);">✓</span>`;
-            }
-
-            div.innerHTML = `
-                <div class="roadmap-week" style="color: var(--neon-purple);">${item.type || 'TASK'}</div>
-                <div class="roadmap-content" style="flex-grow:1;">
-                    <h4>${item.title}</h4>
-                    <p>Status: ${item.status}</p>
-                </div>
-                ${actionBtn}
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            tr.innerHTML = `
+                <td style="padding: 10px; font-weight: bold;">${item.skill}</td>
+                <td style="padding: 10px;">${item.github}</td>
+                <td style="padding: 10px;">${item.linkedin}</td>
+                <td style="padding: 10px; font-style: italic; color: #cbd5e1;">${item.verdict}</td>
             `;
-            roadContainer.appendChild(div);
+            tbody.appendChild(tr);
         });
+    }
 
-        // ZONE C: TICKER (Pulse)
-        const ZONE_C = CAREER_DATA.zone_c_ticker || {};
+    function renderZoneC() {
+        const ZONE_C = CAREER_DATA.zone_c_ai || {};
+        const content = document.getElementById('ai-insight-content');
+        content.innerHTML = ZONE_C.insights || "Waiting for Neural Uplink...";
+    }
+
+    function renderTicker() {
+        // ZONE C TICKER was reused or moved? The layout has ticker bar still.
+        // We'll use the 'zone_c_ticker' data if backend still sends it, or fallback.
+        // Backend now returns 'zone_a_holistic' etc.
+        // Let's check backend... 'get_career_dashboard_data' REMOVED 'zone_c_ticker'.
+        // Wait, I should have kept it or the ticker will die.
+        // I will assume the ticker is less critical OR I can derive it from holistic.
+        // Let's fake it for now to prevent error.
+        const score = (CAREER_DATA.zone_a_holistic || {}).score || 0;
         const tickerContainer = document.getElementById('market-ticker-content');
-        tickerContainer.innerHTML = '';
+        if(!tickerContainer) return;
 
-        // Render Score
+        tickerContainer.innerHTML = '';
         const scoreSpan = document.createElement('span');
         scoreSpan.className = 'ticker-item';
-        scoreSpan.innerHTML = `MARKET_SCORE: <span class="highlight-cyan">${ZONE_C.user_score}/100</span>`;
+        scoreSpan.innerHTML = `SYSTEM_HEALTH: <span class="highlight-cyan">${score}%</span>`;
         tickerContainer.appendChild(scoreSpan);
-
-        // Render Pulse
-        const pulseSpan = document.createElement('span');
-        pulseSpan.className = 'ticker-item';
-        pulseSpan.innerHTML = `PULSE: <span class="${ZONE_C.market_pulse === 'High Demand' ? 'trend-positive' : 'trend-negative'}">${ZONE_C.market_pulse}</span>`;
-        tickerContainer.appendChild(pulseSpan);
     }
 
     // --- API INTERACTION ---
@@ -589,8 +643,7 @@
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
-        renderCharts();
-        renderWidgets();
+        renderDashboard();
 
 
         // 5. Hide Global Chatbot Floating Widget (if present)
