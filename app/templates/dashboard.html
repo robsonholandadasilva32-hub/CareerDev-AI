@@ -6,10 +6,40 @@
 <script src="/static/js/loader.js"></script>
 
 <style>
+    /* --- LEGACY OVERRIDE (THE FIX) --- */
+    /* This section neutralizes the parent layout so our Grid takes over */
+
+    /* 1. Hide Old Elements */
+    .sidebar, .main-sidebar, #sidebar-wrapper, .navbar, .top-nav,
+    header, .dashboard-sidebar, .terminal-footer {
+        display: none !important;
+    }
+
+    /* 2. Reset Containers */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important; /* Let the grid handle scroll */
+        background-color: #030508 !important;
+    }
+
+    .dashboard-content, .container-fluid, .main-panel, .content-wrapper, .dashboard-content-area {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        position: fixed !important; /* Force top-left alignment */
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 9999 !important; /* Sit on top of everything */
+    }
+
+    /* --- NEW THEME VARIABLES --- */
     :root {
         --bg-void: #030508;
-        --bg-panel: rgba(10, 15, 25, 0.85);
-        --border-dim: rgba(255, 255, 255, 0.08);
+        --bg-panel: rgba(10, 15, 25, 0.95); /* Slightly more opaque for readability */
+        --border-dim: rgba(255, 255, 255, 0.1);
         --neon-cyan: #00f3ff;
         --neon-green: #00ff9d;
         --neon-purple: #bc13fe;
@@ -20,65 +50,98 @@
         --font-ui: 'Inter', sans-serif;
     }
 
-    body {
-        background-color: var(--bg-void);
-        color: var(--text-main);
-        font-family: var(--font-ui);
-        overflow: hidden; /* App feel */
-    }
-
     /* --- LAYOUT GRID (BENTO BOX) --- */
     .command-grid {
         display: grid;
-        grid-template-columns: 260px 1fr 320px; /* Nav | Main Data | Tools */
-        grid-template-rows: 60px 1fr 40px;      /* Header | Content | Footer */
+        /* Fixed Left Nav | Fluid Center | Fixed Right Tools */
+        grid-template-columns: 80px 1fr 300px;
+        /* Header | Main Content | Footer */
+        grid-template-rows: 50px 1fr 30px;
         height: 100vh;
-        gap: 12px;
-        padding: 12px;
+        width: 100vw;
+        gap: 8px;
+        padding: 8px;
+        box-sizing: border-box;
+        background: radial-gradient(circle at center, #0a101f 0%, #030508 100%);
     }
 
     /* --- COMMON CARD STYLES --- */
     .hud-panel {
         background: var(--bg-panel);
         border: 1px solid var(--border-dim);
-        border-radius: 6px;
-        backdrop-filter: blur(10px);
+        border-radius: 4px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
         position: relative;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
     }
-    .hud-panel::before {
-        content: '';
+
+    /* Scanning Line Effect */
+    .hud-panel::after {
+        content: " ";
+        display: block;
         position: absolute;
-        top: 0; left: 0; width: 100%; height: 2px;
-        background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-        opacity: 0.5;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        z-index: 2;
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
     }
 
     .hud-header {
-        padding: 10px 15px;
-        background: rgba(255,255,255,0.02);
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.03);
         border-bottom: 1px solid var(--border-dim);
         font-family: var(--font-mono);
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         letter-spacing: 1px;
         color: var(--neon-cyan);
         text-transform: uppercase;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0; /* Never shrink header */
     }
 
     /* --- SPECIFIC AREAS --- */
     
-    /* 1. HEADER TICKER */
+    /* 1. COMPACT NAV (Left) */
+    .side-nav {
+        grid-row: 1 / 4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 15px;
+        gap: 15px;
+        z-index: 10;
+    }
+    .nav-icon {
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border-dim);
+        border-radius: 8px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        font-size: 1.2rem;
+    }
+    .nav-icon:hover, .nav-icon.active {
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+        box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    }
+
+    /* 2. TOP BAR (Ticker) */
     .top-bar {
         grid-column: 2 / 4;
         display: flex;
         align-items: center;
-        padding: 0 20px;
+        padding: 0 15px;
         font-family: var(--font-mono);
     }
     .market-ticker {
@@ -86,65 +149,61 @@
         overflow: hidden;
         white-space: nowrap;
         color: var(--neon-green);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        opacity: 0.8;
     }
     
-    /* 2. IDENTITY (Hero) */
-    .identity-card {
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        border-left: 3px solid var(--neon-purple);
-    }
-    .user-avatar-glitch {
-        width: 60px; height: 60px;
-        border-radius: 50%;
-        border: 2px solid var(--neon-purple);
-        background: url('{{ user.avatar_url or "https://ui-avatars.com/api/?name=" + user.name }}') center/cover;
-        position: relative;
-    }
-    .user-details h1 {
-        margin: 0; font-size: 1.2rem; font-weight: 900; letter-spacing: -0.5px;
-    }
-    .user-details .role {
-        font-family: var(--font-mono);
-        color: var(--neon-purple);
-        font-size: 0.8rem;
-    }
-
-    /* 3. ZONE A & B (Main Dashboard) */
+    /* 3. MAIN STAGE (Center Data) */
     .main-stage {
         grid-column: 2 / 3;
         grid-row: 2 / 3;
         display: grid;
-        grid-template-rows: auto 1fr auto; /* Stats | Graph/Table | Insights */
-        gap: 12px;
-        overflow-y: auto;
-        padding-right: 5px; /* Scrollbar space */
+        grid-template-rows: 100px 1fr 140px; /* Identity | Graph/Table | Insights */
+        gap: 8px;
+        overflow: hidden;
     }
 
-    /* SKILL AUDIT TABLE (Zone B) */
+    /* IDENTITY */
+    .identity-card {
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-left: 2px solid var(--neon-purple);
+    }
+    .user-avatar-hex {
+        width: 60px; height: 60px;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        background: url('{{ user.avatar_url or "https://ui-avatars.com/api/?name=" + user.name }}') center/cover;
+        border: 2px solid var(--neon-purple);
+    }
+
+    /* SKILL AUDIT TABLE */
+    .cyber-table-container {
+        overflow-y: auto;
+        flex-grow: 1;
+    }
     .cyber-table {
         width: 100%;
         border-collapse: collapse;
         font-family: var(--font-mono);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
     .cyber-table th {
         text-align: left;
-        padding: 12px;
+        padding: 10px;
         color: var(--text-muted);
         border-bottom: 1px solid var(--border-dim);
+        position: sticky; top: 0; background: var(--bg-panel);
     }
     .cyber-table td {
-        padding: 12px;
+        padding: 8px 10px;
         border-bottom: 1px solid rgba(255,255,255,0.03);
     }
     .progress-track {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
         height: 4px;
-        width: 100px;
+        width: 80px;
         border-radius: 2px;
         display: inline-block;
         vertical-align: middle;
@@ -153,7 +212,6 @@
     .progress-fill {
         height: 100%;
         background: var(--neon-cyan);
-        box-shadow: 0 0 8px var(--neon-cyan);
     }
 
     /* 4. RIGHT SIDEBAR (Tools) */
@@ -162,29 +220,8 @@
         grid-row: 2 / 3;
         display: grid;
         grid-template-rows: auto 1fr auto;
-        gap: 12px;
+        gap: 8px;
     }
-
-    /* Bio Monitor */
-    .bio-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 5px;
-        padding: 15px;
-    }
-    .bio-node {
-        text-align: center;
-        background: rgba(0,0,0,0.3);
-        padding: 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: 1px solid transparent;
-    }
-    .bio-node:hover { border-color: var(--neon-green); }
-    .bio-node.active span { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
-    .bio-label { font-size: 0.6rem; display: block; color: var(--text-muted); margin-bottom: 4px; }
-    .bio-icon { font-size: 1.2rem; color: #333; transition: color 0.3s; }
 
     /* Chat Terminal */
     .chat-container {
@@ -195,92 +232,78 @@
     }
     .chat-messages {
         flex-grow: 1;
-        padding: 15px;
+        padding: 10px;
         overflow-y: auto;
         font-family: var(--font-mono);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
-    .msg-bot { color: var(--neon-purple); margin-bottom: 10px; border-left: 2px solid var(--neon-purple); padding-left: 8px; }
-    .msg-user { color: var(--text-main); text-align: right; margin-bottom: 10px; opacity: 0.8; }
+    .msg-bot { color: var(--neon-purple); margin-bottom: 8px; display: block; }
+    .msg-user { color: var(--neon-cyan); text-align: right; margin-bottom: 8px; display: block; }
     
     .chat-input-area {
         display: flex;
         border-top: 1px solid var(--border-dim);
-        padding: 10px;
+        padding: 8px;
     }
     .terminal-input {
         background: transparent;
         border: none;
-        color: var(--neon-cyan);
+        color: #fff;
         font-family: var(--font-mono);
         flex-grow: 1;
         outline: none;
+        font-size: 0.8rem;
     }
 
-    /* Pro Suite Buttons */
-    .btn-cyber {
-        background: rgba(0, 243, 255, 0.1);
-        border: 1px solid var(--neon-cyan);
-        color: var(--neon-cyan);
-        width: 100%;
-        padding: 10px;
-        font-family: var(--font-mono);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: 0.2s;
-        text-align: center;
-        text-decoration: none;
-        display: block;
-        margin-bottom: 8px;
-    }
-    .btn-cyber:hover {
-        background: var(--neon-cyan);
-        color: #000;
-        box-shadow: 0 0 15px var(--neon-cyan);
-    }
-    
     /* 5. FOOTER */
     .status-footer {
-        grid-column: 1 / 4;
+        grid-column: 2 / 4;
         grid-row: 3 / 4;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 15px;
+        padding: 0 10px;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        background: rgba(0,0,0,0.5);
+    }
+    .status-dot { width: 6px; height: 6px; background: var(--neon-green); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 5px var(--neon-green); }
+
+    /* UTILS */
+    .btn-cyber {
+        background: rgba(0, 243, 255, 0.05);
+        border: 1px solid var(--border-dim);
+        color: var(--neon-cyan);
+        width: 100%;
+        padding: 8px;
         font-family: var(--font-mono);
         font-size: 0.7rem;
-        color: var(--text-muted);
-        border-top: 1px solid var(--border-dim);
-        background: #050505;
+        cursor: pointer;
+        transition: 0.2s;
+        text-align: center;
+        margin-bottom: 5px;
     }
-    .status-dot { width: 8px; height: 8px; background: var(--neon-green); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 5px var(--neon-green); }
+    .btn-cyber:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.1); }
 
     /* SCROLLBARS */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #000; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
-
+    ::-webkit-scrollbar-thumb { background: #333; }
 </style>
 
 <div class="command-grid">
     
-    <nav class="hud-panel" style="grid-row: 1 / 4;">
-        <div style="padding: 20px; text-align: center;">
-            <svg width="40" height="40" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" stroke="#00f3ff" stroke-width="2" fill="none"/>
-                <path d="M50 20 L50 50 L70 70" stroke="#00f3ff" stroke-width="2"/>
-            </svg>
-            <h3 style="font-family: var(--font-mono); font-size: 0.9rem; margin-top: 10px; color:white;">CAREER.OS</h3>
-        </div>
+    <nav class="hud-panel side-nav">
+        <div style="font-size: 1.5rem; color: white; margin-bottom: 10px;">⚡</div>
         
-        <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px;">
-            <a href="#" class="btn-cyber" style="border-color: transparent; text-align: left; color: white;">> DASHBOARD</a>
-            <a href="#" class="btn-cyber" style="border-color: transparent; text-align: left; color: #64748b;">> SECURITY</a>
-            <a href="#" class="btn-cyber" style="border-color: transparent; text-align: left; color: #64748b;">> ACCESSIBILITY</a>
-            <div style="flex-grow:1"></div>
-            <a href="/logout" class="btn-cyber" style="border-color: var(--alert-red); color: var(--alert-red);">SYSTEM_EXIT</a>
-        </div>
+        <a href="#" class="nav-icon active" title="Dashboard">⊞</a>
+        <a href="#" class="nav-icon" title="Security">🛡️</a>
+        <a href="#" class="nav-icon" title="Network">🌐</a>
+        <a href="#" class="nav-icon" title="Settings">⚙️</a>
+
+        <div style="flex-grow: 1;"></div>
+        <a href="/logout" class="nav-icon" style="color: var(--alert-red); border-color: rgba(255, 42, 109, 0.3);" title="Logout">✕</a>
     </nav>
 
     <div class="hud-panel top-bar">
@@ -293,48 +316,42 @@
     <main class="main-stage">
         
         <div class="hud-panel identity-card">
-            <div class="user-avatar-glitch"></div>
-            <div class="user-details">
-                <h1>{{ user.name }}</h1>
-                <span class="role">LVL {{ profile.level }} // {{ profile.focus }}</span>
+            <div class="user-avatar-hex"></div>
+            <div class="user-details" style="flex-grow: 1;">
+                <h1 style="margin:0; font-size:1.2rem; color:white;">{{ user.name }}</h1>
+                <span style="font-family:var(--font-mono); color:var(--neon-purple); font-size:0.8rem;">LVL {{ profile.level }} // {{ profile.focus }}</span>
             </div>
-            <div style="margin-left: auto; text-align: right;">
-                <div style="font-size: 0.8rem; color: var(--text-muted);">HOLISTIC SCORE</div>
-                <div style="font-size: 2rem; font-weight: bold; color: var(--neon-green);" id="holistic-score-val">0%</div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.7rem; color: var(--text-muted);">HOLISTIC SCORE</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: var(--neon-green);" id="holistic-score-val">--%</div>
             </div>
         </div>
 
         <div class="hud-panel" style="flex-grow: 1;">
             <div class="hud-header">
-                <span>ZONE B: INTEREST (LI) vs REALITY (GH)</span>
-                <button onclick="alert('Syncing...')" style="background:none; border:none; color:var(--neon-cyan); cursor:pointer;">[REFRESH_SCAN]</button>
+                <span>ZONE B: REALITY CHECK</span>
+                <span style="cursor:pointer; opacity:0.7;">[SYNC]</span>
             </div>
-            <div style="padding: 0;">
+            <div class="cyber-table-container">
                 <table class="cyber-table">
                     <thead>
                         <tr>
-                            <th>DETECTED SKILL</th>
-                            <th>GITHUB (BYTES)</th>
-                            <th>LINKEDIN (CLAIM)</th>
-                            <th>AI VERDICT</th>
+                            <th>SKILL</th>
+                            <th>GITHUB VOLUME</th>
+                            <th>VERDICT</th>
                         </tr>
                     </thead>
                     <tbody id="skill-audit-body">
-                        <tr><td colspan="4" style="text-align:center; padding: 20px;">LOADING NEURAL AUDIT...</td></tr>
+                        <tr><td colspan="3" style="text-align:center; padding: 20px;">LOADING...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="hud-panel" style="border-color: var(--neon-purple);">
+        <div class="hud-panel" style="border-left: 2px solid var(--neon-purple);">
             <div class="hud-header" style="color: var(--neon-purple);">ZONE C: SYSTEM INSIGHTS</div>
-            <div id="ai-insight-content" style="padding: 15px; font-size: 0.9rem; line-height: 1.5;">
+            <div id="ai-insight-content" style="padding: 10px; font-size: 0.8rem; color: #e2e8f0; overflow-y: auto;">
                 Awaiting analysis...
-            </div>
-            <div style="padding: 10px; border-top: 1px solid var(--border-dim); text-align: right;">
-                <button onclick="triggerChallenge()" class="btn-cyber" style="width: auto; display: inline-block; border-color: var(--neon-purple); color: var(--neon-purple);">
-                    🎙️ TEST MY WEAKNESS
-                </button>
             </div>
         </div>
 
@@ -342,43 +359,32 @@
 
     <aside class="tool-dock">
         
-        <div class="hud-panel">
+        <div class="hud-panel" style="flex-shrink: 0;">
             <div class="hud-header">BIO_MONITOR</div>
-            <div class="bio-grid">
-                <div class="bio-node" onclick="HealthModule.togglePosture()" id="btn-posture">
-                    <span class="bio-icon">🦴</span>
-                    <span class="bio-label">POSTURE</span>
-                </div>
-                <div class="bio-node" onclick="HealthModule.toggle202020()" id="btn-eyes">
-                    <span class="bio-icon">👁️</span>
-                    <span class="bio-label">VISION</span>
-                </div>
-                <div class="bio-node" onclick="HealthModule.toggleHydration()" id="btn-water">
-                    <span class="bio-icon">💧</span>
-                    <span class="bio-label">H2O</span>
-                </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px;">
+                <button class="btn-cyber" onclick="LocalHealthUI.togglePosture()" id="btn-posture">🦴</button>
+                <button class="btn-cyber" onclick="LocalHealthUI.toggle202020()" id="btn-eyes">👁️</button>
+                <button class="btn-cyber" onclick="LocalHealthUI.toggleHydration()" id="btn-water">💧</button>
             </div>
         </div>
 
         <div class="hud-panel chat-container">
             <div class="hud-header">
-                AI_MENTOR_V2.0
+                AI_MENTOR
                 <span id="interview-status" style="font-size: 0.6rem; opacity: 0.7;">READY</span>
             </div>
             <div id="chatbot-messages" class="chat-messages">
-                <div class="msg-bot">System initialized. Connected to GitHub & LinkedIn APIs. How can we engineer your career today?</div>
+                <div class="msg-bot">System online. Waiting for command...</div>
             </div>
             <div class="chat-input-area">
                 <span style="color: var(--neon-cyan); margin-right: 8px;">></span>
-                <input type="text" id="chat-input" class="terminal-input" placeholder="Execute command or ask question..." autocomplete="off">
+                <input type="text" id="chat-input" class="terminal-input" placeholder="Ask question..." autocomplete="off">
             </div>
         </div>
 
-        <div class="hud-panel" style="justify-content: flex-end; padding: 10px;">
-            <div style="margin-bottom: 10px; font-size: 0.7rem; color: var(--text-muted); text-align: center;">PRO SUITE TOOLS</div>
-            <a href="#" onclick="downloadPassport()" class="btn-cyber">📄 EXPORT PASSPORT (PDF)</a>
-            <button onclick="copyBadgeCode()" class="btn-cyber">🛡️ COPY BADGE MARKDOWN</button>
-            <button onclick="generateLinkedInPost()" class="btn-cyber" style="border-color: #0077b5; color: #0077b5;">🔗 SHARE SUCCESS</button>
+        <div class="hud-panel" style="flex-shrink: 0; padding: 10px;">
+            <button onclick="downloadPassport()" class="btn-cyber">📄 EXPORT PDF</button>
+            <button onclick="triggerChallenge()" class="btn-cyber" style="border-color: var(--neon-purple); color: var(--neon-purple);">🎙️ CHALLENGE MODE</button>
         </div>
 
     </aside>
@@ -386,113 +392,77 @@
     <footer class="status-footer">
         <div><span class="status-dot"></span> SYSTEMS NOMINAL</div>
         <div>
-            SYNC: <span style="color: var(--neon-cyan);">GitHub 2ms</span> | 
-            MODEL: <span style="color: var(--neon-purple);">GPT-4o</span> | 
+            SYNC: <span style="color: var(--neon-cyan);">OK</span> |
             SESSION: <span style="color: white;">{{ user.email }}</span>
         </div>
     </footer>
 
 </div>
 
-<div id="share-modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center;">
-    <div class="hud-panel" style="width: 500px; padding: 20px; border-color: var(--neon-cyan);">
-        <h3 style="color: var(--neon-cyan); margin-top: 0;">LINKEDIN POST GENERATED</h3>
-        <textarea id="share-text" style="width: 100%; height: 150px; background: #000; color: #fff; border: 1px solid #333; padding: 10px; font-family: sans-serif;"></textarea>
-        <div style="margin-top: 10px; display: flex; gap: 10px;">
-            <button onclick="copyShareText()" class="btn-cyber">COPY TO CLIPBOARD</button>
-            <button onclick="document.getElementById('share-modal').style.display='none'" class="btn-cyber" style="border-color: var(--alert-red); color: var(--alert-red);">CLOSE</button>
-        </div>
-    </div>
-</div>
-
 <script>
-    // --- RESTORE LOGIC ---
-    // This script block re-binds the data logic to the new CSS classes
-    
-    // Inject Data
+    // --- DATA BINDING LOGIC ---
     const CAREER_DATA = {{ career_data | tojson }};
     const USER_ID = {{ user.id }};
 
     document.addEventListener("DOMContentLoaded", () => {
-        // 1. Render Zone B (The Table)
+        // 1. Render Table
         const tbody = document.getElementById('skill-audit-body');
         const matrix = CAREER_DATA.zone_b_matrix || [];
         
         if(matrix.length > 0) {
             tbody.innerHTML = '';
             matrix.forEach(item => {
-                // Parse percent for visual bar
-                let percent = 0;
-                if(item.github.includes('KB') || item.github.includes('MB')) {
-                    percent = 50; // Simple heuristic for visual
-                }
+                let percent = 30; // Mock visual
+                if(item.github.includes('MB')) percent = 80;
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="color: #fff; font-weight: bold;">${item.skill}</td>
                     <td>
                         <div class="progress-track"><div class="progress-fill" style="width: ${percent}%"></div></div>
-                        <span style="font-size: 0.7rem;">${item.github}</span>
+                        <span style="font-size: 0.7rem; opacity: 0.7;">${item.github}</span>
                     </td>
-                    <td>${item.linkedin.includes('✅') ? '<span style="color:var(--neon-green)">VERIFIED</span>' : '<span style="color:var(--text-muted)">MISSING</span>'}</td>
                     <td style="color: ${item.verdict.includes('Strong') ? 'var(--neon-green)' : 'var(--alert-red)'}">${item.verdict}</td>
                 `;
                 tbody.appendChild(tr);
             });
         } else {
-             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color: var(--text-muted);">No GitHub Data Found. Please Sync.</td></tr>';
+             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color: var(--text-muted);">No GitHub Data.</td></tr>';
         }
 
-        // 2. Render Zone A & C
+        // 2. Score & Insights
         document.getElementById('holistic-score-val').innerText = (CAREER_DATA.zone_a_holistic?.score || 0) + "%";
-        document.getElementById('ai-insight-content').innerHTML = CAREER_DATA.zone_c_ai?.insights || "Analysis complete. No critical alerts.";
+        document.getElementById('ai-insight-content').innerHTML = CAREER_DATA.zone_c_ai?.insights || "Analysis complete.";
 
-        // 3. Chat Input Binding
+        // 3. Chat Binding
         const chatInput = document.getElementById('chat-input');
         chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && chatInput.value) {
                 const text = chatInput.value;
-                if(!text) return;
-                
-                // Add User Msg
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'msg-user';
                 msgDiv.innerText = text;
                 document.getElementById('chatbot-messages').appendChild(msgDiv);
-                
                 chatInput.value = '';
                 
-                // Simulate Bot (Replace with real Fetch)
-                setTimeout(() => {
-                    const botDiv = document.createElement('div');
-                    botDiv.className = 'msg-bot';
-                    botDiv.innerText = "Processing query... [Real Logic Connected]";
-                    document.getElementById('chatbot-messages').appendChild(botDiv);
-                }, 600);
-
-                // If real logic exists in chatbot.js, call sendMessage() here
-                if(window.sendMessage) window.sendMessage(text); 
+                // Pass to global handler if exists
+                if(window.sendMessage) window.sendMessage(text);
             }
         });
     });
 
-    // Bio Monitor Visual Toggle
-    const HealthModule = {
-        togglePosture: () => toggleBtn('btn-posture'),
-        toggle202020: () => toggleBtn('btn-eyes'),
-        toggleHydration: () => toggleBtn('btn-water')
+    // Helpers
+    const LocalHealthUI = {
+        togglePosture: () => document.getElementById('btn-posture').classList.toggle('active'),
+        toggle202020: () => document.getElementById('btn-eyes').classList.toggle('active'),
+        toggleHydration: () => document.getElementById('btn-water').classList.toggle('active')
     };
-    function toggleBtn(id) {
-        document.getElementById(id).classList.toggle('active');
-    }
-
-    // Modal Helpers
     function downloadPassport() { window.location.href = '/api/export/passport'; }
-    function copyBadgeCode() { 
-        const code = `[![Badge](${window.location.origin}/api/badge/${USER_ID})]`;
-        navigator.clipboard.writeText(code);
-        alert('Markdown copied!');
+    function triggerChallenge() {
+        document.getElementById('chat-input').value = "Test My Weakness";
+        // Simulate enter key to trigger existing logic
+        const e = new KeyboardEvent('keypress', { key: 'Enter' });
+        document.getElementById('chat-input').dispatchEvent(e);
     }
-    // ... Additional functions from previous logic ...
 </script>
 {% endblock %}
