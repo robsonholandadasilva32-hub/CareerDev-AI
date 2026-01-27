@@ -112,60 +112,61 @@ class CareerEngine:
         """
         Returns the structured JSON object for the new Dashboard AI brain.
         Includes Market Trends, Skill Gaps, and Weekly Micro-Projects.
+        INJECTED LOGIC: Returns specific data for Robson Holanda (Python/FastAPI -> Rust/Edge AI).
         """
         # Ensure profile analysis runs first to populate data
         self.analyze_profile(db, user)
 
-        # Market Trends (Mocked for now, but following the spec)
+        # 1. Market Trends (Real-Time Trend Simulation)
+        # "High Demand: Edge AI / Low Demand: Basic CRUD"
         market_trends_data = {
-            "rust": "+15%",
-            "go": "+12%",
-            "python": "stable",
-            "wasm": "+20%"
+            "Edge AI": "High Demand",
+            "Basic CRUD": "Low Demand",
+            "Rust": "+15%",
+            "WASM": "+20%"
         }
 
-        # Skill Gaps
-        # Logic: If they have low Rust/Go, flag it.
-        profile = user.career_profile
-        skills = profile.skills_snapshot if profile else {}
+        # 2. Skill Gaps (Gap Analysis)
+        # Target_Job_Reqs - User_Skills = The_Gap
+        # Implied: Rust, AI, GraphDB
+        gaps = ["Rust (Memory Safety)", "GraphDB (Neo4j)", "Edge Computing"]
 
-        gaps = []
-        if skills.get("Rust", 0) < 40:
-            gaps.append("Rust (Ownership)")
-        if skills.get("Go", 0) < 40:
-            gaps.append("Go (Concurrency)")
-        if skills.get("System Design", 0) < 50:
-            gaps.append("System Design")
+        # 3. Weekly Plan (Micro-Projects & Upskilling Sprint)
+        # Card 1: "Refactor Auth Middleware (Security)"
+        # Card 2: "Learn Rust Memory Safety"
+        weekly_plan_data = [
+            {"day": "Mon", "task": "Refactor Auth Middleware (Security)", "status": "pending"},
+            {"day": "Tue", "task": "Learn Rust Memory Safety", "status": "pending"},
+            {"day": "Wed", "task": "Implement Neo4j Recommendation Engine", "status": "pending"},
+            {"day": "Thu", "task": "Study WASM for 3D Avatars", "status": "pending"},
+            {"day": "Fri", "task": "Draft LinkedIn Post (Networking)", "status": "pending"}
+        ]
 
-        # Default gaps if none found (fallback)
-        if not gaps:
-            gaps = ["AsyncIO", "Kubernetes", "System Design"]
-
-        # Weekly Plan (Micro-Projects)
-        # Map existing LearningPlan items to the requested format
-        plans = self.generate_plan(db, user)
-        weekly_plan_data = []
-
-        days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-        for i, plan in enumerate(plans[:5]):
-            weekly_plan_data.append({
-                "day": days[i] if i < len(days) else "Weekend",
-                "task": plan.title, # e.g. "Implement a gRPC server"
-                "status": "pending" if plan.status != 'completed' else "completed"
-            })
-
-        # Fallback if no plans
-        if not weekly_plan_data:
-             weekly_plan_data = [
-                 {"day": "Mon", "task": "Implement a gRPC server", "status": "pending"},
-                 {"day": "Tue", "task": "Rust: Ownership Drills", "status": "pending"},
-                 {"day": "Wed", "task": "Study Raft Consensus", "status": "pending"}
-             ]
+        # 4. Skills Radar Data (Scarcity & Upskilling)
+        # Visual comparison of Robson's current Python skills vs. Market demand for Rust/AI.
+        radar_data = {
+            "labels": ['Rust', 'Python', 'AI/ML', 'System Design', 'WebAssembly', 'GraphDB'],
+            "datasets": [{
+                "label": 'Robson (Current)',
+                "data": [30, 95, 40, 60, 20, 10], # High Python, Low Rust/AI
+                "backgroundColor": 'rgba(0, 243, 255, 0.2)',
+                "borderColor": '#00f3ff',
+                "pointBackgroundColor": '#00f3ff',
+            }, {
+                "label": 'Market Demand (High Value)',
+                "data": [95, 60, 90, 85, 90, 80], # High Rust/AI, Lower "Basic" Python importance relative to niche
+                "backgroundColor": 'rgba(255, 255, 255, 0.05)',
+                "borderColor": '#6b7280',
+                "borderDash": [5, 5],
+                "pointBackgroundColor": 'transparent'
+            }]
+        }
 
         return {
             "market_trends": market_trends_data,
             "skill_gap": gaps,
-            "weekly_plan": weekly_plan_data
+            "weekly_plan": weekly_plan_data,
+            "radar_data": radar_data
         }
 
 career_engine = CareerEngine()
