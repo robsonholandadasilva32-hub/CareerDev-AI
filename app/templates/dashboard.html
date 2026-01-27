@@ -6,39 +6,25 @@
 <script src="/static/js/loader.js"></script>
 
 <style>
-    /* --- LEGACY OVERRIDE (THE FIX) --- */
-    /* This section neutralizes the parent layout so our Grid takes over */
-
-    /* 1. Hide Old Elements */
-    .sidebar, .main-sidebar, #sidebar-wrapper, .navbar, .top-nav,
-    header, .dashboard-sidebar, .terminal-footer {
+    /* --- 1. LEGACY LAYOUT OVERRIDE (THE FIX) --- */
+    /* Hides the old parent template elements so our new Grid works */
+    .dashboard-sidebar, .main-header, .navbar, .footer, #sidebar-wrapper {
         display: none !important;
     }
-
-    /* 2. Reset Containers */
-    body, html {
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important; /* Let the grid handle scroll */
-        background-color: #030508 !important;
+    .content-wrapper, .main-panel, .dashboard-content {
+        margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important;
+        position: fixed !important; top: 0 !important; left: 0 !important; z-index: 9900 !important;
     }
 
-    .dashboard-content, .container-fluid, .main-panel, .content-wrapper, .dashboard-content-area {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: none !important;
-        position: fixed !important; /* Force top-left alignment */
-        top: 0 !important;
-        left: 0 !important;
-        z-index: 9999 !important; /* Sit on top of everything */
+    /* --- 2. COOKIE BANNER FIX --- */
+    #cookie-consent-banner {
+        z-index: 10001 !important; /* Above everything */
     }
 
-    /* --- NEW THEME VARIABLES --- */
+    /* --- THEME VARIABLES --- */
     :root {
         --bg-void: #030508;
-        --bg-panel: rgba(10, 15, 25, 0.95); /* Slightly more opaque for readability */
+        --bg-panel: rgba(10, 15, 25, 0.95);
         --border-dim: rgba(255, 255, 255, 0.1);
         --neon-cyan: #00f3ff;
         --neon-green: #00ff9d;
@@ -50,125 +36,70 @@
         --font-ui: 'Inter', sans-serif;
     }
 
-    /* --- LAYOUT GRID (BENTO BOX) --- */
+    body {
+        background-color: var(--bg-void) !important;
+        color: var(--text-main);
+        font-family: var(--font-ui);
+        overflow: hidden;
+    }
+
+    /* --- LAYOUT GRID --- */
     .command-grid {
         display: grid;
-        /* Fixed Left Nav | Fluid Center | Fixed Right Tools */
-        grid-template-columns: 80px 1fr 300px;
-        /* Header | Main Content | Footer */
-        grid-template-rows: 50px 1fr 30px;
-        height: 100vh;
-        width: 100vw;
-        gap: 8px;
-        padding: 8px;
+        grid-template-columns: 70px 1fr 320px; /* Nav | Data | Tools */
+        grid-template-rows: 50px 1fr 30px;      /* Header | Content | Footer */
+        height: 100vh; width: 100vw;
+        gap: 8px; padding: 8px;
         box-sizing: border-box;
         background: radial-gradient(circle at center, #0a101f 0%, #030508 100%);
     }
 
-    /* --- COMMON CARD STYLES --- */
+    /* --- PANELS --- */
     .hud-panel {
         background: var(--bg-panel);
         border: 1px solid var(--border-dim);
         border-radius: 4px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+        display: flex; flex-direction: column;
         position: relative;
         box-shadow: 0 4px 30px rgba(0,0,0,0.5);
     }
-
-    /* Scanning Line Effect */
-    .hud-panel::after {
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        z-index: 2;
-        background-size: 100% 2px, 3px 100%;
-        pointer-events: none;
-    }
-
     .hud-header {
         padding: 8px 12px;
         background: rgba(255,255,255,0.03);
         border-bottom: 1px solid var(--border-dim);
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        letter-spacing: 1px;
-        color: var(--neon-cyan);
-        text-transform: uppercase;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-shrink: 0; /* Never shrink header */
+        font-family: var(--font-mono); font-size: 0.7rem;
+        color: var(--neon-cyan); text-transform: uppercase;
+        display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* --- SPECIFIC AREAS --- */
-    
-    /* 1. COMPACT NAV (Left) */
+    /* --- LEFT NAV (FIXED ROUTES) --- */
     .side-nav {
         grid-row: 1 / 4;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 15px;
-        gap: 15px;
-        z-index: 10;
+        display: flex; flex-direction: column; align-items: center;
+        padding-top: 15px; gap: 15px; z-index: 10;
     }
     .nav-icon {
         width: 40px; height: 40px;
         display: flex; align-items: center; justify-content: center;
-        border: 1px solid var(--border-dim);
-        border-radius: 8px;
-        color: var(--text-muted);
-        cursor: pointer;
+        border: 1px solid var(--border-dim); border-radius: 8px;
+        color: var(--text-muted); text-decoration: none; font-size: 1.2rem;
         transition: 0.2s;
-        text-decoration: none;
-        font-size: 1.2rem;
     }
     .nav-icon:hover, .nav-icon.active {
-        border-color: var(--neon-cyan);
-        color: var(--neon-cyan);
+        border-color: var(--neon-cyan); color: var(--neon-cyan);
         box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
     }
 
-    /* 2. TOP BAR (Ticker) */
-    .top-bar {
-        grid-column: 2 / 4;
-        display: flex;
-        align-items: center;
-        padding: 0 15px;
-        font-family: var(--font-mono);
-    }
-    .market-ticker {
-        flex-grow: 1;
-        overflow: hidden;
-        white-space: nowrap;
-        color: var(--neon-green);
-        font-size: 0.75rem;
-        opacity: 0.8;
-    }
-    
-    /* 3. MAIN STAGE (Center Data) */
+    /* --- MAIN STAGE --- */
     .main-stage {
-        grid-column: 2 / 3;
-        grid-row: 2 / 3;
-        display: grid;
-        grid-template-rows: 100px 1fr 140px; /* Identity | Graph/Table | Insights */
-        gap: 8px;
-        overflow: hidden;
+        grid-column: 2 / 3; grid-row: 2 / 3;
+        display: grid; grid-template-rows: 90px 1fr 120px;
+        gap: 8px; overflow: hidden;
     }
 
-    /* IDENTITY */
+    /* Identity */
     .identity-card {
-        padding: 0 20px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
+        padding: 0 20px; display: flex; align-items: center; gap: 20px;
         border-left: 2px solid var(--neon-purple);
     }
     .user-avatar-hex {
@@ -178,171 +109,96 @@
         border: 2px solid var(--neon-purple);
     }
 
-    /* SKILL AUDIT TABLE */
-    .cyber-table-container {
-        overflow-y: auto;
-        flex-grow: 1;
-    }
-    .cyber-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: var(--font-mono);
-        font-size: 0.75rem;
-    }
-    .cyber-table th {
-        text-align: left;
-        padding: 10px;
-        color: var(--text-muted);
-        border-bottom: 1px solid var(--border-dim);
-        position: sticky; top: 0; background: var(--bg-panel);
-    }
-    .cyber-table td {
-        padding: 8px 10px;
-        border-bottom: 1px solid rgba(255,255,255,0.03);
-    }
-    .progress-track {
-        background: rgba(255,255,255,0.05);
-        height: 4px;
-        width: 80px;
-        border-radius: 2px;
-        display: inline-block;
-        vertical-align: middle;
-        margin-right: 8px;
-    }
-    .progress-fill {
-        height: 100%;
-        background: var(--neon-cyan);
-    }
+    /* Zone B Table */
+    .cyber-table-container { overflow-y: auto; flex-grow: 1; }
+    .cyber-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem; }
+    .cyber-table th { text-align: left; padding: 10px; color: var(--text-muted); border-bottom: 1px solid var(--border-dim); sticky; top: 0; background: var(--bg-panel); }
+    .cyber-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); }
 
-    /* 4. RIGHT SIDEBAR (Tools) */
-    .tool-dock {
-        grid-column: 3 / 4;
-        grid-row: 2 / 3;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 8px;
+    /* Progress Bar */
+    .progress-track { background: rgba(255,255,255,0.05); height: 4px; width: 60px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .progress-fill { height: 100%; background: var(--neon-cyan); }
+
+    /* --- RIGHT TOOLS --- */
+    .tool-dock { grid-column: 3 / 4; grid-row: 2 / 3; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; }
+
+    /* Bio Monitor Buttons */
+    .bio-btn {
+        background: rgba(0,0,0,0.3); border: 1px solid var(--border-dim); color: var(--text-muted);
+        width: 100%; padding: 10px; cursor: pointer; border-radius: 4px; transition: 0.2s;
+    }
+    .bio-btn.active {
+        border-color: var(--neon-green); color: var(--neon-green);
+        box-shadow: 0 0 8px rgba(0, 255, 157, 0.2);
     }
 
     /* Chat Terminal */
-    .chat-container {
-        flex-grow: 1;
-        background: #000;
-        display: flex;
-        flex-direction: column;
-    }
-    .chat-messages {
-        flex-grow: 1;
-        padding: 10px;
-        overflow-y: auto;
-        font-family: var(--font-mono);
-        font-size: 0.8rem;
-    }
-    .msg-bot { color: var(--neon-purple); margin-bottom: 8px; display: block; }
-    .msg-user { color: var(--neon-cyan); text-align: right; margin-bottom: 8px; display: block; }
-    
-    .chat-input-area {
-        display: flex;
-        border-top: 1px solid var(--border-dim);
-        padding: 8px;
-    }
-    .terminal-input {
-        background: transparent;
-        border: none;
-        color: #fff;
-        font-family: var(--font-mono);
-        flex-grow: 1;
-        outline: none;
-        font-size: 0.8rem;
-    }
+    .chat-container { flex-grow: 1; background: #000; display: flex; flex-direction: column; }
+    .chat-messages { flex-grow: 1; padding: 10px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem; }
+    .msg-bot { color: var(--neon-purple); margin-bottom: 8px; }
+    .msg-user { color: var(--neon-cyan); text-align: right; margin-bottom: 8px; }
+    .terminal-input { background: transparent; border: none; color: #fff; font-family: var(--font-mono); flex-grow: 1; outline: none; padding: 10px; border-top: 1px solid var(--border-dim); }
 
-    /* 5. FOOTER */
+    /* --- FOOTER --- */
     .status-footer {
-        grid-column: 2 / 4;
-        grid-row: 3 / 4;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 10px;
-        font-family: var(--font-mono);
-        font-size: 0.65rem;
-        color: var(--text-muted);
+        grid-column: 2 / 4; grid-row: 3 / 4;
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 10px; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
         background: rgba(0,0,0,0.5);
     }
-    .status-dot { width: 6px; height: 6px; background: var(--neon-green); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 5px var(--neon-green); }
 
     /* UTILS */
     .btn-cyber {
-        background: rgba(0, 243, 255, 0.05);
-        border: 1px solid var(--border-dim);
-        color: var(--neon-cyan);
-        width: 100%;
-        padding: 8px;
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        cursor: pointer;
-        transition: 0.2s;
-        text-align: center;
-        margin-bottom: 5px;
+        background: rgba(0, 243, 255, 0.05); border: 1px solid var(--border-dim); color: var(--neon-cyan);
+        width: 100%; padding: 8px; font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; margin-bottom: 5px;
     }
     .btn-cyber:hover { border-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.1); }
-
-    /* SCROLLBARS */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: #000; }
-    ::-webkit-scrollbar-thumb { background: #333; }
 </style>
 
 <div class="command-grid">
     
     <nav class="hud-panel side-nav">
         <div style="font-size: 1.5rem; color: white; margin-bottom: 10px;">⚡</div>
-        
-        <a href="#" class="nav-icon active" title="Dashboard">⊞</a>
-        <a href="#" class="nav-icon" title="Security">🛡️</a>
-        <a href="#" class="nav-icon" title="Network">🌐</a>
-        <a href="#" class="nav-icon" title="Settings">⚙️</a>
-
+        <a href="/dashboard" class="nav-icon active" title="Dashboard">⊞</a>
+        <a href="/dashboard/security" class="nav-icon" title="Security">🛡️</a>
+        <a href="/dashboard/network" class="nav-icon" title="Network">🌐</a>
+        <a href="/settings" class="nav-icon" title="Settings">⚙️</a>
         <div style="flex-grow: 1;"></div>
         <a href="/logout" class="nav-icon" style="color: var(--alert-red); border-color: rgba(255, 42, 109, 0.3);" title="Logout">✕</a>
     </nav>
 
-    <div class="hud-panel top-bar">
-        <span style="color: var(--neon-cyan); margin-right: 15px;">MARKET_FEED >></span>
-        <div class="market-ticker" id="market-ticker-content">
-            INITIALIZING NEURAL NET... FETCHING GITHUB DATA... ANALYZING LINKEDIN TRENDS... SYSTEM OPTIMAL.
-        </div>
+    <div class="hud-panel" style="grid-column: 2/4; display:flex; align-items:center; padding:0 15px;">
+        <span style="color: var(--neon-cyan); margin-right: 15px; font-family:var(--font-mono); font-size:0.8rem;">MARKET_FEED >></span>
+        <marquee scrollamount="5" style="color: var(--neon-green); font-family:var(--font-mono); font-size:0.75rem;">
+            FETCHING GITHUB DATA... ANALYZING LINKEDIN TRENDS... SYSTEM OPTIMAL... RUST DEMAND +15%... PYTHON STABLE...
+        </marquee>
     </div>
 
     <main class="main-stage">
         
         <div class="hud-panel identity-card">
             <div class="user-avatar-hex"></div>
-            <div class="user-details" style="flex-grow: 1;">
+            <div style="flex-grow: 1;">
                 <h1 style="margin:0; font-size:1.2rem; color:white;">{{ user.name }}</h1>
                 <span style="font-family:var(--font-mono); color:var(--neon-purple); font-size:0.8rem;">LVL {{ profile.level }} // {{ profile.focus }}</span>
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 0.7rem; color: var(--text-muted);">HOLISTIC SCORE</div>
-                <div style="font-size: 1.8rem; font-weight: bold; color: var(--neon-green);" id="holistic-score-val">--%</div>
+            <div style="text-align: right; display: flex; align-items: center; gap: 10px;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">HOLISTIC SCORE</div>
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--neon-green);" id="holistic-score-val">--%</div>
+                </div>
             </div>
         </div>
 
         <div class="hud-panel" style="flex-grow: 1;">
-            <div class="hud-header">
-                <span>ZONE B: REALITY CHECK</span>
-                <span style="cursor:pointer; opacity:0.7;">[SYNC]</span>
-            </div>
+            <div class="hud-header">ZONE B: REALITY CHECK <span style="cursor:pointer; opacity:0.7;">[SYNC]</span></div>
             <div class="cyber-table-container">
                 <table class="cyber-table">
                     <thead>
-                        <tr>
-                            <th>SKILL</th>
-                            <th>GITHUB VOLUME</th>
-                            <th>VERDICT</th>
-                        </tr>
+                        <tr><th>SKILL</th><th>GITHUB VOLUME</th><th>VERDICT</th></tr>
                     </thead>
                     <tbody id="skill-audit-body">
-                        <tr><td colspan="3" style="text-align:center; padding: 20px;">LOADING...</td></tr>
+                        <tr><td colspan="3" style="text-align:center; padding: 20px;">LOADING NEURAL AUDIT...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -351,69 +207,56 @@
         <div class="hud-panel" style="border-left: 2px solid var(--neon-purple);">
             <div class="hud-header" style="color: var(--neon-purple);">ZONE C: SYSTEM INSIGHTS</div>
             <div id="ai-insight-content" style="padding: 10px; font-size: 0.8rem; color: #e2e8f0; overflow-y: auto;">
-                Awaiting analysis...
+                Initializing analysis engine...
             </div>
         </div>
-
     </main>
 
     <aside class="tool-dock">
-        
         <div class="hud-panel" style="flex-shrink: 0;">
             <div class="hud-header">BIO_MONITOR</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px;">
-                <button class="btn-cyber" onclick="LocalHealthUI.togglePosture()" id="btn-posture">🦴</button>
-                <button class="btn-cyber" onclick="LocalHealthUI.toggle202020()" id="btn-eyes">👁️</button>
-                <button class="btn-cyber" onclick="LocalHealthUI.toggleHydration()" id="btn-water">💧</button>
+                <button class="bio-btn" onclick="toggleBio(this)" title="Posture Check">🦴</button>
+                <button class="bio-btn" onclick="toggleBio(this)" title="20-20-20 Vision">👁️</button>
+                <button class="bio-btn" onclick="toggleBio(this)" title="Hydration Alert">💧</button>
             </div>
         </div>
 
         <div class="hud-panel chat-container">
-            <div class="hud-header">
-                AI_MENTOR
-                <span id="interview-status" style="font-size: 0.6rem; opacity: 0.7;">READY</span>
-            </div>
+            <div class="hud-header">AI_MENTOR <span style="font-size:0.6rem;">READY</span></div>
             <div id="chatbot-messages" class="chat-messages">
-                <div class="msg-bot">System online. Waiting for command...</div>
+                <div class="msg-bot">System online. I am configured as your Career Manager. Waiting for command...</div>
             </div>
-            <div class="chat-input-area">
-                <span style="color: var(--neon-cyan); margin-right: 8px;">></span>
-                <input type="text" id="chat-input" class="terminal-input" placeholder="Ask question..." autocomplete="off">
-            </div>
+            <input type="text" id="chat-input" class="terminal-input" placeholder="Execute command..." autocomplete="off">
         </div>
 
         <div class="hud-panel" style="flex-shrink: 0; padding: 10px;">
-            <button onclick="downloadPassport()" class="btn-cyber">📄 EXPORT PDF</button>
+            <button onclick="downloadPassport()" class="btn-cyber">📄 EXPORT PASSPORT</button>
             <button onclick="triggerChallenge()" class="btn-cyber" style="border-color: var(--neon-purple); color: var(--neon-purple);">🎙️ CHALLENGE MODE</button>
         </div>
-
     </aside>
 
     <footer class="status-footer">
-        <div><span class="status-dot"></span> SYSTEMS NOMINAL</div>
-        <div>
-            SYNC: <span style="color: var(--neon-cyan);">OK</span> |
-            SESSION: <span style="color: white;">{{ user.email }}</span>
-        </div>
+        <div><span style="width:6px; height:6px; background:var(--neon-green); border-radius:50%; display:inline-block;"></span> SYSTEMS NOMINAL</div>
+        <div>SESSION: {{ user.email }}</div>
     </footer>
-
 </div>
 
 <script>
-    // --- DATA BINDING LOGIC ---
+    // --- DATA INJECTION FROM BACKEND ---
     const CAREER_DATA = {{ career_data | tojson }};
     const USER_ID = {{ user.id }};
 
     document.addEventListener("DOMContentLoaded", () => {
-        // 1. Render Table
+        // 1. Populate Zone B Table
         const tbody = document.getElementById('skill-audit-body');
         const matrix = CAREER_DATA.zone_b_matrix || [];
         
         if(matrix.length > 0) {
             tbody.innerHTML = '';
             matrix.forEach(item => {
-                let percent = 30; // Mock visual
-                if(item.github.includes('MB')) percent = 80;
+                let percent = 30;
+                if(item.github.includes('MB')) percent = 80; // Visual heuristic
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -427,14 +270,14 @@
                 tbody.appendChild(tr);
             });
         } else {
-             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color: var(--text-muted);">No GitHub Data.</td></tr>';
+             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color: var(--text-muted);">No GitHub Data Found.</td></tr>';
         }
 
-        // 2. Score & Insights
+        // 2. Populate Scores & Insights
         document.getElementById('holistic-score-val').innerText = (CAREER_DATA.zone_a_holistic?.score || 0) + "%";
-        document.getElementById('ai-insight-content').innerHTML = CAREER_DATA.zone_c_ai?.insights || "Analysis complete.";
+        document.getElementById('ai-insight-content').innerHTML = CAREER_DATA.zone_c_ai?.insights || "No critical alerts.";
 
-        // 3. Chat Binding
+        // 3. Chat Input Binding
         const chatInput = document.getElementById('chat-input');
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && chatInput.value) {
@@ -445,22 +288,21 @@
                 document.getElementById('chatbot-messages').appendChild(msgDiv);
                 chatInput.value = '';
                 
-                // Pass to global handler if exists
+                // Pass to global handler (chatbot.js)
                 if(window.sendMessage) window.sendMessage(text);
             }
         });
     });
 
-    // Helpers
-    const LocalHealthUI = {
-        togglePosture: () => document.getElementById('btn-posture').classList.toggle('active'),
-        toggle202020: () => document.getElementById('btn-eyes').classList.toggle('active'),
-        toggleHydration: () => document.getElementById('btn-water').classList.toggle('active')
-    };
+    // --- BIO MONITOR FUNCTIONALITY ---
+    function toggleBio(btn) {
+        btn.classList.toggle('active');
+    }
+
+    // --- PRO SUITE ACTIONS ---
     function downloadPassport() { window.location.href = '/api/export/passport'; }
     function triggerChallenge() {
         document.getElementById('chat-input').value = "Test My Weakness";
-        // Simulate enter key to trigger existing logic
         const e = new KeyboardEvent('keypress', { key: 'Enter' });
         document.getElementById('chat-input').dispatchEvent(e);
     }
