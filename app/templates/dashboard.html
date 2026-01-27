@@ -48,39 +48,26 @@
         <!-- DASHBOARD GRID -->
         <div class="os-grid">
 
-            <!-- WIDGET A: SKILLS RADAR -->
-            <div class="card market-radar-card">
-                <h3><span class="icon">📡</span> SKILLS RADAR</h3>
-                <div class="chart-container">
-                    <canvas id="marketRadarChart"></canvas>
+            <!-- ZONE A: REALITY (DOUGHNUT) -->
+            <div class="card repo-composition-card" style="grid-column: span 2;">
+                <h3><span class="icon">🥧</span> ZONE A: REALITY (SKILL COMPOSITION)</h3>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div class="chart-container" style="position: relative; height: 250px; width: 50%; display: flex; justify-content: center;">
+                        <canvas id="repoDoughnutChart"></canvas>
+                    </div>
+                    <div class="insight-panel" style="width: 50%; padding: 10px; border-left: 2px solid var(--neon-cyan);">
+                        <h4 style="color: var(--neon-cyan); margin-top: 0;">AI INSIGHT:</h4>
+                        <p id="zone-a-insight" style="color: #e2e8f0; font-size: 1rem;"></p>
+                    </div>
                 </div>
-            </div>
-
-            <!-- WIDGET A2: REPO COMPOSITION -->
-            <div class="card repo-composition-card">
-                <h3><span class="icon">🥧</span> REPO COMPOSITION</h3>
-                <div class="chart-container" style="position: relative; height: 200px; display: flex; justify-content: center;">
-                    <canvas id="repoDoughnutChart"></canvas>
-                </div>
-            </div>
-
-            <!-- GAP ANALYSIS -->
-            <div class="card gap-analysis-card" style="grid-column: span 2;">
-                <h3><span class="icon">⚠️</span> DETECTED GAPS</h3>
-                <div class="gap-list" id="gap-list-container">
-                    <!-- JS Injected -->
-                </div>
-                <button class="btn-scan" onclick="document.getElementById('resume-modal').style.display='flex'">
-                    SCAN RESUME_DATA
-                </button>
             </div>
 
         </div>
 
-        <!-- WIDGET B: CURRENT UPSKILLING SPRINT (Roadmap) -->
+        <!-- ZONE B: ACTION (KANBAN) -->
         <div class="card upskilling-engine">
             <div class="card-header-flex">
-                <h3><span class="icon">📅</span> CURRENT UPSKILLING SPRINT</h3>
+                <h3><span class="icon">📅</span> ZONE B: ACTION PLAN</h3>
                 <div class="kanban-controls">
                     <span class="active">KANBAN_VIEW</span>
                 </div>
@@ -485,37 +472,22 @@
 
     // --- RENDER FUNCTIONS ---
     function renderCharts() {
-        // Radar Data
-        const MARKET_DATA = CAREER_DATA.radar_data;
-        // Doughnut Data
-        const DOUGHNUT_DATA = CAREER_DATA.doughnut_data || {
-            labels: [], datasets: []
+        // ZONE A: REALITY (Doughnut)
+        const ZONE_A = CAREER_DATA.zone_a_reality || {};
+        const DOUGHNUT_DATA = {
+            labels: ZONE_A.data?.labels || [],
+            datasets: [{
+                data: ZONE_A.data?.values || [],
+                backgroundColor: ["#00f3ff", "#bd00ff", "#00ff88", "#ffff00", "#ff0055"],
+                borderWidth: 0
+            }]
         };
+
+        // Render Insight
+        document.getElementById('zone-a-insight').innerText = ZONE_A.insight || "No Data";
 
         try {
             if (typeof Chart !== 'undefined') {
-                // 1. Radar
-                const ctxRadar = document.getElementById('marketRadarChart').getContext('2d');
-                if (radarChartInstance) radarChartInstance.destroy();
-                radarChartInstance = new Chart(ctxRadar, {
-                    type: 'radar',
-                    data: MARKET_DATA,
-                    options: {
-                        scales: {
-                            r: {
-                                angleLines: { color: 'rgba(255,255,255,0.1)' },
-                                grid: { color: 'rgba(255,255,255,0.1)' },
-                                pointLabels: { color: '#94a3b8', font: { family: 'Courier New' } },
-                                ticks: { display: false, backdropColor: 'transparent' }
-                            }
-                        },
-                        plugins: {
-                            legend: { labels: { color: '#e2e8f0' } }
-                        }
-                    }
-                });
-
-                // 2. Doughnut (Repo Composition)
                 const ctxDoughnut = document.getElementById('repoDoughnutChart').getContext('2d');
                 if (doughnutChartInstance) doughnutChartInstance.destroy();
                 doughnutChartInstance = new Chart(ctxDoughnut, {
@@ -535,7 +507,6 @@
                         }
                     }
                 });
-
             } else {
                 console.warn("Chart.js not loaded.");
             }
@@ -545,20 +516,12 @@
     }
 
     function renderWidgets() {
-        // 1. Render Gaps
-        const gapContainer = document.getElementById('gap-list-container');
-        gapContainer.innerHTML = '';
-        CAREER_DATA.skill_gap.forEach(gap => {
-            const div = document.createElement('div');
-            div.className = 'gap-item';
-            div.innerHTML = `<strong>${gap}</strong> <span style="float:right; font-size:0.7em; background:#374151; padding:2px 6px; border-radius:4px;">Critical</span>`;
-            gapContainer.appendChild(div);
-        });
-
-        // 2. Render Current Upskilling Sprint (Kanban)
+        // ZONE B: ACTION (Kanban)
+        const ZONE_B = CAREER_DATA.zone_b_action || [];
         const roadContainer = document.getElementById('roadmap-container');
         roadContainer.innerHTML = '';
-        CAREER_DATA.weekly_plan.forEach(item => {
+
+        ZONE_B.forEach(item => {
             const isCompleted = item.status === 'completed';
             const div = document.createElement('div');
             div.className = `roadmap-item ${isCompleted ? '' : 'high-prio'}`;
@@ -572,9 +535,9 @@
             }
 
             div.innerHTML = `
-                <div class="roadmap-week">${item.day || 'TODO'}</div>
+                <div class="roadmap-week" style="color: var(--neon-purple);">${item.type || 'TASK'}</div>
                 <div class="roadmap-content" style="flex-grow:1;">
-                    <h4>${item.task}</h4>
+                    <h4>${item.title}</h4>
                     <p>Status: ${item.status}</p>
                 </div>
                 ${actionBtn}
@@ -582,24 +545,22 @@
             roadContainer.appendChild(div);
         });
 
-        // 3. Render Market Pulse
+        // ZONE C: TICKER (Pulse)
+        const ZONE_C = CAREER_DATA.zone_c_ticker || {};
         const tickerContainer = document.getElementById('market-ticker-content');
         tickerContainer.innerHTML = '';
-        const trends = CAREER_DATA.market_trends;
 
-        for (const [tech, val] of Object.entries(trends)) {
-            const span = document.createElement('span');
-            span.className = 'ticker-item';
+        // Render Score
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'ticker-item';
+        scoreSpan.innerHTML = `MARKET_SCORE: <span class="highlight-cyan">${ZONE_C.user_score}/100</span>`;
+        tickerContainer.appendChild(scoreSpan);
 
-            let trendClass = '';
-            if (val.includes('+')) trendClass = 'trend-positive';
-            if (val.includes('-')) trendClass = 'trend-negative';
-            if (val.toLowerCase().includes('high demand')) trendClass = 'trend-positive';
-            if (val.toLowerCase().includes('low demand')) trendClass = 'trend-negative';
-
-            span.innerHTML = `${tech.toUpperCase()}: <span class="${trendClass}">${val}</span>`;
-            tickerContainer.appendChild(span);
-        }
+        // Render Pulse
+        const pulseSpan = document.createElement('span');
+        pulseSpan.className = 'ticker-item';
+        pulseSpan.innerHTML = `PULSE: <span class="${ZONE_C.market_pulse === 'High Demand' ? 'trend-positive' : 'trend-negative'}">${ZONE_C.market_pulse}</span>`;
+        tickerContainer.appendChild(pulseSpan);
     }
 
     // --- API INTERACTION ---

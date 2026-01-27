@@ -111,74 +111,79 @@ class CareerEngine:
     def get_career_dashboard_data(self, db: Session, user: User) -> Dict:
         """
         Returns the structured JSON object for the new Dashboard AI brain.
-        Includes Market Trends, Skill Gaps, and Weekly Micro-Projects.
-        Combines Real Harvested Data with Simulation fallback.
+        Phase 3 Compliance: Strict JSON structure for HUD.
         """
         # Ensure profile analysis runs first to populate data
         self.analyze_profile(db, user)
         profile = user.career_profile
 
-        # 1. Market Trends (Real-Time Trend Simulation)
-        market_trends_data = {
-            "Edge AI": "High Demand",
-            "Basic CRUD": "Low Demand",
-            "Rust": "+15%",
-            "WASM": "+20%"
-        }
-
-        # 2. Skill Gaps (Gap Analysis)
-        gaps = ["Rust (Memory Safety)", "GraphDB (Neo4j)", "Edge Computing"]
-
-        # 3. Weekly Plan / Micro Projects
-        # Prefer DB persisted plan, fallback to simulation
-        weekly_plan_data = profile.pending_micro_projects
-        if not weekly_plan_data:
-            weekly_plan_data = [
-                {"id": 1, "day": "Mon", "task": "Refactor Auth Middleware (Security)", "status": "pending"},
-                {"id": 2, "day": "Tue", "task": "Learn Rust Memory Safety", "status": "pending"},
-                {"id": 3, "day": "Wed", "task": "Implement Neo4j Recommendation Engine", "status": "pending"},
-                {"id": 4, "day": "Thu", "task": "Study WASM for 3D Avatars", "status": "pending"},
-                {"id": 5, "day": "Fri", "task": "Draft LinkedIn Post (Networking)", "status": "pending"}
-            ]
-
-        # 4. Skills Radar Data (User vs Market)
-        radar_data = {
-            "labels": ['Rust', 'Python', 'AI/ML', 'System Design', 'WebAssembly', 'GraphDB'],
-            "datasets": [{
-                "label": 'You (Current)',
-                "data": [30, 95, 40, 60, 20, 10],
-                "backgroundColor": 'rgba(0, 243, 255, 0.2)',
-                "borderColor": '#00f3ff',
-                "pointBackgroundColor": '#00f3ff',
-            }, {
-                "label": 'Market Demand',
-                "data": [95, 60, 90, 85, 90, 80],
-                "backgroundColor": 'rgba(255, 255, 255, 0.05)',
-                "borderColor": '#6b7280',
-                "borderDash": [5, 5],
-                "pointBackgroundColor": 'transparent'
-            }]
-        }
-
-        # 5. Repo Composition (Doughnut Chart) - Harvested Data
+        # ZONE A: REALITY (Doughnut Chart)
         doughnut_data = profile.skills_graph_data
-        if not doughnut_data:
-            # Fallback Simulation
-            doughnut_data = {
-                "labels": ["Python", "JavaScript", "HTML/CSS"],
-                "datasets": [{
-                    "data": [70, 20, 10],
-                    "backgroundColor": ["#00f3ff", "#bd00ff", "#00ff88"]
-                }]
-            }
+        insight_text = "Analysis Pending..."
+
+        if doughnut_data and "labels" in doughnut_data:
+            labels = doughnut_data["labels"]
+            datasets = doughnut_data.get("datasets", [])
+            values = datasets[0]["data"] if datasets else []
+
+            # Simple Insight Logic
+            if "Python" in labels and "Go" not in labels:
+                 insight_text = "You are tech-heavy on Python, but the market is moving to Go."
+            elif "Rust" in labels:
+                 insight_text = "Strong Market Alignment detected with Rust."
+            else:
+                 insight_text = "Consider diversifying your stack with Systems Languages."
+        else:
+             # Fallback Simulation if Harvester hasn't run
+             doughnut_data = {
+                 "labels": ["Python", "Go"],
+                 "datasets": [{"data": [85, 15], "backgroundColor": ["#00f3ff", "#bd00ff"]}]
+             }
+             insight_text = "You are tech-heavy on Python, but the market is moving to Go."
+
+        # ZONE B: ACTION (Kanban)
+        # Convert stored plan to "Zone B" format
+        raw_plan = profile.pending_micro_projects
+        if not raw_plan:
+             # Fallback
+             zone_b_action = [
+                 { "id": 1, "title": "Build a gRPC Service in Go", "status": "pending", "type": "upskilling" },
+                 { "id": 2, "title": "Refactor Auth with Rust", "status": "pending", "type": "upskilling" },
+                 { "id": 3, "title": "Deploy to K8s", "status": "pending", "type": "infrastructure" }
+             ]
+        else:
+             # Normalize if older format
+             zone_b_action = []
+             for item in raw_plan:
+                 # Map 'task' to 'title' if needed
+                 title = item.get("title") or item.get("task") or "Unknown Task"
+                 zone_b_action.append({
+                     "id": item.get("id"),
+                     "title": title,
+                     "status": item.get("status", "pending"),
+                     "type": item.get("type", "upskilling")
+                 })
+
+        # ZONE C: TICKER (Score)
+        score = profile.market_relevance_score or 0
+        pulse = "Stable"
+        if score > 70: pulse = "High Demand"
+        elif score < 40: pulse = "Needs Update"
 
         return {
-            "market_trends": market_trends_data,
-            "skill_gap": gaps,
-            "weekly_plan": weekly_plan_data,
-            "radar_data": radar_data,
-            "doughnut_data": doughnut_data,
-            "market_alignment_score": profile.market_alignment_score or 33 # Default 33
+            "zone_a_reality": {
+                "chart_type": "doughnut",
+                "data": {
+                    "labels": doughnut_data.get("labels", []),
+                    "values": doughnut_data.get("datasets", [{}])[0].get("data", [])
+                },
+                "insight": insight_text
+            },
+            "zone_b_action": zone_b_action,
+            "zone_c_ticker": {
+                "user_score": score,
+                "market_pulse": pulse
+            }
         }
 
 career_engine = CareerEngine()
