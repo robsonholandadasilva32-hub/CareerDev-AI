@@ -108,4 +108,64 @@ class CareerEngine:
 
         return new_items
 
+    def get_career_dashboard_data(self, db: Session, user: User) -> Dict:
+        """
+        Returns the structured JSON object for the new Dashboard AI brain.
+        Includes Market Trends, Skill Gaps, and Weekly Micro-Projects.
+        """
+        # Ensure profile analysis runs first to populate data
+        self.analyze_profile(db, user)
+
+        # Market Trends (Mocked for now, but following the spec)
+        market_trends_data = {
+            "rust": "+15%",
+            "go": "+12%",
+            "python": "stable",
+            "wasm": "+20%"
+        }
+
+        # Skill Gaps
+        # Logic: If they have low Rust/Go, flag it.
+        profile = user.career_profile
+        skills = profile.skills_snapshot if profile else {}
+
+        gaps = []
+        if skills.get("Rust", 0) < 40:
+            gaps.append("Rust (Ownership)")
+        if skills.get("Go", 0) < 40:
+            gaps.append("Go (Concurrency)")
+        if skills.get("System Design", 0) < 50:
+            gaps.append("System Design")
+
+        # Default gaps if none found (fallback)
+        if not gaps:
+            gaps = ["AsyncIO", "Kubernetes", "System Design"]
+
+        # Weekly Plan (Micro-Projects)
+        # Map existing LearningPlan items to the requested format
+        plans = self.generate_plan(db, user)
+        weekly_plan_data = []
+
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+        for i, plan in enumerate(plans[:5]):
+            weekly_plan_data.append({
+                "day": days[i] if i < len(days) else "Weekend",
+                "task": plan.title, # e.g. "Implement a gRPC server"
+                "status": "pending" if plan.status != 'completed' else "completed"
+            })
+
+        # Fallback if no plans
+        if not weekly_plan_data:
+             weekly_plan_data = [
+                 {"day": "Mon", "task": "Implement a gRPC server", "status": "pending"},
+                 {"day": "Tue", "task": "Rust: Ownership Drills", "status": "pending"},
+                 {"day": "Wed", "task": "Study Raft Consensus", "status": "pending"}
+             ]
+
+        return {
+            "market_trends": market_trends_data,
+            "skill_gap": gaps,
+            "weekly_plan": weekly_plan_data
+        }
+
 career_engine = CareerEngine()

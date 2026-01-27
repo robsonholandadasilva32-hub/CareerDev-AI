@@ -71,11 +71,99 @@
             width: 100%;
         }
     }
+
+    /* UTILITY DOCK STYLES */
+    .utility-dock {
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--accent-color);
+        padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .utility-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        padding: 10px;
+    }
+    .util-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .pulse-dot {
+        width: 6px; height: 6px; background: var(--neon-green, #00ff88);
+        border-radius: 50%;
+        box-shadow: 0 0 5px var(--neon-green, #00ff88);
+        animation: pulse 2s infinite;
+    }
+    .mini-control {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        margin-bottom: 5px;
+        color: #d1d5db;
+    }
+    /* MINI SWITCH */
+    .switch-mini { position: relative; display: inline-block; width: 30px; height: 16px; }
+    .switch-mini input { opacity: 0; width: 0; height: 0; }
+    .slider-mini { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 16px; }
+    .slider-mini:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider-mini { background-color: var(--primary-color, #00f3ff); }
+    input:checked + .slider-mini:before { transform: translateX(14px); }
+
+    .micro-text { font-size: 0.7rem; color: #6b7280; margin: 0; }
+    .util-link { font-size: 0.7rem; color: var(--primary-color); text-transform: uppercase; display: block; margin-top: 5px; text-decoration: none;}
 </style>
 
 <div class="dashboard-layout">
     <!-- SIDEBAR -->
     <aside class="dashboard-sidebar">
+        <!-- UTILITY DOCK (ZONE C) -->
+        <div class="utility-dock">
+            <div class="utility-card health-mini">
+                <div class="util-header">
+                    <span>🩺 BIO_MONITOR</span>
+                    <div id="health-indicator" class="pulse-dot" style="display:none;"></div>
+                </div>
+                <div class="mini-control">
+                    <span>POSTURE</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-control">
+                    <span>20-20-20</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+                <div class="mini-control">
+                    <span>HYDRATION</span>
+                    <label class="switch-mini">
+                        <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
+                        <span class="slider-mini"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="utility-card a11y-mini">
+                 <div class="util-header">
+                    <span>👁️ A11Y_CORE</span>
+                </div>
+                <p class="micro-text">Visual/Motor adjustments.</p>
+                <a href="/dashboard/accessibility" class="util-link">CONFIGURE</a>
+            </div>
+        </div>
+
         <nav>
             <ul class="sidebar-menu">
                 <li class="sidebar-item">
@@ -204,6 +292,7 @@
     </button>
 </footer>
 
+<script src="/static/js/health.js"></script>
 <script>
     function deployCoffee() {
         const btn = document.getElementById('commitBtn');
