@@ -18,7 +18,7 @@ class ChatRequest(BaseModel):
 async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = Depends(get_db)):
     user_id = get_current_user_from_request(request)
 
-    response = await chatbot_service.get_response(
+    result = await chatbot_service.get_response(
         chat_req.message,
         chat_req.lang,
         user_id=user_id,
@@ -26,4 +26,4 @@ async def chat_endpoint(request: Request, chat_req: ChatRequest, db: Session = D
         mode=chat_req.mode
     )
 
-    return {"response": response}
+    return {"response": result["message"], "meta": result.get("meta", {})}
