@@ -19,12 +19,23 @@ class CareerProfile(Base):
     skills_snapshot = Column(JSON, default={})
 
     # External Data
-    github_stats = Column(JSON, default={}) # {"repos": 10, "top_lang": "Python"}
-    linkedin_stats = Column(JSON, default={})
+    github_stats = Column(JSON, default={}) # Legacy? Keeping for safety if used elsewhere
+    linkedin_stats = Column(JSON, default={}) # Legacy?
 
-    # Architecture Shift: Data Harvesting Fields
-    market_alignment_score = Column(Integer, default=0)  # 0-100
-    skills_graph_data = Column(JSON, default={})         # For Frontend Charting
+    # THE HUD DATA STORE
+    # Stores: { "labels": ["Python", "Rust"], "datasets": [{ "data": [80, 20] }] }
+    skills_graph_data = Column(JSON, default={})
+
+    # Stores: { "commits_last_30_days": 120, "top_repo": "career-ai", "velocity_score": "High" }
+    github_activity_metrics = Column(JSON, default={})
+
+    # Stores: { "role": "Backend Dev", "industry": "Fintech", "missing_keywords": ["AsyncIO"] }
+    linkedin_alignment_data = Column(JSON, default={})
+
+    # 0-100 Score calculated by intersecting Skills vs. Market Trends
+    market_relevance_score = Column(Integer, default=0)
+
+    # Legacy / Helper
     pending_micro_projects = Column(JSON, default=[])    # Kanban/ToDo Widget
 
     updated_at = Column(DateTime, default=datetime.utcnow)

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
+from app.services.social_harvester import social_harvester
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, revoke_session, log_audit
 from app.db.session import get_db
@@ -102,17 +103,17 @@ def complete_task(task_id: int, background_tasks: BackgroundTasks, user: User = 
         # Re-assign to trigger SQLAlchemy detection of change
         profile.pending_micro_projects = tasks
 
-        # Simulate Score Boost
-        if profile.market_alignment_score is None:
-            profile.market_alignment_score = 0
-        if profile.market_alignment_score < 100:
-             profile.market_alignment_score += 5
+        # Simulate Score Boost (Immediate UI feedback)
+        if profile.market_relevance_score is None:
+            profile.market_relevance_score = 0
+        if profile.market_relevance_score < 100:
+             profile.market_relevance_score += 5
 
         db.commit()
 
-        # Note: A real GitHub rescan requires an active Access Token.
-        # Since we don't persist tokens, we rely on the score boost simulation here
-        # until the next login/harvest cycle.
+        # Phase 4 Requirement: Trigger SocialDataService.scan_github()
+        # "scan_github" is the verification logic
+        background_tasks.add_task(social_harvester.scan_github, db, user)
 
     data = career_engine.get_career_dashboard_data(db, user)
     return data

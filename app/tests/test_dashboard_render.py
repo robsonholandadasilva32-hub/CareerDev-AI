@@ -44,12 +44,16 @@ def test_dashboard_render_user_context(mock_career_engine):
     mock_career_engine.analyze_profile.return_value = {"level": "Junior", "focus": "Backend", "trends": {}}
     mock_career_engine.generate_plan.return_value = []
     mock_career_engine.get_career_dashboard_data.return_value = {
-        "market_trends": {},
-        "skill_gap": [],
-        "weekly_plan": [],
-        "radar_data": {"labels": [], "datasets": []},
-        "doughnut_data": {"labels": [], "datasets": []},
-        "market_alignment_score": 50
+        "zone_a_reality": {
+            "chart_type": "doughnut",
+            "data": {"labels": [], "values": []},
+            "insight": "Test Insight"
+        },
+        "zone_b_action": [],
+        "zone_c_ticker": {
+            "user_score": 50,
+            "market_pulse": "Stable"
+        }
     }
 
     # Make request
