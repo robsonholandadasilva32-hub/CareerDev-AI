@@ -36,7 +36,7 @@ class SocialHarvester:
                 # 1. Fetch Profile Data
                 async with httpx.AsyncClient() as client:
                     response = await client.get(
-                        "https://api.linkedin.com/v2/me",
+                        "https://api.linkedin.com/v2/userinfo",
                         headers={"Authorization": f"Bearer {token}"}
                     )
 
@@ -47,14 +47,16 @@ class SocialHarvester:
                 data = response.json()
 
                 # 2. Process Data
-                first_name = data.get("localizedFirstName", "")
-                last_name = data.get("localizedLastName", "")
+                first_name = data.get("given_name", "")
+                last_name = data.get("family_name", "")
+                picture = data.get("picture", "")
 
                 alignment_data = {
                     "source": "linkedin_oauth",
                     "connected": True,
                     "first_name": first_name,
                     "last_name": last_name,
+                    "picture": picture,
                     "status": "Active",
                     "detected_role": "Lite Profile (Update via Dashboard)",
                     "industry": "Tech"

@@ -12,6 +12,9 @@ from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.db.models.gamification import UserBadge
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -81,42 +84,46 @@ def get_dashboard_stats(user: User = Depends(get_current_user_secure), db: Sessi
     data = career_engine.get_career_dashboard_data(db, user)
     return data
 
-@router.post("/api/dashboard/complete-task/{task_id}", response_class=JSONResponse)
-def complete_task(task_id: int, background_tasks: BackgroundTasks, user: User = Depends(get_current_user_secure), db: Session = Depends(get_db)):
-    if not user:
+@router.post("/api/dashboard/tasks/{task_id}/complete")
+async def complete_task(task_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_secure)):
+    # 1. Logic to mark task as done (mocked or real DB update)
+    if not current_user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    profile = user.career_profile
-    if not profile or not profile.pending_micro_projects:
+    logger.info(f"Task {task_id} marked as done by {current_user.email}")
+
+    profile = current_user.career_profile
+    if profile and profile.pending_micro_projects:
+        tasks = list(profile.pending_micro_projects)
+        updated = False
+        for t in tasks:
+            if t.get("id") == task_id:
+                t["status"] = "completed"
+                updated = True
+                break
+
+        if updated:
+            profile.pending_micro_projects = tasks
+            # Simulate Score Boost (Immediate UI feedback)
+            if profile.market_relevance_score is None:
+                profile.market_relevance_score = 0
+            if profile.market_relevance_score < 100:
+                profile.market_relevance_score += 5
+            db.commit()
+        else:
+            return JSONResponse({"error": "Task not found"}, status_code=404)
+    else:
         return JSONResponse({"error": "No tasks found"}, status_code=404)
 
-    # Update Status
-    tasks = list(profile.pending_micro_projects)
-    updated = False
-    for t in tasks:
-        if t.get("id") == task_id:
-            t["status"] = "completed"
-            updated = True
-            break
+    # 2. TRIGGER THE RE-SCAN (The "Sync")
+    # This creates the loop: Action -> New Data -> Updated Charts
+    if current_user.github_token:
+         background_tasks.add_task(social_harvester.harvest_github_data, current_user.id, current_user.github_token)
+    else:
+         # Fallback to simulation if no token
+         background_tasks.add_task(social_harvester.scan_github, db, current_user)
 
-    if updated:
-        # Re-assign to trigger SQLAlchemy detection of change
-        profile.pending_micro_projects = tasks
-
-        # Simulate Score Boost (Immediate UI feedback)
-        if profile.market_relevance_score is None:
-            profile.market_relevance_score = 0
-        if profile.market_relevance_score < 100:
-             profile.market_relevance_score += 5
-
-        db.commit()
-
-        # Phase 4 Requirement: Trigger SocialDataService.scan_github()
-        # "scan_github" is the verification logic
-        background_tasks.add_task(social_harvester.scan_github, db, user)
-
-    data = career_engine.get_career_dashboard_data(db, user)
-    return data
+    return {"status": "success", "message": "Task completed. GitHub re-scan initiated."}
 
 # ==========================================
 # NOVAS ROTAS DE SEGURANÇA (Da Feature Branch)

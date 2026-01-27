@@ -160,7 +160,8 @@ app.add_middleware(
 )
 
 # 2. If protocol is HTTP, Force Redirect to HTTPS
-app.add_middleware(HTTPSRedirectMiddleware)
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 # 1. Trust the Proxy (Railway) to reveal the real protocol
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
