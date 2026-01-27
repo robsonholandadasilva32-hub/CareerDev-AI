@@ -54,6 +54,9 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     # Generate/Fetch Plan
     plan_items = career_engine.generate_plan(db, user)
 
+    # New AI Brain Data
+    career_data = career_engine.get_career_dashboard_data(db, user)
+
     # 5️⃣ Renderiza o dashboard
     return templates.TemplateResponse(
         "dashboard.html",
@@ -65,6 +68,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
             "profile": profile_data,
             "plan": plan_items, # List of LearningPlan objects
             "badges": user.badges, # Pass UserBadges to template
+            "career_data": career_data, # NEW
         }
     )
 

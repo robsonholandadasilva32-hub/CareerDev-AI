@@ -6,7 +6,7 @@
 
 <div class="career-os-wrapper">
 
-    <!-- COL 2: CAREER PULSE (MAIN) -->
+    <!-- ZONE A: CAREER PULSE (CENTER) -->
     <main class="career-main">
 
         <!-- IDENTITY HEADER -->
@@ -37,12 +37,20 @@
             </div>
         </div>
 
+        <!-- MARKET TICKER (New) -->
+        <div class="market-ticker-bar">
+            <span class="ticker-label">MARKET_FEED >></span>
+            <div class="ticker-content" id="market-ticker-content">
+                <!-- JS Injected -->
+            </div>
+        </div>
+
         <!-- DASHBOARD GRID -->
         <div class="os-grid">
 
             <!-- MARKET RADAR -->
             <div class="card market-radar-card">
-                <h3><span class="icon">📡</span> MARKET RADAR</h3>
+                <h3><span class="icon">📡</span> SKILLS RADAR</h3>
                 <div class="chart-container">
                     <canvas id="marketRadarChart"></canvas>
                 </div>
@@ -50,7 +58,7 @@
 
             <!-- GAP ANALYSIS -->
             <div class="card gap-analysis-card">
-                <h3><span class="icon">⚠️</span> SKILL GAPS</h3>
+                <h3><span class="icon">⚠️</span> DETECTED GAPS</h3>
                 <div class="gap-list" id="gap-list-container">
                     <!-- JS Injected -->
                 </div>
@@ -61,13 +69,12 @@
 
         </div>
 
-        <!-- INTELLIGENT UPSKILLING -->
+        <!-- WEEKLY ROUTINE BOARD -->
         <div class="card upskilling-engine">
             <div class="card-header-flex">
-                <h3><span class="icon">🚀</span> UPSKILLING_PROTOCOL</h3>
+                <h3><span class="icon">📅</span> WEEKLY_ROUTINE_BOARD</h3>
                 <div class="kanban-controls">
-                    <span class="active">TIMELINE</span>
-                    <span>KANBAN</span>
+                    <span class="active">KANBAN_VIEW</span>
                 </div>
             </div>
 
@@ -76,79 +83,12 @@
             </div>
         </div>
 
-        <!-- NETWORKING NODE -->
-        <div class="card networking-node">
-            <h3><span class="icon">🌐</span> NETWORKING_NODE</h3>
-            <div class="network-grid">
-                <a href="https://discord.gg/rust-lang" target="_blank" class="net-link">
-                    <span class="net-icon">👾</span> RUST_DISCORD
-                </a>
-                <a href="https://gophers.slack.com/" target="_blank" class="net-link">
-                    <span class="net-icon">🐹</span> GOPHERS_SLACK
-                </a>
-                 <a href="#" class="net-link">
-                    <span class="net-icon">🧠</span> AI_ETHICS_FORUM
-                </a>
-            </div>
-        </div>
-
     </main>
 
-    <!-- COL 3: ASSISTANT ZONE (RIGHT) -->
+    <!-- ZONE B: MENTOR & NETWORK (RIGHT) -->
     <aside class="assistant-zone">
 
-        <!-- UTILITY STACK -->
-        <div class="utility-stack">
-            <!-- SECURITY -->
-            <div class="utility-card security-mini" id="tour-security">
-                <div class="util-header">
-                    <span>🔒 SEC_LEVEL</span>
-                    <span class="status-ok">ACTIVE</span>
-                </div>
-                <a href="/dashboard/security" class="util-link">MANAGE_KEYS</a>
-            </div>
-
-            <!-- HEALTH -->
-            <div class="utility-card health-mini" id="tour-health">
-                <div class="util-header">
-                    <span>🩺 BIO_MONITOR</span>
-                    <div id="health-indicator" class="pulse-dot"></div>
-                </div>
-
-                <div class="mini-control">
-                    <span>POSTURE_AI</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="posture-toggle" onchange="HealthModule.togglePosture()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-                <div class="mini-control">
-                    <span>20-20-20</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="202020-toggle" onchange="HealthModule.toggle202020()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-                <div class="mini-control">
-                    <span>HYDRATION</span>
-                    <label class="switch-mini">
-                        <input type="checkbox" id="hydration-toggle" onchange="HealthModule.toggleHydration()">
-                        <span class="slider-mini"></span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- ACCESSIBILITY -->
-            <div class="utility-card a11y-mini" id="tour-a11y">
-                 <div class="util-header">
-                    <span>👁️ A11Y_CORE</span>
-                </div>
-                <p class="micro-text">Visual/Motor adjustments active.</p>
-                <a href="/dashboard/accessibility" class="util-link">CONFIGURE</a>
-            </div>
-        </div>
-
-        <!-- EMBEDDED CHATBOT -->
+        <!-- CHATBOT CONSOLE -->
         <div class="embedded-chat-container">
             <div class="chat-terminal-header">
                 <span>AI_MENTOR_V2.0</span>
@@ -161,6 +101,22 @@
             <div id="embedded-chatbot-target" style="height: 100%; display: flex; flex-direction: column;">
                 <!-- Placeholder for injection -->
                 <div style="padding: 20px; color: #6b7280; text-align: center;">Initializing Neural Link...</div>
+            </div>
+        </div>
+
+        <!-- NETWORKING NODE (Moved) -->
+        <div class="card networking-node">
+            <h3><span class="icon">🌐</span> NETWORKING_NODE</h3>
+            <div class="network-grid">
+                <a href="https://discord.gg/rust-lang" target="_blank" class="net-link">
+                    <span class="net-icon">👾</span> RUST_DISCORD
+                </a>
+                <a href="https://gophers.slack.com/" target="_blank" class="net-link">
+                    <span class="net-icon">🐹</span> GOPHERS_SLACK
+                </a>
+                 <a href="#" class="net-link">
+                    <span class="net-icon">🧠</span> AI_ETHICS_FORUM
+                </a>
             </div>
         </div>
 
@@ -339,6 +295,43 @@
         box-shadow: 0 0 10px var(--neon-cyan);
     }
 
+    /* MARKET TICKER */
+    .market-ticker-bar {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 4px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        overflow: hidden;
+    }
+    .ticker-label {
+        font-family: 'Courier New', monospace;
+        color: var(--neon-cyan);
+        font-weight: bold;
+        white-space: nowrap;
+        font-size: 0.8rem;
+    }
+    .ticker-content {
+        display: flex;
+        gap: 40px;
+        animation: marquee 20s linear infinite;
+        white-space: nowrap;
+    }
+    .ticker-item {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #e2e8f0;
+    }
+    .trend-positive { color: var(--neon-green); }
+    .trend-negative { color: var(--error-color); }
+
+    @keyframes marquee {
+        0% { transform: translateX(50%); }
+        100% { transform: translateX(-100%); }
+    }
+
     /* OS GRID (Radar + Gap) */
     .os-grid {
         display: grid;
@@ -403,59 +396,6 @@
     .roadmap-content h4 { margin: 0; color: var(--text-main); }
     .roadmap-content p { margin: 5px 0 0 0; font-size: 0.85rem; color: #94a3b8; }
 
-    /* UTILITY STACK */
-    .utility-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .utility-card {
-        background: #111827;
-        border: 1px solid #374151;
-        border-radius: 6px;
-        padding: 12px;
-    }
-    .util-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-    }
-    .status-ok { color: var(--neon-green); font-size: 0.75rem; }
-    .pulse-dot {
-        width: 8px; height: 8px; background: var(--neon-green);
-        border-radius: 50%;
-        box-shadow: 0 0 5px var(--neon-green);
-        animation: pulse 2s infinite;
-    }
-    .util-link {
-        font-size: 0.75rem;
-        color: var(--neon-cyan);
-        text-transform: uppercase;
-        display: inline-block;
-        margin-top: 5px;
-    }
-    .mini-control {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.8rem;
-        margin-bottom: 5px;
-        color: #d1d5db;
-    }
-    .micro-text { font-size: 0.75rem; color: #6b7280; margin: 0; }
-
-    /* MINI SWITCH */
-    .switch-mini { position: relative; display: inline-block; width: 34px; height: 18px; }
-    .switch-mini input { opacity: 0; width: 0; height: 0; }
-    .slider-mini { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 18px; }
-    .slider-mini:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider-mini { background-color: var(--neon-cyan); }
-    input:checked + .slider-mini:before { transform: translateX(16px); }
-
     /* EMBEDDED CHAT */
     .embedded-chat-container {
         flex-grow: 1;
@@ -497,7 +437,6 @@
 
 <!-- JS LOGIC -->
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
-<script src="/static/js/health.js"></script>
 <script>
     // --- TOAST UTILITY ---
     window.showToast = function(msg, type) {
@@ -528,11 +467,15 @@
     window.CAREER_OS_EMBEDDED_CHAT = true;
 
     // --- MOCK DATA FOR CHART.JS ---
+    // Injected from Backend
+    const CAREER_DATA = {{ career_data | tojson }};
+    const PROFILE_DATA = {{ profile | tojson }};
+
     const MARKET_DATA = {
         labels: ['Rust', 'Go', 'Python', 'AI/ML', 'System Design', 'React'],
         datasets: [{
             label: 'Your Skills',
-            data: [40, 30, 90, 60, 50, 80],
+            data: [40, 30, 90, 60, 50, 80], // Dynamic from profile in real app
             backgroundColor: 'rgba(0, 243, 255, 0.2)',
             borderColor: '#00f3ff',
             pointBackgroundColor: '#00f3ff',
@@ -545,17 +488,6 @@
             pointBackgroundColor: 'transparent'
         }]
     };
-
-    const GAP_DATA = [
-        { skill: "Rust (Ownership)", missing: "Critical", desc: "Required for High-Perf Systems roles (+15% Salary)" },
-        { skill: "Kubernetes", missing: "Medium", desc: "Essential for Cloud-Native tracks." }
-    ];
-
-    const ROADMAP_DATA = [
-        { week: "W1", title: "Rust Ownership Model", desc: "Deep dive into Borrow Checker & Lifetimes.", prio: "high" },
-        { week: "W2", title: "Build a CLI Tool", desc: "Apply Rust concepts to build a 'grep' clone.", prio: "normal" },
-        { week: "W3", title: "AsyncIO in Python", desc: "Master event loops and coroutines.", prio: "normal" }
-    ];
 
     // --- INITIALIZATION ---
     document.addEventListener("DOMContentLoaded", () => {
@@ -579,38 +511,56 @@
             }
         });
 
-        // 2. Render Gaps
+        // 2. Render Gaps (Using career_data)
         const gapContainer = document.getElementById('gap-list-container');
-        GAP_DATA.forEach(gap => {
+        CAREER_DATA.skill_gap.forEach(gap => {
             const div = document.createElement('div');
             div.className = 'gap-item';
-            div.innerHTML = `<strong>${gap.skill} <span style="float:right; font-size:0.7em; background:#374151; padding:2px 6px; border-radius:4px;">${gap.missing}</span></strong> ${gap.desc}`;
+            div.innerHTML = `<strong>${gap}</strong> <span style="float:right; font-size:0.7em; background:#374151; padding:2px 6px; border-radius:4px;">Critical</span>`;
             gapContainer.appendChild(div);
         });
 
-        // 3. Render Roadmap
+        // 3. Render Weekly Routine Board (Using career_data)
         const roadContainer = document.getElementById('roadmap-container');
-        ROADMAP_DATA.forEach(item => {
+        CAREER_DATA.weekly_plan.forEach(item => {
             const div = document.createElement('div');
-            div.className = `roadmap-item ${item.prio === 'high' ? 'high-prio' : ''}`;
+            div.className = `roadmap-item ${item.status === 'completed' ? '' : 'high-prio'}`;
             div.innerHTML = `
-                <div class="roadmap-week">${item.week}</div>
+                <div class="roadmap-week">${item.day}</div>
                 <div class="roadmap-content">
-                    <h4>${item.title}</h4>
-                    <p>${item.desc}</p>
+                    <h4>${item.task}</h4>
+                    <p>Status: ${item.status}</p>
                 </div>
             `;
             roadContainer.appendChild(div);
         });
 
-        // 4. Init Health
-        HealthModule.init();
+        // 4. Render Market Ticker
+        const tickerContainer = document.getElementById('market-ticker-content');
+        const trends = CAREER_DATA.market_trends; // Object { rust: "+15%", ... }
+
+        for (const [tech, val] of Object.entries(trends)) {
+            const span = document.createElement('span');
+            span.className = 'ticker-item';
+
+            let trendClass = '';
+            if (val.includes('+')) trendClass = 'trend-positive';
+            if (val.includes('-')) trendClass = 'trend-negative';
+
+            span.innerHTML = `${tech.toUpperCase()}: <span class="${trendClass}">${val}</span>`;
+            tickerContainer.appendChild(span);
+        }
 
         // 5. Hide Global Chatbot Floating Widget (if present)
         const globalChat = document.getElementById('chatbot-widget');
         const globalToggle = document.getElementById('chatbot-toggle');
         if(globalChat) globalChat.style.display = 'none';
         if(globalToggle) globalToggle.style.display = 'none';
+
+        // Note: HealthModule.init() is now called in layout (or handled via health.js script load if it auto-runs)
+        // Check health.js: it has HealthModule.init() but needs to be called.
+        // I should call it here to be safe, or check if it's called elsewhere.
+        if (window.HealthModule) HealthModule.init();
     });
 
     // Badge Share Mock
