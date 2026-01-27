@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // State
     let isVoiceEnabled = false;
     let isInterviewMode = false;
+    let isEmbedded = false;
     let currentLang = 'en'; // Default
 
     // UI Elements
@@ -13,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const micBtn = document.getElementById('btn-mic');
     const voiceToggleBtn = document.getElementById('voice-toggle');
     const interviewBtn = document.getElementById('interview-toggle');
+    const dashboardInterviewBtn = document.getElementById('dashboard-interview-toggle');
     const langSelect = document.getElementById('chat-lang-selector');
     const messagesContainer = document.getElementById('chatbot-messages');
     const statusDiv = document.getElementById('chatbot-status');
@@ -57,6 +59,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Initialization ---
     function init() {
+        // Check for Embedded Mode (Career OS Dashboard)
+        const embeddedTarget = document.getElementById('embedded-chatbot-target');
+        if (embeddedTarget && (window.CAREER_OS_EMBEDDED_CHAT || document.body.classList.contains('career-os-mode'))) {
+            isEmbedded = true;
+
+            // Move Components
+            const messages = document.getElementById('chatbot-messages');
+            const status = document.getElementById('chatbot-status');
+            const inputArea = document.querySelector('.chatbot-input');
+            const controls = document.querySelector('.header-controls');
+
+            if (messages && inputArea) {
+                embeddedTarget.innerHTML = ''; // Clear placeholder
+
+                // Move Controls to Dashboard Header
+                const dashboardHeader = document.querySelector('.chat-terminal-header');
+                if (dashboardHeader && controls) {
+                    // Hide Close Button
+                    const closeBtn = document.getElementById('btn-close-chat');
+                    if (closeBtn) closeBtn.style.display = 'none';
+                    dashboardHeader.appendChild(controls);
+                }
+
+                // Move Main Components
+                embeddedTarget.appendChild(messages);
+                if (status) embeddedTarget.appendChild(status);
+                embeddedTarget.appendChild(inputArea);
+
+                // Styling Overrides for Embedded View
+                messages.style.flex = '1';
+                messages.style.height = 'auto';
+                messages.style.maxHeight = 'none';
+                inputArea.style.borderRadius = '0';
+
+                // Hide Original Floating Widget
+                if (widget) widget.style.display = 'none';
+                if (toggleBtn) toggleBtn.style.display = 'none';
+            }
+        }
+
         // Detect Language from Browser
         const browserLang = navigator.language || 'en';
         if (browserLang.startsWith('pt')) currentLang = 'pt-BR';
@@ -97,6 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (closeBtn) closeBtn.addEventListener('click', toggleChat);
         if (voiceToggleBtn) voiceToggleBtn.addEventListener('click', toggleVoice);
         if (interviewBtn) interviewBtn.addEventListener('click', toggleInterview);
+        if (dashboardInterviewBtn) dashboardInterviewBtn.addEventListener('click', toggleInterview);
         if (micBtn) micBtn.addEventListener('click', startVoiceInput);
         if (sendBtn) sendBtn.addEventListener('click', sendMessage);
         if (input) {
@@ -109,6 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Core Logic ---
 
     function toggleChat() {
+        if (isEmbedded) return; // Disable toggle in embedded mode
+
         if (widget.style.display === 'none' || widget.style.display === '') {
             widget.style.display = 'flex';
             toggleBtn.style.display = 'none';
@@ -138,18 +183,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleInterview() {
         isInterviewMode = !isInterviewMode;
-        const header = document.querySelector('.chatbot-header');
+        const header = document.querySelector('.chatbot-header') || document.querySelector('.chat-terminal-header');
         const t = translations[currentLang] || translations['en'];
 
         if (isInterviewMode) {
             interviewBtn.style.color = 'var(--secondary-color)';
             interviewBtn.title = "Exit Interview";
+
+            if (dashboardInterviewBtn) {
+                dashboardInterviewBtn.innerText = "END_SIMULATION";
+                dashboardInterviewBtn.style.borderColor = "var(--neon-green)";
+                dashboardInterviewBtn.style.color = "var(--neon-green)";
+            }
+
             if (header) header.style.background = 'linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(17, 24, 39, 0.95))';
             addMessage(t.interview_start, 'bot');
             if (isVoiceEnabled) speakText(t.interview_start);
         } else {
             interviewBtn.style.color = 'var(--text-muted)';
             interviewBtn.title = "Interview Mode";
+
+            if (dashboardInterviewBtn) {
+                dashboardInterviewBtn.innerText = "START_SIMULATION";
+                dashboardInterviewBtn.style.borderColor = "var(--neon-cyan)";
+                dashboardInterviewBtn.style.color = "var(--neon-cyan)";
+            }
+
             if (header) header.style.background = 'rgba(10, 15, 28, 0.9)';
             addMessage(t.interview_end, 'bot');
         }

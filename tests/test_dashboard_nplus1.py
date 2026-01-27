@@ -61,6 +61,8 @@ def test_user_with_badges(db_session: Session):
         name="N+1 Test User",
         hashed_password=hash_password("password"),
         is_premium=True,
+        github_id="test_gh_id",
+        linkedin_id="test_li_id",
     )
     db_session.add(user)
     db_session.commit()
@@ -99,7 +101,7 @@ async def test_dashboard_avoids_nplus1(client: AsyncClient, test_user_with_badge
     cookies = {"access_token": access_token}
 
     with QueryCounter(engine) as counter:
-        response = await client.get("/dashboard", cookies=cookies)
+        response = await client.get("/dashboard", cookies=cookies, headers={"X-Forwarded-Proto": "https"})
         assert response.status_code == 200
         # The key assertion: check the number of queries.
         # This number might need adjustment based on other operations in the endpoint,
