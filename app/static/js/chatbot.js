@@ -96,7 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Update welcome message
         const welcomeMsg = document.getElementById('chatbot-welcome-msg');
         if (welcomeMsg) {
-             welcomeMsg.innerText = t.welcome;
+             // Context-Aware Greeting: Use server-provided message if available
+             const serverGreeting = welcomeMsg.getAttribute('data-server-greeting');
+             if (serverGreeting && serverGreeting.trim() !== '') {
+                 welcomeMsg.innerText = serverGreeting;
+             } else {
+                 welcomeMsg.innerText = t.welcome;
+             }
         }
     }
 
@@ -317,7 +323,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US'; // Use selected language
-        utterance.rate = 0.9;
+        
+        // CONFLICT RESOLVED: Using settings from main branch (includes pitch)
+        utterance.rate = 0.9;     // Slower speech rate for better comprehension
+        utterance.pitch = 1.0;    // Natural pitch
 
         window.speechSynthesis.speak(utterance);
     }
@@ -333,35 +342,3 @@ document.addEventListener("DOMContentLoaded", () => {
     function showToast(message) {
         let toast = document.getElementById('chatbot-toast');
         if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'chatbot-toast';
-            toast.className = 'chatbot-toast';
-            document.body.appendChild(toast);
-        }
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    function triggerVisualAlert() {
-        const flash = document.createElement('div');
-        flash.className = 'visual-flash-overlay';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 500);
-    }
-
-    // Expose Challenge Mode Trigger
-    window.startChatbotChallenge = function() {
-        if (widget.style.display === 'none' || widget.style.display === '') {
-            toggleChat();
-        }
-        // Send hidden command or simulated user text
-        input.value = "Test My Weakness";
-        sendMessage();
-    };
-
-    // Run Init
-    init();
-});

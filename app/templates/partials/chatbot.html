@@ -22,7 +22,7 @@
     </div>
 
     <div id="chatbot-messages" class="chatbot-messages" aria-live="polite" role="log">
-        <div id="chatbot-welcome-msg" class="message bot">
+        <div id="chatbot-welcome-msg" class="message bot" data-server-greeting="{{ greeting_message if greeting_message else '' }}">
             Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub.
         </div>
     </div>
