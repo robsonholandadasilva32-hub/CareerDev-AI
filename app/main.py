@@ -167,7 +167,7 @@ async def catch_runtime_errors(request: Request, call_next):
         return await call_next(request)
     except RuntimeError as e:
         if "No response returned" in str(e):
-            return JSONResponse(status_code=404, content={"detail": "Not Found (Empty Response)"})
+            return JSONResponse(status_code=500, content={"detail": "Internal Handler Error"})
         raise e
 
 # 7. Arquivos Estáticos (Com caminho absoluto corrigido)
