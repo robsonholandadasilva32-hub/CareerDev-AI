@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
+from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,72 @@ class SocialHarvester:
     def __init__(self):
         # System's "High Demand" List
         self.market_high_demand_skills = ["Rust", "Go", "Python", "AI/ML", "React", "System Design", "Cloud Architecture", "TypeScript", "Kubernetes"]
+
+    async def harvest_linkedin_data(self, user_id: int, token: str):
+        """
+        Background Task: Fetches LinkedIn data using a fresh DB session.
+        """
+        logger.info(f"⚡ [SocialHarvester] Starting LinkedIn sync for user_id {user_id}...")
+
+        with SessionLocal() as db:
+            try:
+                user = db.query(User).filter(User.id == user_id).first()
+                if not user:
+                    logger.error(f"❌ User {user_id} not found during background harvest.")
+                    return
+
+                # 1. Fetch Profile Data
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        "https://api.linkedin.com/v2/me",
+                        headers={"Authorization": f"Bearer {token}"}
+                    )
+
+                if response.status_code != 200:
+                    logger.error(f"❌ LinkedIn API Error: {response.text}")
+                    return
+
+                data = response.json()
+
+                # 2. Process Data
+                first_name = data.get("localizedFirstName", "")
+                last_name = data.get("localizedLastName", "")
+
+                alignment_data = {
+                    "source": "linkedin_oauth",
+                    "connected": True,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "status": "Active",
+                    "detected_role": "Lite Profile (Update via Dashboard)",
+                    "industry": "Tech"
+                }
+
+                # 3. Update DB
+                if not user.career_profile:
+                    user.career_profile = CareerProfile(user_id=user.id)
+
+                user.career_profile.linkedin_alignment_data = alignment_data
+
+                # Bump score
+                current_score = user.career_profile.market_relevance_score or 0
+                user.career_profile.market_relevance_score = min(current_score + 10, 100)
+
+                db.commit()
+                logger.info(f"✅ [SocialHarvester] LinkedIn data saved for {user.name}")
+
+            except Exception as e:
+                logger.error(f"🔥 Critical Error in harvest_linkedin_data: {e}")
+                db.rollback()
+
+    async def harvest_github_data(self, user_id: int, token: str):
+        """Wrapper for sync_profile to match Route calls"""
+        # Create session here too
+        with SessionLocal() as db:
+            # re-fetch user to attach to session
+            user = db.query(User).get(user_id)
+            if user:
+                await self.sync_profile(db, user, token)
 
     async def sync_profile(self, db: Session, user: User, github_token: str) -> bool:
         """

@@ -270,7 +270,7 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
         # TRIGGER DATA HARVEST
         if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_github_data, db, current_user, token.get('access_token'))
+            background_tasks.add_task(social_harvester.harvest_github_data, current_user.id, token.get('access_token'))
 
         # Redirect Directly to Dashboard (Zero Touch)
         return RedirectResponse("/dashboard", status_code=303)
@@ -375,7 +375,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
 
             # Trigger Harvest
             if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
 
             return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
@@ -384,7 +384,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         if user:
             # Trigger Harvest (even for existing users)
             if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
             return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
 
         # 3. Create User (with Idempotency Check)
@@ -426,7 +426,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
 
         # Trigger Harvest (New User)
         if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_linkedin_data, db, user, token.get('access_token'))
+            background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
 
         logger.info(f"Strict Onboarding: New user created.")
         return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
