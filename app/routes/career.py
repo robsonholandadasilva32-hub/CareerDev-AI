@@ -1,6 +1,7 @@
 import asyncio
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Request, Form, Body
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from pydantic import BaseModel
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -98,4 +99,22 @@ async def generate_linkedin_post(request: Request, db: Session = Depends(get_db)
         return {"post_text": post_text}
     except Exception as e:
         logger.error(f"Error generating LinkedIn post: {e}")
+        return JSONResponse({"error": "AI Service Error"}, status_code=500)
+
+class ProjectSpecRequest(BaseModel):
+    skill: str
+
+@router.post("/api/generate-project-spec", response_class=JSONResponse)
+async def generate_project_spec(request: Request, body: ProjectSpecRequest, db: Session = Depends(get_db)):
+    # 1. Auth Guard
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # 2. Generate Spec
+    try:
+        spec_md = await chatbot_service.generate_project_spec(body.skill, "en")
+        return {"spec": spec_md}
+    except Exception as e:
+        logger.error(f"Error generating project spec: {e}")
         return JSONResponse({"error": "AI Service Error"}, status_code=500)

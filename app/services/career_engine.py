@@ -125,10 +125,78 @@ class CareerEngine:
 
         return new_items
 
+    def analyze_alignment(self, linkedin_data: Dict, github_metrics: Dict) -> List[Dict]:
+        """
+        The 'Imposter vs. Hidden Gem' Matrix Logic.
+        Compares LinkedIn Claims vs. GitHub Reality (Languages + Frameworks).
+        """
+        audit_results = []
+
+        # 1. Normalize Data
+        raw_langs = github_metrics.get("raw_languages", {})
+        detected_frameworks = set(github_metrics.get("detected_frameworks", []))
+        claimed_skills = set([s.lower() for s in linkedin_data.get("claimed_skills", [])])
+
+        # Combined evidence (Lang > 1KB OR Framework present)
+        proven_skills = set()
+        for lang, bytes_count in raw_langs.items():
+            if bytes_count > 1000:
+                proven_skills.add(lang.lower())
+
+        # Map frameworks to languages for broader proof
+        # e.g. using React proves JS/TS competence
+        framework_map = {
+            "react": ["javascript", "typescript", "react"],
+            "fastapi": ["python", "fastapi"],
+            "django": ["python", "django"],
+            "tokio": ["rust"],
+            "serde": ["rust"],
+            "express": ["javascript", "node.js"]
+        }
+
+        for fw in detected_frameworks:
+            if fw in framework_map:
+                for s in framework_map[fw]:
+                    proven_skills.add(s)
+            proven_skills.add(fw) # Add the framework itself
+
+        # 2. Analyze Alignment (Top 5 Claims + Top 5 Code)
+        # We look at the Union of significant skills
+        significant_skills = list(claimed_skills | proven_skills)[:8] # Analyze top 8 relevant
+
+        for skill in significant_skills:
+            is_claimed = skill in claimed_skills
+            is_proven = skill in proven_skills
+
+            status = "Neutral"
+            action = "None"
+            badge = "ok"
+
+            if is_claimed and not is_proven:
+                status = "Imposter Detected"
+                action = "HOTFIX"
+                badge = "critical"
+            elif is_proven and not is_claimed:
+                status = "Hidden Gem"
+                action = "ADD_TO_LINKEDIN"
+                badge = "opportunity"
+            elif is_proven and is_claimed:
+                status = "Verified Expert"
+                badge = "success"
+
+            audit_results.append({
+                "skill": skill.title(),
+                "status": status,
+                "action": action,
+                "badge": badge
+            })
+
+        return audit_results
+
     def get_career_dashboard_data(self, db: Session, user: User) -> Dict:
         """
         Returns the structured JSON object for the new Dashboard AI brain.
-        Phase 3 Compliance: Strict JSON structure for HUD.
+        Now includes 'radar_data' and 'missing_skills'.
         """
         # Ensure profile analysis runs first to populate data
         self.analyze_profile(db, user)
@@ -137,61 +205,63 @@ class CareerEngine:
         # --- DATA PREP ---
         metrics = profile.github_activity_metrics or {}
         raw_languages = metrics.get("raw_languages", {})
+        detected_frameworks = metrics.get("detected_frameworks", [])
 
         li_data = profile.linkedin_alignment_data or {}
         claimed_skills = li_data.get("claimed_skills", [])
 
         # ZONE A: HOLISTIC SCANNER (Professional Health Bar)
         # Logic: (Profile Completeness + GitHub Activity + Skill Verification Score) / 3
-        # 1. Profile Completeness (Mock: Assume 80% if linkedin connected)
         p_completeness = 80 if li_data.get("connected") else 40
-
-        # 2. GitHub Activity (Velocity)
         velocity_score = 85 if metrics.get("velocity_score") == "High" else 50
 
-        # 3. Verified Skill Score (Average of Top 3 Skills)
+        # Skill Verification
         skill_ver_sum = 0
         top_skills = sorted(raw_languages.items(), key=lambda x: x[1], reverse=True)[:3]
         for skill, bytes_count in top_skills:
             skill_ver_sum += self.calculate_verified_score(skill, bytes_count, claimed_skills)
-
         avg_skill_ver = (skill_ver_sum / 3) * 100 if top_skills else 0
 
         holistic_score = int((p_completeness + velocity_score + avg_skill_ver) / 3)
         health_color = "green" if holistic_score > 80 else ("orange" if holistic_score > 50 else "red")
 
-        # ZONE B: INTEREST VS REALITY MATRIX (Skill Audit)
-        # Table: Skill | Detected in GitHub | Shown on LinkedIn | AI Verdict
-        skill_audit = []
-        all_skills = set(raw_languages.keys()) | set(claimed_skills)
-        # Limit to top 5 relevant for display
+        # ZONE B: CROSS-VERIFICATION ENGINE
+        skill_audit = self.analyze_alignment(li_data, metrics)
 
-        for skill in list(all_skills)[:6]:
-            gh_bytes = raw_languages.get(skill, 0)
-            in_gh = "✅ (Top Lang)" if gh_bytes > 5000 else ("⚠️ (In Progress)" if gh_bytes > 0 else "❌ (None)")
-
-            in_li = "✅" if skill in claimed_skills else "❌"
-
-            # AI Verdict Logic
-            if in_gh.startswith("✅") and in_li == "✅":
-                verdict = "Strong Asset"
-            elif in_gh.startswith("⚠️") and in_li == "❌":
-                verdict = "Hidden Gem (Add to CV)"
-            elif in_gh.startswith("❌") and in_li == "✅":
-                verdict = "Unverified (Build a Demo)"
-            else:
-                verdict = "Emerging Interest"
-
-            skill_audit.append({
-                "skill": skill,
-                "github": in_gh,
-                "linkedin": in_li,
-                "verdict": verdict
-            })
+        # Extract 'missing_skills' for Chatbot (Imposter Detected)
+        missing_skills = [item['skill'] for item in skill_audit if item['badge'] == 'critical']
 
         # ZONE C: STRENGTHS & WEAKNESSES (AI Insight)
-        # Use stored summary or fallback
         ai_insight_card = profile.ai_insights_summary or "System Analysis: Initializing Neural Link... Please wait for next scan."
+
+        # MARKET RADAR DATA
+        # We map top 5 skills to 3 axes: Github (Reality), LinkedIn (Claims), Market (Demand)
+        # Normalize to 1-100
+        radar_labels = []
+        d_github = []
+        d_linkedin = []
+        d_market = []
+
+        # Use top 5 languages/frameworks from GitHub as base + any high market demand ones missing
+        base_skills = list(raw_languages.keys())[:5]
+        if not base_skills: base_skills = ["Python", "JavaScript", "Rust"]
+
+        for skill in base_skills:
+            radar_labels.append(skill)
+
+            # GitHub Score (Log Volume)
+            vol = raw_languages.get(skill, 0)
+            d_github.append(min(int(math.log(vol + 1) * 8), 100))
+
+            # LinkedIn Score (Binary-ish)
+            d_linkedin.append(90 if skill in claimed_skills else 20)
+
+            # Market Score (Lookup or Random High for Demo)
+            market_val = 80
+            if skill in self.market_trends:
+                trend = self.market_trends[skill]
+                market_val = 95 if trend == "Very High" else (85 if trend == "High" else 60)
+            d_market.append(market_val)
 
         return {
             "zone_a_holistic": {
@@ -203,7 +273,16 @@ class CareerEngine:
             "zone_c_ai": {
                 "insights": ai_insight_card
             },
-            # Legacy/Secondary Data for Charts if needed
+            "radar_data": {
+                "labels": radar_labels,
+                "datasets": [
+                    {"label": "Code Reality", "data": d_github, "color": "#3b82f6"},
+                    {"label": "Profile Claims", "data": d_linkedin, "color": "#10b981"},
+                    {"label": "Market Demand", "data": d_market, "color": "#ef4444", "borderDash": [5, 5]}
+                ]
+            },
+            "missing_skills": missing_skills,
+            # Legacy
             "doughnut_data": profile.skills_graph_data
         }
 

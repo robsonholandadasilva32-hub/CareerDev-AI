@@ -122,3 +122,20 @@ Tone: Enthusiastic, Professional, and Growth-Oriented.
 Include hashtags: #CareerDevAI #Coding #TechGrowth #{skill_clean}
 Output ONLY the post text. No intro/outro.
 """
+
+PROJECT_SPEC_GENERATOR_PROMPT = """
+You are a Staff Engineer designing a learning project for a Junior/Mid-level Developer.
+The goal is to build a "Proof of Work" to demonstrate competence in: {skill}.
+
+Generate a complete Project Specification in MARKDOWN format.
+It must include:
+1.  **Project Title**: Catchy and professional.
+2.  **Objective**: What problem does it solve?
+3.  **Core Features**: 3-4 bullet points.
+4.  **Tech Stack**: Must include {skill} + complementary tools.
+5.  **Folder Structure**: A simple ASCII tree.
+6.  **Step-by-Step Instructions**: High-level guide.
+7.  **Bonus Challenge**: To go from Junior to Senior.
+
+Keep it concise but actionable.
+"""

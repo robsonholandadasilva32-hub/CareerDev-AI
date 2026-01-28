@@ -177,7 +177,7 @@ class SocialHarvester:
 
     async def _harvest_github_raw(self, token: str) -> tuple[Dict[str, int], Dict[str, Any]]:
         """
-        Internal helper to fetch raw byte counts and commit metrics.
+        Internal helper to fetch raw byte counts, commit metrics, AND Deep Scan Frameworks.
         Returns: (language_bytes_map, commit_metrics_json)
         """
         headers = {
@@ -187,10 +187,12 @@ class SocialHarvester:
         }
 
         language_bytes = {}
+        detected_frameworks = set()
         commit_metrics = {
             "commits_last_30_days": 0,
             "top_repo": "N/A",
-            "velocity_score": "Low"
+            "velocity_score": "Low",
+            "detected_frameworks": [] # Added to metrics
         }
 
         async with httpx.AsyncClient() as client:
@@ -208,22 +210,61 @@ class SocialHarvester:
             repos_resp = await client.get(repos_url, headers=headers)
             repos = repos_resp.json() if repos_resp.status_code == 200 else []
 
-            # 1. Byte Calculation
-            async def fetch_languages(repo):
-                lang_url = repo.get("languages_url")
-                if lang_url:
-                    r = await client.get(lang_url, headers=headers)
-                    if r.status_code == 200:
-                        return r.json(), repo.get("name")
-                return {}, None
+            # 1. Byte Calculation & Deep Scan
+            sem = asyncio.Semaphore(5)
 
-            tasks = [fetch_languages(repo) for repo in repos]
+            async def scan_repo(repo):
+                async with sem:
+                    repo_name = repo.get("name")
+
+                    # A. Language Stats
+                    lang_url = repo.get("languages_url")
+                    lang_data = {}
+                    if lang_url:
+                        r = await client.get(lang_url, headers=headers)
+                        if r.status_code == 200:
+                            lang_data = r.json()
+
+                    # B. Deep File Scan (Dependency Check)
+                    # We check root files for specific patterns
+                    found_frameworks = []
+                    files_to_check = {
+                        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas"],
+                        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript"],
+                        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket"]
+                    }
+
+                    # Scan contents (List root files first to avoid 404 spam)
+                    contents_url = repo.get("contents_url", "").replace("{+path}", "")
+                    c_resp = await client.get(contents_url, headers=headers)
+                    if c_resp.status_code == 200:
+                        files = {f["name"]: f for f in c_resp.json()}
+
+                        for filename, keywords in files_to_check.items():
+                            if filename in files:
+                                # Fetch Content
+                                file_url = files[filename].get("download_url")
+                                if file_url:
+                                    f_resp = await client.get(file_url)
+                                    if f_resp.status_code == 200:
+                                        content = f_resp.text.lower()
+                                        for kw in keywords:
+                                            if kw in content:
+                                                found_frameworks.append(kw)
+
+                    return lang_data, repo_name, found_frameworks
+
+            tasks = [scan_repo(repo) for repo in repos]
             results = await asyncio.gather(*tasks)
 
             max_repo_bytes = 0
             top_repo_name = "N/A"
 
-            for lang_map, repo_name in results:
+            for lang_map, repo_name, frameworks in results:
+                # Aggregate Frameworks
+                for f in frameworks:
+                    detected_frameworks.add(f)
+
                 repo_total = 0
                 for lang, bytes_count in lang_map.items():
                     language_bytes[lang] = language_bytes.get(lang, 0) + bytes_count
@@ -254,7 +295,8 @@ class SocialHarvester:
             commit_metrics = {
                 "commits_last_30_days": commit_count,
                 "top_repo": top_repo_name,
-                "velocity_score": velocity
+                "velocity_score": velocity,
+                "detected_frameworks": list(detected_frameworks)
             }
 
         return language_bytes, commit_metrics
