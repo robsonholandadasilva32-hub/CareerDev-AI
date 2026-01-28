@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.db.declarative import Base
+from app.db.base_class import Base
 
 class Badge(Base):
     __tablename__ = "badges"
