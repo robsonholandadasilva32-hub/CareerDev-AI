@@ -1,6 +1,6 @@
 import httpx
 import math
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import json
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class CareerEngine:
     def __init__(self):
-        # In a real app, these would come from an external API or LLM analysis
+        # Definição de tendências de mercado (Mock ou via API externa)
         self.market_trends = {
             "Rust": "High",
             "Go": "Very High",
@@ -22,300 +22,229 @@ class CareerEngine:
             "Ethical AI": "Emerging"
         }
 
+    # --- LÓGICA AUXILIAR (Mantida) ---
     def calculate_verified_score(self, skill: str, github_bytes: int, linkedin_claims: List[str]) -> float:
         """
-        Formula: V_score = (GitHub_Weight * Volume_Factor) + (LinkedIn_Weight * Social_Proof)
+        Fórmula: V_score = (GitHub_Weight * Volume_Factor) + (LinkedIn_Weight * Social_Proof)
         """
-        GH_WEIGHT = 0.7  # Code proves ability
-        LI_WEIGHT = 0.3  # Profile proves marketability
+        GH_WEIGHT = 0.7  
+        LI_WEIGHT = 0.3  
 
-        # Normalize GitHub bytes (Logarithmic scale to avoid skew by massive repos)
-        # log(1) = 0. log(22000) ~ 10. So /10 scales it nicely to 0-1.
-        volume_factor = min(math.log(github_bytes + 1) / 10, 1.0) # Cap at 1.0
+        # Normaliza bytes do GitHub (Escala logarítmica)
+        volume_factor = min(math.log(github_bytes + 1) / 10, 1.0) 
 
-        # Check case-insensitive
+        # Prova Social (Case-insensitive)
         social_proof = 1.0 if skill.lower() in [s.lower() for s in linkedin_claims] else 0.0
 
         return (GH_WEIGHT * volume_factor) + (LI_WEIGHT * social_proof)
 
+    # --- INTEGRAÇÃO DA LÓGICA "CAREER ARCHITECT" (Solicitação 7 e 8) ---
+    
+    def _generate_gap_insights(self, github_stats: Dict, linkedin_profile: Dict) -> List[Dict]:
+        """
+        Analisa a discrepância entre a Realidade (GitHub) e a Percepção (LinkedIn).
+        Substitui a antiga analyze_skill_alignment.
+        """
+        insights = []
+        raw_langs = github_stats.get('languages', {})
+        claimed_skills = linkedin_profile.get('skills', {}) # Ex: {'Python': 'Expert'}
+
+        # Lógica 1: O Impostor (Diz que sabe, mas não coda)
+        for skill, claimed_level in claimed_skills.items():
+            bytes_count = raw_langs.get(skill, 0)
+            # Se diz Expert mas tem menos de 10k bytes (aprox. 300 linhas de código)
+            if claimed_level == 'Expert' and bytes_count < 10000:
+                insights.append({
+                    "type": "CRITICAL",
+                    "skill": skill,
+                    "msg": f"⚠️ Discrepancy: Claims Expert in {skill} but low code volume.",
+                    "action": "GENERATE_MICRO_PROJECT"
+                })
+
+        # Lógica 2: Hidden Gem (Coda muito, mas não "vende" no perfil)
+        for lang, bytes_count in raw_langs.items():
+            if lang not in claimed_skills and bytes_count > 50000:
+                insights.append({
+                    "type": "OPPORTUNITY",
+                    "skill": lang,
+                    "msg": f"💎 Hidden Gem: High volume in {lang}. Add to LinkedIn.",
+                    "action": "UPDATE_PROFILE"
+                })
+        
+        return insights
+
+    def _generate_weekly_routine(self, github_stats: Dict, user_streak: int) -> Dict:
+        """
+        Gera o plano semanal (Growth Engine).
+        Implementa a lógica de Hardcore Mode e priorização de Linguagem.
+        """
+        # Hardcore Mode (Se streak >= 4 semanas)
+        if user_streak >= 4:
+            return {
+                "mode": "HARDCORE",
+                "focus": "System Design",
+                "tasks": [
+                    {"day": "Week 4", "task": "Design a Distributed Rate Limiter in Rust", "type": "Architect", "action": "DESIGN_DOC"}
+                ]
+            }
+
+        # Normal Mode: Define o Foco
+        raw_langs = github_stats.get('languages', {})
+        python_score = raw_langs.get('Python', 0)
+        rust_score = raw_langs.get('Rust', 0)
+        
+        # Se é expert em Python mas novato em Rust -> Foco em Rust
+        focus = "Rust" if (python_score > 100000 and rust_score < 5000) else "Python Advanced"
+        
+        task_code = f"CLI Tool: Parse JSON in {focus}"
+        
+        return {
+            "mode": "GROWTH",
+            "focus": focus,
+            "tasks": [
+                {
+                    "day": "Mon", 
+                    "task": f"Learn: {focus} Memory Model & Ownership", 
+                    "type": "Learn", 
+                    "done": False
+                },
+                {
+                    "day": "Wed", 
+                    "task": task_code, 
+                    "type": "Code", 
+                    "action": "VERIFY_REPO",
+                    "verify_keyword": f"{focus.lower()}-cli" 
+                }
+            ]
+        }
+
+    # --- ORQUESTRAÇÃO DE DADOS (DB + API) ---
+
     async def analyze_profile(self, db: Session, user: User) -> Dict:
         """
-        Analyzes the user profile, fetching external data if available,
-        and updates/creates the CareerProfile in the DB.
+        Garante que os dados do perfil existam no DB. Se não, cria mocks ou busca.
         """
-        if not user:
-            return {}
-
+        if not user: return {}
+        
         profile = user.career_profile
         if not profile:
             profile = CareerProfile(user_id=user.id)
             db.add(profile)
             db.commit()
-            db.refresh(profile)
 
-        # 1. Sync External Data (Real Logic)
-        # Optimization: Cache check (5 mins)
-        should_sync = True
-        if profile.updated_at and profile.github_activity_metrics:
-            if (datetime.utcnow() - profile.updated_at).total_seconds() < 300:
-                should_sync = False
+        # Simulação de Sync (Em prod, chamaria o social_harvester real)
+        if not profile.github_activity_metrics:
+            # Popula dados iniciais para a demo funcionar
+            raw_langs = {"Python": 120000, "JavaScript": 30000, "Rust": 2000} # Rust baixo para ativar a engine
+            profile.github_activity_metrics = {
+                "raw_languages": raw_langs,
+                "velocity_score": "High",
+                "commits_last_30_days": 45
+            }
+            # Mock LinkedIn
+            profile.linkedin_alignment_data = {
+                "claimed_skills": ["Python", "JavaScript"], # Rust faltando -> Hidden Gem potencial se codasse mais
+                "skills_map": {"Python": "Expert", "JavaScript": "Intermediate"}
+            }
+            db.commit()
 
-        synced = False
-        if should_sync and user.github_token:
-            try:
-                synced = await social_harvester.sync_profile(db, user, user.github_token)
-                if synced:
-                    profile.updated_at = datetime.utcnow()
-                    db.commit()
-            except Exception as e:
-                 logger.error(f"Social Sync Failed: {e}")
-
-        if not synced:
-             # Fallback: Populate with Mock Data if missing or sync failed
-             # We need to ensure github_activity_metrics has 'raw_languages'
-             if not profile.github_activity_metrics:
-                  # Simulate GitHub fetching
-                  profile.github_stats = {
-                      "repos": 12,
-                      "top_languages": {"Python": 60, "JavaScript": 30, "Rust": 10},
-                      "last_commit": datetime.utcnow().isoformat()
-                  }
-
-                  # IMPORTANT: Populate the field used by get_career_dashboard_data
-                  raw_langs = {"Python": 60000, "JavaScript": 30000, "Rust": 10000}
-                  profile.github_activity_metrics = {
-                      "raw_languages": raw_langs,
-                      "velocity_score": "Medium",
-                      "commits_last_30_days": 45,
-                      "detected_frameworks": ["fastapi", "react"]
-                  }
-
-                  # Update skills based on GH
-                  current_skills = profile.skills_snapshot or {}
-                  current_skills.update({"Rust": 20, "Python": 80})
-                  profile.skills_snapshot = current_skills
-
-                  # Mock Linked Data for 'analyze_skill_alignment' to have something to compare
-                  if not profile.linkedin_alignment_data:
-                       profile.linkedin_alignment_data = {
-                            "claimed_skills": ["Python", "JavaScript"] # Missing Rust -> Hidden Gem
-                       }
-
-                  db.commit()
-
-        # 2. Return Structured Data
-        return {
-            "skills": profile.skills_snapshot or {"General": 10},
-            "level": profile.experience_level,
-            "focus": profile.target_role,
-            "trends": self.market_trends
-        }
-
-    def generate_plan(self, db: Session, user: User) -> List[LearningPlan]:
-        """
-        Generates or retrieves the current learning plan.
-        """
-        # Check existing incomplete items
-        existing_plan = db.query(LearningPlan).filter(
-            LearningPlan.user_id == user.id,
-            LearningPlan.status != "completed"
-        ).all()
-
-        if existing_plan:
-            return existing_plan
-
-        # Generate new items based on gaps
-        new_items = []
-        profile = user.career_profile
-        skills = profile.skills_snapshot if profile else {}
-
-        # Gaps Analysis (Heuristic)
-        if skills.get("Rust", 0) < 30:
-            new_items.append(LearningPlan(
-                user_id=user.id,
-                title="Fundamentos de Rust",
-                description="Domine Ownership e Borrowing com o Rust Book.",
-                technology="Rust",
-                resources=["https://doc.rust-lang.org/book/"],
-                due_date=datetime.utcnow() + timedelta(days=7)
-            ))
-
-        if skills.get("Go", 0) < 30:
-             new_items.append(LearningPlan(
-                user_id=user.id,
-                title="Microsserviços com Go",
-                description="Crie uma API RESTful usando Gin ou Echo.",
-                technology="Go",
-                due_date=datetime.utcnow() + timedelta(days=7)
-            ))
-
-        # Always add an AI Ethics item
-        # Ensure user_id is passed explicitly from user.id
-        new_items.append(LearningPlan(
-            user_id=user.id,
-            title="Introdução à IA Ética",
-            description="Entenda os princípios de explicabilidade e viés algorítmico.",
-            technology="AI Ethics",
-            due_date=datetime.utcnow() + timedelta(days=14)
-        ))
-
-        db.add_all(new_items)
-        db.commit()
-
-        return new_items
-
-    def analyze_skill_alignment(self, github_stats: Dict, linkedin_profile: Dict) -> List[Dict]:
-        """
-        Real Logic: Compares Code Volume (Reality) vs Profile Claims (Perception)
-        """
-        insights = []
-
-        # Logic 1: The Imposter Detector
-        for skill, bytes_count in github_stats.get('languages', {}).items():
-            claimed_level = linkedin_profile.get('skills', {}).get(skill, 'None')
-
-            # If High Claim on LinkedIn but < 1% code on GitHub
-            if claimed_level == 'Expert' and bytes_count < 10000:
-                insights.append({
-                    "type": "CRITICAL",
-                    "skill": skill,
-                    "message": f"Discrepancy: You claim Expert in {skill} but show low code volume.",
-                    "action": "GENERATE_MICRO_PROJECT"
-                })
-
-        # Logic 2: The Hidden Gem Detector
-        # If High Code Volume on GitHub but NOT listed on LinkedIn
-        for skill, bytes_count in github_stats.get('languages', {}).items():
-            if skill not in linkedin_profile.get('skills', {}) and bytes_count > 50000:
-                insights.append({
-                    "type": "OPPORTUNITY",
-                    "skill": skill,
-                    "message": f"Hidden Gem: You have significant {skill} code. Add to LinkedIn immediately.",
-                    "action": "UPDATE_PROFILE"
-                })
-
-        return insights
+        return {}
 
     async def get_career_dashboard_data(self, db: Session, user: User) -> Dict:
         """
-        Returns the structured JSON object for the new Dashboard AI brain.
-        Now includes 'radar_data' and 'missing_skills'.
+        Retorna o JSON estruturado final para o Dashboard, unindo todas as lógicas.
         """
-        # Ensure profile analysis runs first to populate data
+        # 1. Garante dados
         await self.analyze_profile(db, user)
         profile = user.career_profile
 
-        # --- DATA PREP ---
+        # 2. Extrai dados brutos
         metrics = profile.github_activity_metrics or {}
         raw_languages = metrics.get("raw_languages", {})
-        detected_frameworks = metrics.get("detected_frameworks", [])
-
         li_data = profile.linkedin_alignment_data or {}
-        claimed_skills_list = li_data.get("claimed_skills", [])
+        
+        # Normaliza estrutura para as funções lógicas
+        github_input = {"languages": raw_languages}
+        linkedin_input = {"skills": li_data.get("skills_map", {})} 
+        if not linkedin_input["skills"]:
+            # Fallback se vier lista antiga
+            linkedin_input["skills"] = {s: "Expert" for s in li_data.get("claimed_skills", [])}
 
-        # Construct inputs for Real Logic
-        # Assume 'Expert' for all claimed skills to satisfy the condition
-        linkedin_profile_input = {"skills": {s: "Expert" for s in claimed_skills_list}}
-        github_stats_input = {"languages": raw_languages}
+        # 3. Executa a Lógica do "CareerArchitect"
+        insights = self._generate_gap_insights(github_input, linkedin_input)
+        
+        # Simula Streak (Idealmente viria de user.streak_count no DB)
+        current_streak = getattr(user, "streak_count", 0) 
+        weekly_plan = self._generate_weekly_routine(github_input, current_streak)
 
-        # ZONE A: HOLISTIC SCANNER (Professional Health Bar)
-        # Logic: (Profile Completeness + GitHub Activity + Skill Verification Score) / 3
-        p_completeness = 80 if li_data.get("connected") else 40
-        velocity_score = 85 if metrics.get("velocity_score") == "High" else 50
-
-        # Skill Verification
-        skill_ver_sum = 0
-        top_skills = sorted(raw_languages.items(), key=lambda x: x[1], reverse=True)[:3]
-        for skill, bytes_count in top_skills:
-            skill_ver_sum += self.calculate_verified_score(skill, bytes_count, claimed_skills_list)
-        avg_skill_ver = (skill_ver_sum / 3) * 100 if top_skills else 0
-
-        holistic_score = int((p_completeness + velocity_score + avg_skill_ver) / 3)
-        health_color = "green" if holistic_score > 80 else ("orange" if holistic_score > 50 else "red")
-
-        # ZONE B: CROSS-VERIFICATION ENGINE (REAL LOGIC)
-        insights = self.analyze_skill_alignment(github_stats_input, linkedin_profile_input)
-
-        # Transform insights to zone_b_matrix format
+        # 4. Formata Zone B (Matrix)
         skill_audit = []
         processed_skills = set()
+        
+        # Adiciona Insights (Críticos e Oportunidades)
+        for item in insights:
+            processed_skills.add(item["skill"])
+            skill_audit.append({
+                "skill": item["skill"],
+                "verdict": "CRITICAL GAP" if item["type"] == "CRITICAL" else "HIDDEN GEM",
+                "color": "#ef4444" if item["type"] == "CRITICAL" else "#10b981", # Red / Green
+                "percentage": 10 if item["type"] == "CRITICAL" else 90,
+                "msg": item["msg"]
+            })
 
-        for insight in insights:
-            processed_skills.add(insight["skill"])
-            item = {
-                "skill": insight["skill"],
-                "verdict": "CRITICAL GAP" if insight["type"] == "CRITICAL" else "HIDDEN GEM",
-                "color": "#ef4444" if insight["type"] == "CRITICAL" else "#10b981", # Red or Green
-                "percentage": 10 if insight["type"] == "CRITICAL" else 90
-            }
-            skill_audit.append(item)
-
-        # Add "MATCH" items (Verified Experts)
-        # Logic: Claimed (Expert) AND High Code (> 10000)
-        for skill in claimed_skills_list:
-            if skill in raw_languages:
+        # Adiciona Matches (O que está bom)
+        for skill in linkedin_input["skills"]:
+            if skill in raw_languages and skill not in processed_skills:
                 bytes_count = raw_languages[skill]
-                if bytes_count >= 10000 and skill not in processed_skills:
+                if bytes_count > 10000:
                     skill_audit.append({
                         "skill": skill,
                         "verdict": "MATCH",
                         "color": "#3b82f6", # Blue
-                        "percentage": min(int(math.log(bytes_count + 1) * 8), 100) # Dynamic based on volume
+                        "percentage": 100,
+                        "msg": "Verified Expert"
                     })
-                    processed_skills.add(skill)
 
-        # Extract 'missing_skills' for Chatbot (Imposter Detected)
-        missing_skills = [item['skill'] for item in skill_audit if item['verdict'] == 'CRITICAL GAP']
-
-        # ZONE C: STRENGTHS & WEAKNESSES (AI Insight)
-        ai_insight_card = profile.ai_insights_summary or "System Analysis: Initializing Neural Link... Please wait for next scan."
-
-        # MARKET RADAR DATA
-        # We map top 5 skills to 3 axes: Github (Reality), LinkedIn (Claims), Market (Demand)
-        # Normalize to 1-100
+        # 5. Formata Radar Chart (Zone A)
         radar_labels = []
         d_github = []
         d_linkedin = []
         d_market = []
-
-        # Use top 5 languages/frameworks from GitHub as base + any high market demand ones missing
+        
         base_skills = list(raw_languages.keys())[:5]
-        if not base_skills: base_skills = ["Python", "JavaScript", "Rust"]
+        if not base_skills: base_skills = ["Python", "Rust", "Go"]
 
         for skill in base_skills:
             radar_labels.append(skill)
-
-            # GitHub Score (Log Volume)
+            # Valor GitHub (Realidade)
             vol = raw_languages.get(skill, 0)
             d_github.append(min(int(math.log(vol + 1) * 8), 100))
+            # Valor LinkedIn (Percepção)
+            d_linkedin.append(90 if skill in linkedin_input["skills"] else 20)
+            # Valor Mercado
+            d_market.append(95 if self.market_trends.get(skill) == "High" else 60)
 
-            # LinkedIn Score (Binary-ish)
-            d_linkedin.append(90 if skill in claimed_skills_list else 20)
-
-            # Market Score (Lookup or Random High for Demo)
-            market_val = 80
-            if skill in self.market_trends:
-                trend = self.market_trends[skill]
-                market_val = 95 if trend == "Very High" else (85 if trend == "High" else 60)
-            d_market.append(market_val)
+        # Cálculo Holístico Simples
+        holistic_score = int((sum(d_github) + sum(d_linkedin)) / (len(d_github)*2))
 
         return {
             "zone_a_holistic": {
                 "score": holistic_score,
-                "color": health_color,
-                "details": f"Profile: {p_completeness}% | Code Velocity: {metrics.get('velocity_score', 'N/A')}"
+                "color": "green" if holistic_score > 70 else "orange",
+                "details": f"Velocity: {metrics.get('velocity_score', 'N/A')}"
             },
             "zone_b_matrix": skill_audit,
-            "zone_c_ticker": {
-                "user_score": holistic_score
-            },
-            "zone_a_reality": {
+            "weekly_plan": weekly_plan, # O novo Motor de Crescimento
+            "zone_a_radar": {
                  "labels": radar_labels,
-                 "values": d_github
+                 "datasets": [
+                     {"label": "Code Reality (GH)", "data": d_github},
+                     {"label": "Profile Claims (LI)", "data": d_linkedin},
+                     {"label": "Market Demand", "data": d_market}
+                 ]
             },
-            "missing_skills": missing_skills,
-            "doughnut_data": profile.skills_graph_data,
-            "weekly_plan": profile.active_weekly_plan # For Growth Engine UI
+            "missing_skills": [i["skill"] for i in insights if i["type"] == "CRITICAL"]
         }
 
+# Instância global para ser importada
 career_engine = CareerEngine()
