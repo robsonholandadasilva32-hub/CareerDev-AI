@@ -13,3 +13,4 @@ from app.db.models.gamification import Badge, UserBadge
 
 # A CORREÇÃO: Importando o modelo que estava faltando
 from app.db.models.weekly_routine import WeeklyRoutine
+from app.db.models.audit import LoginHistory
