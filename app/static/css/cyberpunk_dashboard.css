@@ -1,1 +1,140 @@
+/* =========================================
+   1. NUCLEAR RESET & BASE THEME
+   ========================================= */
+/* Esconde elementos herdados do layout pai que não queremos */
+.dashboard-sidebar, .main-header, .navbar, .footer, #sidebar-wrapper { 
+    display: none !important; 
+}
 
+/* Garante que o dashboard ocupe a tela toda */
+.content-wrapper, .main-panel, .dashboard-content {
+    margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important;
+    position: fixed !important; top: 0 !important; left: 0 !important; z-index: 9900 !important;
+    background: #050505 !important;
+}
+
+:root {
+    --bg-deep: #050505; 
+    --bg-panel: #0f111a; 
+    --border: rgba(255, 255, 255, 0.08);
+    --neon-blue: #3b82f6; 
+    --neon-green: #10b981; 
+    --neon-purple: #8b5cf6; 
+    --alert: #ef4444;
+    --text-main: #f3f4f6; 
+    --text-dim: #9ca3af; 
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Inter', sans-serif;
+}
+
+body { 
+    background-color: var(--bg-deep) !important; 
+    color: var(--text-main); 
+    font-family: var(--font-sans); 
+    overflow: hidden; 
+}
+
+/* =========================================
+   2. GRID LAYOUT SYSTEM
+   ========================================= */
+.grid-layout {
+    display: grid; 
+    grid-template-columns: 80px 1fr 350px; 
+    grid-template-rows: 60px 1fr 30px;
+    height: 100vh; 
+    width: 100vw; 
+    gap: 12px; 
+    padding: 12px; 
+    box-sizing: border-box;
+}
+
+/* Estilo Base dos Painéis */
+.panel { 
+    background: var(--bg-panel); 
+    border: 1px solid var(--border); 
+    border-radius: 8px; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.panel-head { 
+    padding: 12px 16px; 
+    background: rgba(255,255,255,0.02); 
+    border-bottom: 1px solid var(--border); 
+    font-family: var(--font-mono); 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    color: var(--neon-blue); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+
+/* =========================================
+   3. COMPONENTS
+   ========================================= */
+
+/* Navigation Dock */
+.nav-dock { grid-row: 1 / 4; align-items: center; padding-top: 20px; gap: 20px; }
+.brand-logo { font-weight: 900; color: #fff; font-size: 1.2rem; margin-bottom: 10px; }
+.nav-btn {
+    width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); border: 1px solid transparent; font-size: 1.4rem; cursor: pointer; 
+    text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: transparent;
+}
+.nav-btn:hover, .nav-btn.active { 
+    background: rgba(59, 130, 246, 0.15); 
+    color: var(--neon-blue); 
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+.alert-color:hover { color: var(--alert); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
+
+/* Status Bar & Marquee */
+.status-bar { grid-column: 2/4; flex-direction: row; align-items: center; padding: 0 20px; }
+.feed-label { font-family: var(--font-mono); color: var(--neon-blue); margin-right: 20px; font-weight: bold; }
+.feed-text { font-family: var(--font-mono); font-size: 0.8rem; color: var(--neon-green); }
+
+/* Tabs Logic */
+.tab-header { gap: 15px; justify-content: flex-start; }
+.tab-btn { 
+    background: none; border: none; color: var(--text-dim); cursor: pointer; 
+    font-family: var(--font-mono); font-size: 0.8rem; transition: 0.3s; padding: 5px 0;
+}
+.tab-btn.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); text-shadow: 0 0 8px rgba(59,130,246,0.5); }
+
+/* Kanban / Weekly Plan */
+.kanban-header { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.8rem; }
+.kanban-list { padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.kanban-card { 
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 12px; border-radius: 6px;
+    font-family: var(--font-sans); font-size: 0.9rem;
+}
+.active-card { border-color: var(--neon-purple); background: rgba(139, 92, 246, 0.05); }
+.verify-btn { 
+    background: var(--neon-green); color: #000; border: none; padding: 8px; width: 100%; 
+    cursor: pointer; font-weight: 800; margin-top: 10px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+}
+.verify-btn:hover { box-shadow: 0 0 15px var(--neon-green); transform: translateY(-1px); }
+.verify-btn:disabled { background: var(--text-dim); cursor: not-allowed; box-shadow: none; }
+
+/* Bio Monitor */
+.bio-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px; }
+.bio-card { background: #000; border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
+.bio-card:hover { border-color: var(--neon-blue); }
+.bio-icon { display: block; font-size: 1.2rem; margin-bottom: 5px; }
+
+/* Chat */
+.chat-panel { flex-grow: 1; background: #000; grid-row: 2/3; }
+#chat-history { flex-grow: 1; padding: 15px; color: var(--text-dim); overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.6; }
+#chat-input { width: 100%; background: #050505; border: none; border-top: 1px solid var(--border); padding: 15px; color: #fff; font-family: var(--font-mono); outline: none; }
+
+/* Footer */
+.footer-bar { grid-column: 2/4; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border); background: var(--bg-panel); }
+
+/* Effects */
+.streak-badge { background: rgba(239, 68, 68, 0.2); color: var(--alert); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--alert); font-size: 0.7rem; }
+.theme-matrix { filter: sepia(100%) hue-rotate(50deg) saturate(500%) contrast(120%); }
