@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+# --- CORREÇÃO: Esta importação é OBRIGATÓRIA para usar o relationship abaixo ---
+from sqlalchemy.orm import relationship
 from datetime import datetime
-# CORREÇÃO CRÍTICA: Importar do arquivo isolado que criamos
+# --- CORREÇÃO: Importar de base_class evita o erro "Circular Import" ---
 from app.db.base_class import Base
 
 class LoginHistory(Base):
@@ -21,6 +23,8 @@ class LoginHistory(Base):
     login_timestamp = Column(DateTime, default=datetime.utcnow)
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
-    
+
+    # Relacionamento Reverso (Conecta com app/db/models/user.py)
     user = relationship("User", back_populates="audit_logs")
-    # TODO: Implement a Cron Job to archive/delete logs older than 1 year to comply with GDPR/LGPD and save storage.   
+
+    # TODO: Implement a Cron Job to archive/delete logs older than 1 year to comply with GDPR/LGPD.
