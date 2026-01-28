@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-# --- CORREÇÃO: Esta importação é OBRIGATÓRIA para usar o relationship abaixo ---
 from sqlalchemy.orm import relationship
 from datetime import datetime
-# --- CORREÇÃO: Importar de base_class evita o erro "Circular Import" ---
 from app.db.base_class import Base
 
 class LoginHistory(Base):
