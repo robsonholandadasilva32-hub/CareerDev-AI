@@ -9,7 +9,8 @@ from app.ai.prompts import (
     CAREER_ASSISTANT_SYSTEM_PROMPT,
     get_interviewer_system_prompt,
     CHALLENGE_GENERATOR_PROMPT,
-    CHALLENGE_GRADER_PROMPT
+    CHALLENGE_GRADER_PROMPT,
+    LINKEDIN_POST_GENERATOR_PROMPT
 )
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
@@ -156,6 +157,18 @@ class ChatbotService:
         db.commit()
 
         return {"message": grade, "meta": {"mode": "standard"}}
+
+    async def generate_linkedin_post(self, skill: str, lang: str) -> str:
+        """
+        Generates a viral LinkedIn post using the dedicated prompt.
+        """
+        clean_skill = skill.replace(" ", "").replace("/", "")
+
+        if self.simulated:
+            return f"Excited to share my progress in {skill}! Thanks to CareerDev AI for the structured learning path. 🚀 #{clean_skill} #TechJourney (Simulated)"
+
+        prompt = LINKEDIN_POST_GENERATOR_PROMPT.format(skill=skill, skill_clean=clean_skill)
+        return await self._llm_response("", lang, "", prompt)
 
     def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
         msg = message.lower()

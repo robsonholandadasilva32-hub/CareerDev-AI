@@ -8,6 +8,7 @@ from app.core.auth_guard import get_current_user_from_request
 from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
+from app.ai.chatbot import chatbot_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -67,3 +68,34 @@ async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
         "user": user,
         "data": analytics_data,
     })
+
+@router.post("/api/generate-linkedin-post", response_class=JSONResponse)
+async def generate_linkedin_post(request: Request, db: Session = Depends(get_db)):
+    # 1. Auth Guard
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    # 2. Get Top Skill
+    profile = user.career_profile
+    top_skill = "Software Engineering"
+
+    if profile and profile.skills_snapshot:
+        # Simple logic: pick first key, or could use volume sorting if available
+        try:
+             # Sort by value if dict values are numeric, else pick random
+            skills = profile.skills_snapshot
+            if skills:
+                 top_skill = list(skills.keys())[0]
+        except Exception:
+            pass
+
+    # 3. Generate Post
+    try:
+        post_text = await chatbot_service.generate_linkedin_post(top_skill, "en")
+        return {"post_text": post_text}
+    except Exception as e:
+        logger.error(f"Error generating LinkedIn post: {e}")
+        return JSONResponse({"error": "AI Service Error"}, status_code=500)

@@ -114,3 +114,11 @@ Rating: [1-5 Stars]
 Correction: [Brief correction if wrong, or "Spot on" if right]
 Follow-up: [A short encouragement or next challenge phrase]
 """
+
+LINKEDIN_POST_GENERATOR_PROMPT = """
+Draft a professional LinkedIn post celebrating my progress in {skill}.
+Keep it under 280 chars to ensure it's punchy and viral.
+Tone: Enthusiastic, Professional, and Growth-Oriented.
+Include hashtags: #CareerDevAI #Coding #TechGrowth #{skill_clean}
+Output ONLY the post text. No intro/outro.
+"""
