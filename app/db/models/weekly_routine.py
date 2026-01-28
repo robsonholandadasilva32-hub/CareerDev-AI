@@ -2,7 +2,8 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, J
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from app.db.base import Base
+# Importe do arquivo isolado base_class
+from app.db.base_class import Base
 
 class WeeklyRoutine(Base):
     __tablename__ = "weekly_routines"
