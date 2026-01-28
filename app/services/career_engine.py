@@ -126,73 +126,37 @@ class CareerEngine:
 
         return new_items
 
-    def analyze_alignment(self, linkedin_data: Dict, github_metrics: Dict) -> List[Dict]:
+    def analyze_skill_alignment(self, github_stats: Dict, linkedin_profile: Dict) -> List[Dict]:
         """
-        The 'Imposter vs. Hidden Gem' Matrix Logic.
-        Compares LinkedIn Claims vs. GitHub Reality (Languages + Frameworks).
+        Real Logic: Compares Code Volume (Reality) vs Profile Claims (Perception)
         """
-        audit_results = []
+        insights = []
 
-        # 1. Normalize Data
-        raw_langs = github_metrics.get("raw_languages", {})
-        detected_frameworks = set(github_metrics.get("detected_frameworks", []))
-        claimed_skills = set([s.lower() for s in linkedin_data.get("claimed_skills", [])])
+        # Logic 1: The Imposter Detector
+        for skill, bytes_count in github_stats.get('languages', {}).items():
+            claimed_level = linkedin_profile.get('skills', {}).get(skill, 'None')
 
-        # Combined evidence (Lang > 1KB OR Framework present)
-        proven_skills = set()
-        for lang, bytes_count in raw_langs.items():
-            if bytes_count > 1000:
-                proven_skills.add(lang.lower())
+            # If High Claim on LinkedIn but < 1% code on GitHub
+            if claimed_level == 'Expert' and bytes_count < 10000:
+                insights.append({
+                    "type": "CRITICAL",
+                    "skill": skill,
+                    "message": f"Discrepancy: You claim Expert in {skill} but show low code volume.",
+                    "action": "GENERATE_MICRO_PROJECT"
+                })
 
-        # Map frameworks to languages for broader proof
-        # e.g. using React proves JS/TS competence
-        framework_map = {
-            "react": ["javascript", "typescript", "react"],
-            "fastapi": ["python", "fastapi"],
-            "django": ["python", "django"],
-            "tokio": ["rust"],
-            "serde": ["rust"],
-            "express": ["javascript", "node.js"]
-        }
+        # Logic 2: The Hidden Gem Detector
+        # If High Code Volume on GitHub but NOT listed on LinkedIn
+        for skill, bytes_count in github_stats.get('languages', {}).items():
+            if skill not in linkedin_profile.get('skills', {}) and bytes_count > 50000:
+                insights.append({
+                    "type": "OPPORTUNITY",
+                    "skill": skill,
+                    "message": f"Hidden Gem: You have significant {skill} code. Add to LinkedIn immediately.",
+                    "action": "UPDATE_PROFILE"
+                })
 
-        for fw in detected_frameworks:
-            if fw in framework_map:
-                for s in framework_map[fw]:
-                    proven_skills.add(s)
-            proven_skills.add(fw) # Add the framework itself
-
-        # 2. Analyze Alignment (Top 5 Claims + Top 5 Code)
-        # We look at the Union of significant skills
-        significant_skills = list(claimed_skills | proven_skills)[:8] # Analyze top 8 relevant
-
-        for skill in significant_skills:
-            is_claimed = skill in claimed_skills
-            is_proven = skill in proven_skills
-
-            status = "Neutral"
-            action = "None"
-            badge = "ok"
-
-            if is_claimed and not is_proven:
-                status = "Imposter Detected"
-                action = "HOTFIX"
-                badge = "critical"
-            elif is_proven and not is_claimed:
-                status = "Hidden Gem"
-                action = "ADD_TO_LINKEDIN"
-                badge = "opportunity"
-            elif is_proven and is_claimed:
-                status = "Verified Expert"
-                badge = "success"
-
-            audit_results.append({
-                "skill": skill.title(),
-                "status": status,
-                "action": action,
-                "badge": badge
-            })
-
-        return audit_results
+        return insights
 
     def get_career_dashboard_data(self, db: Session, user: User) -> Dict:
         """
@@ -209,7 +173,12 @@ class CareerEngine:
         detected_frameworks = metrics.get("detected_frameworks", [])
 
         li_data = profile.linkedin_alignment_data or {}
-        claimed_skills = li_data.get("claimed_skills", [])
+        claimed_skills_list = li_data.get("claimed_skills", [])
+
+        # Construct inputs for Real Logic
+        # Assume 'Expert' for all claimed skills to satisfy the condition
+        linkedin_profile_input = {"skills": {s: "Expert" for s in claimed_skills_list}}
+        github_stats_input = {"languages": raw_languages}
 
         # ZONE A: HOLISTIC SCANNER (Professional Health Bar)
         # Logic: (Profile Completeness + GitHub Activity + Skill Verification Score) / 3
@@ -220,17 +189,45 @@ class CareerEngine:
         skill_ver_sum = 0
         top_skills = sorted(raw_languages.items(), key=lambda x: x[1], reverse=True)[:3]
         for skill, bytes_count in top_skills:
-            skill_ver_sum += self.calculate_verified_score(skill, bytes_count, claimed_skills)
+            skill_ver_sum += self.calculate_verified_score(skill, bytes_count, claimed_skills_list)
         avg_skill_ver = (skill_ver_sum / 3) * 100 if top_skills else 0
 
         holistic_score = int((p_completeness + velocity_score + avg_skill_ver) / 3)
         health_color = "green" if holistic_score > 80 else ("orange" if holistic_score > 50 else "red")
 
-        # ZONE B: CROSS-VERIFICATION ENGINE
-        skill_audit = self.analyze_alignment(li_data, metrics)
+        # ZONE B: CROSS-VERIFICATION ENGINE (REAL LOGIC)
+        insights = self.analyze_skill_alignment(github_stats_input, linkedin_profile_input)
+
+        # Transform insights to zone_b_matrix format
+        skill_audit = []
+        processed_skills = set()
+
+        for insight in insights:
+            processed_skills.add(insight["skill"])
+            item = {
+                "skill": insight["skill"],
+                "verdict": "CRITICAL GAP" if insight["type"] == "CRITICAL" else "HIDDEN GEM",
+                "color": "#ef4444" if insight["type"] == "CRITICAL" else "#10b981", # Red or Green
+                "percentage": 10 if insight["type"] == "CRITICAL" else 90
+            }
+            skill_audit.append(item)
+
+        # Add "MATCH" items (Verified Experts)
+        # Logic: Claimed (Expert) AND High Code (> 10000)
+        for skill in claimed_skills_list:
+            if skill in raw_languages:
+                bytes_count = raw_languages[skill]
+                if bytes_count >= 10000 and skill not in processed_skills:
+                    skill_audit.append({
+                        "skill": skill,
+                        "verdict": "MATCH",
+                        "color": "#3b82f6", # Blue
+                        "percentage": min(int(math.log(bytes_count + 1) * 8), 100) # Dynamic based on volume
+                    })
+                    processed_skills.add(skill)
 
         # Extract 'missing_skills' for Chatbot (Imposter Detected)
-        missing_skills = [item['skill'] for item in skill_audit if item['badge'] == 'critical']
+        missing_skills = [item['skill'] for item in skill_audit if item['verdict'] == 'CRITICAL GAP']
 
         # ZONE C: STRENGTHS & WEAKNESSES (AI Insight)
         ai_insight_card = profile.ai_insights_summary or "System Analysis: Initializing Neural Link... Please wait for next scan."
@@ -255,7 +252,7 @@ class CareerEngine:
             d_github.append(min(int(math.log(vol + 1) * 8), 100))
 
             # LinkedIn Score (Binary-ish)
-            d_linkedin.append(90 if skill in claimed_skills else 20)
+            d_linkedin.append(90 if skill in claimed_skills_list else 20)
 
             # Market Score (Lookup or Random High for Demo)
             market_val = 80
@@ -275,16 +272,14 @@ class CareerEngine:
             "zone_c_ai": {
                 "insights": ai_insight_card
             },
-            "radar_data": {
-                "labels": radar_labels,
-                "datasets": [
-                    {"label": "Code Reality", "data": d_github, "color": "#3b82f6"},
-                    {"label": "Profile Claims", "data": d_linkedin, "color": "#10b981"},
-                    {"label": "Market Demand", "data": d_market, "color": "#ef4444", "borderDash": [5, 5]}
-                ]
+            "zone_c_ticker": {
+                "user_score": holistic_score
+            },
+            "zone_a_reality": {
+                 "labels": radar_labels,
+                 "values": d_github
             },
             "missing_skills": missing_skills,
-            # Legacy
             "doughnut_data": profile.skills_graph_data
         }
 
