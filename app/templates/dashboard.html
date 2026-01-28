@@ -1,4 +1,186 @@
+{% extends "dashboard_layout.html" %}
+
+{% block dashboard_content %}
+
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="/static/css/cyberpunk_dashboard.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="grid-layout">
+
+    <!-- NAV DOCK -->
+    <nav class="panel nav-dock">
+        <div class="brand-logo">C/AI</div>
+        <a href="/dashboard" class="nav-btn active" title="Command Center">⌘</a>
+        <a href="/accessibility" class="nav-btn" title="Universal Accessibility">🧠</a>
+        <a href="/dashboard/network" class="nav-btn" title="Network Node">🌐</a>
+        <a href="/dashboard/security" class="nav-btn" title="Security & Sessions">🛡️</a>
+        <a href="/legal" class="nav-btn" title="Legal & Privacy">⚖️</a>
+        <div style="flex-grow: 1;"></div>
+        <a href="/logout" class="nav-btn alert-color" title="Logout">✕</a>
+    </nav>
+
+    <!-- STATUS BAR -->
+    <div class="panel status-bar" style="grid-column: 2/4; grid-row: 1/2;">
+        <span class="feed-label">REAL_TIME_FEED ::</span>
+        <marquee class="feed-text">
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... DETECTING GAPS...
+        </marquee>
+    </div>
+
+    <!-- MAIN PANEL -->
+    <main class="panel" style="grid-column: 2/3; grid-row: 2/3; position: relative; overflow: hidden;">
+        <div class="panel-head tab-header">
+            <div>
+                <button class="tab-btn active" onclick="switchTab('audit')">AUDIT VIEW</button>
+                <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
+            </div>
+            <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
+        </div>
+
+        <!-- AUDIT VIEW -->
+        <div id="view-audit" style="display: flex; flex-direction: column; height: 100%; padding: 20px;">
+            <div style="flex-grow: 1; position: relative;">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+                <div style="font-size: 0.8rem; color: var(--text-dim);">MARKET ALIGNMENT</div>
+                <div style="font-size: 2rem; font-weight: 800; color: {{ career_data.zone_a_holistic.color }};">
+                    {{ market_score }}/100
+                </div>
+            </div>
+        </div>
+
+        <!-- WEEKLY PLAN -->
+        <div id="view-plan" style="display: none; flex-direction: column; height: 100%; padding: 20px; overflow-y: auto;">
+            <div class="kanban-header" style="margin-bottom: 20px;">
+                CURRENT FOCUS:
+                <span style="color:var(--neon-green)">
+                    {{ career_data.weekly_plan.focus | default('ANALYZING...') | upper }}
+                </span>
+            </div>
+
+            <div class="kanban-list">
+                {% if career_data.weekly_plan and career_data.weekly_plan.tasks %}
+                    {% for task in career_data.weekly_plan.tasks %}
+                    <div class="kanban-card {% if task.type == 'Code' %}active-card{% endif %}">
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong style="color: var(--neon-blue);">{{ task.day }}</strong>
+                            <span style="font-size: 0.7rem; opacity: 0.7;">{{ task.type }}</span>
+                        </div>
+
+                        <div style="margin: 8px 0;">{{ task.task }}</div>
+
+                        {% if task.action == 'VERIFY_REPO' %}
+                        <button
+                            class="verify-btn"
+                            id="btn-{{ loop.index }}"
+                            onclick="verifyRepo('{{ loop.index }}', '{{ task.verify_keyword }}')">
+                            VERIFY WORK ⚡
+                        </button>
+                        <div id="status-{{ loop.index }}" style="font-size: 0.7rem; margin-top: 5px;"></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="kanban-card">
+                        System analyzing gaps... Check back shortly.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <!-- RIGHT ASIDE -->
+    <aside style="grid-column: 3/4; grid-row: 2/3; display: flex; flex-direction: column; gap: 12px;">
+        <div class="panel">
+            <div class="panel-head">BIO_MONITOR</div>
+            <div class="bio-grid">
+                <div class="bio-card"><span class="bio-icon">🦴</span><span class="bio-label">Posture</span></div>
+                <div class="bio-card"><span class="bio-icon">👁️</span><span class="bio-label">Vision</span></div>
+                <div class="bio-card"><span class="bio-icon">💧</span><span class="bio-label">Hydration</span></div>
+            </div>
+        </div>
+
+        <div class="panel chat-panel">
+            <div class="panel-head" style="color: var(--neon-purple); border-color: var(--neon-purple);">
+                AI_MENTOR
+            </div>
+            <div id="chat-history">
+                <div>> System Online.</div>
+                <div style="color: var(--neon-blue);">> {{ greeting_message }}</div>
+            </div>
+            <input type="text" id="chat-input" placeholder="Ask Mentor...">
+        </div>
+    </aside>
+
+    <!-- FOOTER -->
+    <footer class="footer-bar" style="grid-column: 2/4; grid-row: 3/4;">
+        <span>STATUS: <span style="color: var(--neon-green)">ONLINE</span></span>
+        <span>CAREERDEV AI v2.0</span>
+    </footer>
+
+    <!-- COOKIE BANNER -->
+    <div id="cookie-banner"
+         style="position: fixed; bottom: 20px; left: 100px; right: 20px;
+                background: #0f111a; border: 1px solid var(--neon-blue);
+                padding: 15px; border-radius: 8px; display: none;
+                align-items: center; justify-content: space-between;
+                z-index: 9999;">
+        <span style="font-size: 0.8rem;">🍪 We use cookies to analyze GitHub traffic.</span>
+        <div>
+            <button onclick="acceptCookies()" style="background: var(--neon-green); border: none; padding: 5px 15px;">
+                ACCEPT
+            </button>
+            <button onclick="document.getElementById('cookie-banner').style.display='none'">
+                CLOSE
+            </button>
+        </div>
+    </div>
+
+</div>
+
 <script>
+/* ---------------- COOKIES ---------------- */
+if (!localStorage.getItem('cookiesAccepted')) {
+    document.getElementById('cookie-banner').style.display = 'flex';
+}
+function acceptCookies() {
+    localStorage.setItem('cookiesAccepted', 'true');
+    document.getElementById('cookie-banner').style.display = 'none';
+}
+
+/* ---------------- RADAR CHART ---------------- */
+const radarDataRaw = {{ career_data.zone_a_radar | tojson }};
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById('radarChart') && radarDataRaw) {
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        radarDataRaw.datasets[0].backgroundColor = 'rgba(59,130,246,0.2)';
+        radarDataRaw.datasets[0].borderColor = '#3b82f6';
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: radarDataRaw,
+            options: {
+                maintainAspectRatio: false,
+                scales: { r: { beginAtZero: true, max: 100 } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+});
+
+/* ---------------- TABS ---------------- */
+function switchTab(tab) {
+    document.getElementById('view-audit').style.display = 'none';
+    document.getElementById('view-plan').style.display = 'none';
+    document.getElementById('view-' + tab).style.display = 'flex';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+/* ---------------- VERIFY REPO (REAL) ---------------- */
 async function verifyRepo(taskId, keyword) {
     const btn = document.getElementById(`btn-${taskId}`);
     const status = document.getElementById(`status-${taskId}`);
@@ -26,7 +208,7 @@ async function verifyRepo(taskId, keyword) {
             status.innerText = "No compatible commits detected.";
             btn.disabled = false;
         }
-    } catch (err) {
+    } catch {
         btn.innerText = "ERROR";
         btn.style.background = "var(--alert)";
         status.innerText = "Verification failed.";
@@ -34,3 +216,5 @@ async function verifyRepo(taskId, keyword) {
     }
 }
 </script>
+
+{% endblock %}
