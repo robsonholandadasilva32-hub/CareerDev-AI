@@ -35,6 +35,10 @@ class User(Base):
     linkedin_id = Column(String, nullable=True, unique=True)
     avatar_url = Column(String, nullable=True)
 
+    # Gamification
+    weekly_streak_count = Column(Integer, default=0)
+    last_weekly_check = Column(DateTime, nullable=True)
+
     # Access Tokens
     github_token = Column(String, nullable=True)
     linkedin_token = Column(String, nullable=True)

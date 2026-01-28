@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.ai.prompts import (
     CAREER_ASSISTANT_SYSTEM_PROMPT,
+    RUTHLESS_CTO_SYSTEM_PROMPT,
     get_interviewer_system_prompt,
     CHALLENGE_GENERATOR_PROMPT,
     CHALLENGE_GRADER_PROMPT,
@@ -38,7 +39,12 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         )
         context_str = ""
     else:
-        system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
+        # Check for HARDCORE MODE
+        if user.weekly_streak_count >= 4:
+            system_prompt = RUTHLESS_CTO_SYSTEM_PROMPT
+        else:
+            system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
+
         context_str = f"""
         **User Context:**
         - Name: {user.name}
@@ -46,6 +52,7 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         - Current Skills: {json.dumps(skills)}
         - Active Learning Plan: {', '.join(active_plans)}
         - Focus: {target_role}
+        - Weekly Streak: {user.weekly_streak_count}
 
         Use this context to give personalized advice. If Premium is False and they ask for advanced resume checks, suggest upgrading.
         """
@@ -67,6 +74,7 @@ class ChatbotService:
         """
 
         profile = None
+        user = None
         if user_id and db:
              user = db.query(User).filter(User.id == user_id).first()
              if user:
@@ -91,7 +99,8 @@ class ChatbotService:
 
         response_text = ""
         if self.simulated:
-            response_text = self._simulated_response(message, lang, context_str, mode)
+            # Pass user object to check streak in simulation
+            response_text = self._simulated_response(message, lang, context_str, mode, user)
         else:
             response_text = await self._llm_response(message, lang, context_str, system_prompt)
 
@@ -181,7 +190,7 @@ class ChatbotService:
         prompt = PROJECT_SPEC_GENERATOR_PROMPT.format(skill=skill)
         return await self._llm_response("", lang, "", prompt)
 
-    def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:
+    def _simulated_response(self, message: str, lang: str, context: str, mode: str, user: User = None) -> str:
         msg = message.lower()
 
         # Helper for simple multilingual return
@@ -202,6 +211,14 @@ class ChatbotService:
                  "Boa resposta (Simulado). Próxima: O que é Injeção de Dependência?",
                  "Buena respuesta (Simulado). Siguiente: ¿Qué es la Inyección de Dependencias?"
              )
+
+        # HARDCORE MODE SIMULATION
+        if user and user.weekly_streak_count >= 4:
+            return reply(
+                "HARDCORE MODE: I don't care about your feelings. Your system design is flawed. Design a distributed lock manager using Redis. NOW.",
+                "MODO HARDCORE: Não me importo com seus sentimentos. Seu design de sistema é falho. Projete um gerenciador de bloqueio distribuído usando Redis. AGORA.",
+                "MODO HARDCORE: No me importan tus sentimientos. Tu diseño de sistema es defectuoso. Diseña un gestor de bloqueo distribuido usando Redis. AHORA."
+            )
 
         if "my plan" in msg or "meu plano" in msg:
             if "Active Learning Plan" in context:

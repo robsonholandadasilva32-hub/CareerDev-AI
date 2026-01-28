@@ -275,7 +275,8 @@ class CareerEngine:
                  "values": d_github
             },
             "missing_skills": missing_skills,
-            "doughnut_data": profile.skills_graph_data
+            "doughnut_data": profile.skills_graph_data,
+            "weekly_plan": profile.active_weekly_plan # For Growth Engine UI
         }
 
 career_engine = CareerEngine()
