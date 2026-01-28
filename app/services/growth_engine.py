@@ -64,7 +64,15 @@ class GrowthEngine:
             plan_type = "Micro-Learning"
             reasoning += " (Adjusted for low availability: 15 min tasks)."
 
-        # 3. Generate Routine
+        # 3. Check Hardcore Mode (Gamification Rule)
+        # Rule: If streak >= 4 weeks, UNLOCK "HARDCORE MODE"
+        is_hardcore = user.weekly_streak_count >= 4
+        if is_hardcore:
+             focus_skill = "System Design"
+             reasoning = "🔥 HARDCORE MODE ACTIVE: Streak >= 4. Tutorials disabled. Ruthless Challenges only."
+             plan_type = "Challenge"
+
+        # 4. Generate Routine
         week_id = datetime.datetime.now().strftime("%Y-W%U")
 
         routine = [
@@ -109,6 +117,33 @@ class GrowthEngine:
                     "type": "Code",
                     "task": f"Snippet: Hello World in {focus_skill}",
                     "verify_key": focus_skill.lower(),
+                    "status": "pending"
+                }
+            ]
+        elif plan_type == "Challenge":
+            # Hardcore Tasks
+            routine = [
+                {
+                    "id": 1,
+                    "day": "Mon",
+                    "type": "Design",
+                    "task": "System Design: Distributed Rate Limiter",
+                    "status": "pending"
+                },
+                {
+                    "id": 2,
+                    "day": "Wed",
+                    "type": "Code",
+                    "task": "Implement Token Bucket Algo in Rust",
+                    "verify_key": "rust",
+                    "status": "pending"
+                },
+                 {
+                    "id": 3,
+                    "day": "Fri",
+                    "type": "Code",
+                    "task": "Load Test your Rate Limiter",
+                    "verify_key": "rust",
                     "status": "pending"
                 }
             ]
