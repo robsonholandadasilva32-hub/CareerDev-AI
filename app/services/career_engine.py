@@ -127,3 +127,5 @@ class CareerEngine:
         base = min(bytes_count / 100_000, 1.0)
         bonus = 0.2 if skill in linkedin_skills else 0.0
         return min(base + bonus, 1.0)
+
+    career_engine = CareerEngine()
