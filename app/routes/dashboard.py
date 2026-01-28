@@ -105,9 +105,12 @@ def security_panel(request: Request, user: User = Depends(get_current_user_secur
     if not user: return RedirectResponse("/login")
     return templates.TemplateResponse("dashboard/security.html", {"request": request, "user": user})
 
-@router.get("/legal")
+# ATUALIZADO AQUI (Aba Legal Hub com Privacidade e Termos)
+@router.get("/legal", response_class=HTMLResponse)
 def legal_panel(request: Request):
-    """Solicitação 4: Balança = Legal/About (Pode ser público)"""
+    """
+    Legal Hub: Renderiza a Política de Privacidade e Termos de Uso.
+    """
     return templates.TemplateResponse("legal.html", {"request": request})
 
 @router.get("/accessibility")
