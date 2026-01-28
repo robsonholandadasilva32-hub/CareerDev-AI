@@ -3,9 +3,9 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base_class import Base
 
-# --- ATENÇÃO: O nome da classe deve ser LoginHistory ---
-class LoginHistory(Base):
-    __tablename__ = "login_history"
+# Vamos usar AuditLog, já que é isso que o servidor insiste em ver
+class AuditLog(Base):
+    __tablename__ = "audit_logs" # Nome da tabela no banco
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -23,5 +23,5 @@ class LoginHistory(Base):
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
 
-    # Relacionamento
+    # Relacionamento Reverso
     user = relationship("User", back_populates="audit_logs")
