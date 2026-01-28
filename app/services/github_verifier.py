@@ -1,27 +1,48 @@
 from datetime import datetime, timedelta
+from typing import List, Dict
 
 class GitHubCommitVerifier:
+    """
+    Verifica se commits recentes atendem aos critérios de uma tarefa de código.
+    """
 
-    def verify(self, commits: list, language: str, days: int = 7) -> bool:
-        ext_map = {
-            "rust": ".rs",
-            "python": ".py",
-            "go": ".go"
-        }
+    EXTENSIONS = {
+        "rust": ".rs",
+        "python": ".py",
+        "go": ".go",
+        "javascript": ".js",
+        "typescript": ".ts"
+    }
 
-        cutoff = datetime.utcnow() - timedelta(days=days)
-        ext = ext_map.get(language.lower())
+    def verify(self, commits: List[Dict], language: str, days: int = 7) -> bool:
+        """
+        Retorna True se encontrar commits recentes com arquivos compatíveis
+        com a linguagem esperada.
+        """
+        if not commits or not language:
+            return False
+
+        ext = self.EXTENSIONS.get(language.lower())
+        if not ext:
+            return False
+
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
 
         for commit in commits:
-            commit_date = datetime.fromisoformat(commit["date"])
-            if commit_date < cutoff:
+            try:
+                commit_date = datetime.fromisoformat(commit["date"])
+            except Exception:
                 continue
 
-            for file in commit.get("files", []):
-                if file.endswith(ext):
+            if commit_date < cutoff_date:
+                continue
+
+            for file_path in commit.get("files", []):
+                if file_path.endswith(ext):
                     return True
 
         return False
 
 
+# Instância reutilizável
 github_verifier = GitHubCommitVerifier()
