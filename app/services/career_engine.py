@@ -7,6 +7,7 @@ import json
 
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
+from app.services.growth_engine import growth_engine
 
 class CareerEngine:
     def __init__(self):
@@ -270,6 +271,7 @@ class CareerEngine:
                 "details": f"Profile: {p_completeness}% | Code Velocity: {metrics.get('velocity_score', 'N/A')}"
             },
             "zone_b_matrix": skill_audit,
+            "weekly_plan": growth_engine.generate_weekly_plan(db, user),
             "zone_c_ai": {
                 "insights": ai_insight_card
             },

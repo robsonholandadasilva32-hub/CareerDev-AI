@@ -39,6 +39,20 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         context_str = ""
     else:
         system_prompt = CAREER_ASSISTANT_SYSTEM_PROMPT
+
+        # HARDCORE MODE LOGIC
+        streak = user.weekly_streak_count or 0
+        if streak >= 4:
+            system_prompt += """
+
+            **HARDCORE MODE ENABLED (STREAK > 4 WEEKS)**
+            - The user is a veteran. STOP being polite.
+            - DO NOT provide tutorials or step-by-step guides.
+            - If they ask a question, answer with a System Design Challenge or a trade-off analysis question.
+            - Be concise, rigorous, and demanding.
+            - Persona: Ruthless CTO.
+            """
+
         context_str = f"""
         **User Context:**
         - Name: {user.name}
@@ -46,6 +60,7 @@ def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple
         - Current Skills: {json.dumps(skills)}
         - Active Learning Plan: {', '.join(active_plans)}
         - Focus: {target_role}
+        - Weekly Streak: {streak}
 
         Use this context to give personalized advice. If Premium is False and they ask for advanced resume checks, suggest upgrading.
         """

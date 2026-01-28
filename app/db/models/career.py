@@ -38,6 +38,9 @@ class CareerProfile(Base):
     # Active Challenge State (Stores {skill: "Docker", question: "...", timestamp: ...})
     active_challenge = Column(JSON, nullable=True)
 
+    # Weekly Growth Engine
+    active_weekly_plan = Column(JSON, nullable=True)
+
     # 0-100 Score calculated by intersecting Skills vs. Market Trends
     market_relevance_score = Column(Integer, default=0)
 

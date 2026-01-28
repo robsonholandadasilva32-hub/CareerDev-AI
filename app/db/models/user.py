@@ -39,6 +39,10 @@ class User(Base):
     github_token = Column(String, nullable=True)
     linkedin_token = Column(String, nullable=True)
 
+    # Gamification
+    weekly_streak_count = Column(Integer, default=0)
+    last_weekly_check = Column(DateTime, nullable=True)
+
     # Residential Address
     address_street = Column(String, nullable=True)
     address_number = Column(String, nullable=True)
