@@ -23,25 +23,22 @@ class User(Base):
     streak_count = Column(Integer, default=0) # Usado no Dashboard (Hardcore Mode)
     accelerator_mode = Column(Boolean, default=False) # Ativa features avançadas
     
-    # --- Relacionamentos (Cruciais para o dashboard.py funcionar) ---
+    # --- Relacionamentos ---
     
     # 1. Perfil de Carreira (One-to-One)
-    # Contém as skills, métricas do GitHub e análise de gaps
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     # 2. Rotinas Semanais (One-to-Many)
-    # O plano gerado pelo CareerEngine
     weekly_routines = relationship("WeeklyRoutine", back_populates="user", cascade="all, delete-orphan")
 
     # 3. Badges/Conquistas (One-to-Many)
-    # Necessário para o joinedload(User.badges) no dashboard
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
 
     # 4. Sessões de Segurança (One-to-Many)
-    # Para o painel de Segurança e controle de dispositivos
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
     # 5. Planos de Aprendizado (Legacy/Compatibilidade)
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
 
+    # 6. Auditoria de Login (One-to-Many)
     audit_logs = relationship("LoginHistory", back_populates="user", cascade="all, delete-orphan")
