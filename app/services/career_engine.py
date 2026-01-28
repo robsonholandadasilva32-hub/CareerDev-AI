@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-
 class CareerEngine:
     """
     Core service responsible for analyzing developer career signals
@@ -19,6 +18,7 @@ class CareerEngine:
         # -------------------------------
         skill_confidence: Dict[str, int] = {}
 
+        # Garante que temos uma lista, mesmo que linkedin_input esteja vazio
         linkedin_skills = list(linkedin_input.get("skills", {}).keys())
 
         for skill, bytes_count in raw_languages.items():
@@ -82,6 +82,7 @@ class CareerEngine:
         python_score = raw_langs.get("Python", 0)
         rust_score = raw_langs.get("Rust", 0)
 
+        # Lógica de exemplo para decidir o foco
         focus = "Rust" if (python_score > 100_000 and rust_score < 5_000) else "Python"
 
         suggested_pr = {
@@ -128,4 +129,7 @@ class CareerEngine:
         bonus = 0.2 if skill in linkedin_skills else 0.0
         return min(base + bonus, 1.0)
 
-    career_engine = CareerEngine()
+# ---------------------------------------------------------
+# INSTANCIAÇÃO (Esta linha DEVE estar sem indentação)
+# ---------------------------------------------------------
+career_engine = CareerEngine()
