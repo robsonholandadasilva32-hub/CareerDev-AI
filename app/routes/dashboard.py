@@ -161,3 +161,16 @@ def dashboard_legal(request: Request, user: User = Depends(get_current_user_secu
             "user": user,
         }
     )
+
+@router.get("/security")
+def security_panel(request: Request):
+    return templates.TemplateResponse("dashboard/security.html", {"request": request})
+
+@router.get("/network")
+def network_node(request: Request):
+    # Connects to the "Network" Icon
+    return templates.TemplateResponse("dashboard/network.html", {"request": request})
+
+@router.get("/legal")
+def legal_panel(request: Request):
+    return templates.TemplateResponse("legal.html", {"request": request})
