@@ -43,3 +43,5 @@ class User(Base):
 
     # 5. Planos de Aprendizado (Legacy/Compatibilidade)
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
+
+    audit_logs = relationship("LoginHistory", back_populates="user", cascade="all, delete-orphan")
