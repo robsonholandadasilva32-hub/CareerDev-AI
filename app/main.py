@@ -19,6 +19,8 @@ from app.core.limiter import limiter
 from pathlib import Path
 from dotenv import load_dotenv
 import sentry_sdk
+from app.db.models.user import User
+from app.db.models.weekly_routine import WeeklyRoutine
 
 # 1. Carregar .env e Configurar Logs
 load_dotenv()
