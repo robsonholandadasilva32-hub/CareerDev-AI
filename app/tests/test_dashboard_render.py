@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from datetime import datetime
 from fastapi.testclient import TestClient
 from app.main import app
@@ -41,9 +41,9 @@ def setup_overrides():
 @patch("app.routes.dashboard.career_engine")
 def test_dashboard_render_user_context(mock_career_engine):
     # Setup mocks for career_engine
-    mock_career_engine.analyze_profile.return_value = {"level": "Junior", "focus": "Backend", "trends": {}}
+    mock_career_engine.analyze_profile = AsyncMock(return_value={"level": "Junior", "focus": "Backend", "trends": {}})
     mock_career_engine.generate_plan.return_value = []
-    mock_career_engine.get_career_dashboard_data.return_value = {
+    mock_career_engine.get_career_dashboard_data = AsyncMock(return_value={
         "zone_a_reality": {
             "chart_type": "doughnut",
             "data": {"labels": [], "values": []},
@@ -54,7 +54,7 @@ def test_dashboard_render_user_context(mock_career_engine):
             "user_score": 50,
             "market_pulse": "Stable"
         }
-    }
+    })
 
     # Make request
     # Note: TestClient raises exceptions from the app by default.

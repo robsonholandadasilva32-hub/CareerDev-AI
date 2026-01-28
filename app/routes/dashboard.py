@@ -38,7 +38,7 @@ def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
     return user
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
+async def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
     # 1️⃣ Secure Auth Dependency Check
     if not user:
         return RedirectResponse("/login", status_code=302)
@@ -53,13 +53,13 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
 
     # 3️⃣ Career Data (Real Logic)
     # This will create/update the profile and sync (simulated) external data
-    profile_data = career_engine.analyze_profile(db, user)
+    profile_data = await career_engine.analyze_profile(db, user)
 
     # Generate/Fetch Plan
     plan_items = career_engine.generate_plan(db, user)
 
     # New AI Brain Data
-    career_data = career_engine.get_career_dashboard_data(db, user)
+    career_data = await career_engine.get_career_dashboard_data(db, user)
 
     # Logic for Context-Aware Greeting
     skills_dict = profile_data.get('skills', {})
@@ -90,11 +90,11 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depe
     )
 
 @router.get("/api/dashboard/stats", response_class=JSONResponse)
-def get_dashboard_stats(user: User = Depends(get_current_user_secure), db: Session = Depends(get_db)):
+async def get_dashboard_stats(user: User = Depends(get_current_user_secure), db: Session = Depends(get_db)):
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    data = career_engine.get_career_dashboard_data(db, user)
+    data = await career_engine.get_career_dashboard_data(db, user)
     return data
 
 @router.post("/api/dashboard/tasks/{task_id}/complete")
