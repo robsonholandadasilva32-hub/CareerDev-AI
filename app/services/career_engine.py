@@ -2,7 +2,7 @@ from typing import Dict, List
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
-from app.db.models.learning_plan import LearningPlan
+from app.db.models.career import CareerProfile, LearningPlan
 
 
 class CareerEngine:
