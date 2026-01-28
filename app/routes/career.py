@@ -10,6 +10,7 @@ from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
 from app.ai.chatbot import chatbot_service
+from app.services.growth_engine import growth_engine
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,3 +119,39 @@ async def generate_project_spec(request: Request, body: ProjectSpecRequest, db: 
     except Exception as e:
         logger.error(f"Error generating project spec: {e}")
         return JSONResponse({"error": "AI Service Error"}, status_code=500)
+
+
+# GROWTH ENGINE ROUTES
+
+@router.post("/api/growth/generate", response_class=JSONResponse)
+def generate_weekly_plan_route(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    try:
+        plan = growth_engine.generate_weekly_plan(db, user)
+        return plan
+    except Exception as e:
+        logger.error(f"Error generating plan: {e}")
+        return JSONResponse({"error": "Failed to generate plan"}, status_code=500)
+
+class VerifyTaskRequest(BaseModel):
+    task_id: int
+
+@router.post("/api/growth/verify", response_class=JSONResponse)
+async def verify_task_route(request: Request, body: VerifyTaskRequest, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    try:
+        result = await growth_engine.verify_task(db, user, body.task_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error verifying task: {e}")
+        return JSONResponse({"error": "Verification Failed"}, status_code=500)
