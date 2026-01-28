@@ -2,428 +2,232 @@
 
 {% block dashboard_content %}
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="/static/css/cyberpunk_dashboard.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-    /* NUCLEAR CSS RESET */
-    .dashboard-sidebar, .main-header, .navbar, .footer, #sidebar-wrapper { display: none !important; }
-    .content-wrapper, .main-panel, .dashboard-content {
-        margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important;
-        position: fixed !important; top: 0 !important; left: 0 !important; z-index: 9900 !important;
-        background: #050505 !important;
-    }
-
-    /* THEME */
-    :root {
-        --bg-deep: #050505; --bg-panel: #0f111a; --border: rgba(255, 255, 255, 0.08);
-        --neon-blue: #3b82f6; --neon-green: #10b981; --neon-purple: #8b5cf6; --alert: #ef4444;
-        --text-main: #f3f4f6; --text-dim: #9ca3af; --font-mono: 'JetBrains Mono', monospace;
-    }
-    body { background-color: var(--bg-deep) !important; color: var(--text-main); font-family: 'Inter', sans-serif; overflow: hidden; }
-
-    /* LAYOUT */
-    .grid-layout {
-        display: grid; grid-template-columns: 80px 1fr 350px; grid-template-rows: 60px 1fr 30px;
-        height: 100vh; width: 100vw; gap: 12px; padding: 12px; box-sizing: border-box;
-    }
-
-    /* PANELS */
-    .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-    .panel-head { padding: 12px 16px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--neon-blue); display: flex; justify-content: space-between; }
-
-    /* NAVIGATION */
-    .nav-dock { grid-row: 1 / 4; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 20px; }
-    .nav-btn {
-        width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-        color: var(--text-dim); border: 1px solid transparent; font-size: 1.4rem; cursor: pointer; text-decoration: none; transition: 0.3s;
-    }
-    .nav-btn:hover, .nav-btn.active { background: rgba(59, 130, 246, 0.15); color: var(--neon-blue); border-color: var(--neon-blue); }
-
-    /* HEALTH MODULE */
-    .bio-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px; }
-    .bio-card { background: #000; border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-    .bio-card.active { border-color: var(--neon-green); background: rgba(16, 185, 129, 0.1); }
-    .bio-label { font-size: 0.6rem; font-family: var(--font-mono); color: var(--text-dim); text-transform: uppercase; display: block; margin-top: 5px; }
-    .bio-card.active .bio-label { color: var(--neon-green); }
-
-    /* DATA VISUALS */
-    .data-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; margin-left: 5px; }
-    .tag-ok { background: rgba(16, 185, 129, 0.2); color: var(--neon-green); }
-    .tag-crit { background: rgba(239, 68, 68, 0.2); color: var(--alert); }
-
-    /* LOADER */
-    .loader-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:var(--bg-panel); display:flex; justify-content:center; align-items:center; z-index:10; }
-
-    /* MATRIX THEME */
-    .theme-matrix { filter: sepia(100%) hue-rotate(50deg) saturate(500%) contrast(120%); font-family: 'Courier New', monospace !important; }
-    .theme-matrix * { color: #00ff00 !important; border-color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
-</style>
 
 <div class="grid-layout">
     
     <nav class="panel nav-dock">
-        <div style="font-weight: 900; color: #fff; font-size: 1.2rem; margin-bottom: 10px;">C/AI</div>
-
+        <div class="brand-logo">C/AI</div>
         <a href="/dashboard" class="nav-btn active" title="Command Center">⌘</a>
-
-        <a href="/dashboard/ai-settings" class="nav-btn" title="AI Configuration">🧠</a>
-
+        <a href="/accessibility" class="nav-btn" title="Universal Accessibility">🧠</a>
         <a href="/dashboard/network" class="nav-btn" title="Network Node">🌐</a>
-
-        <a href="/dashboard/security" class="nav-btn" title="Security & Privacy">🛡️</a>
-
-        <a href="/legal" class="nav-btn" title="Legal Info">⚖️</a>
-
+        <a href="/dashboard/security" class="nav-btn" title="Security & Sessions">🛡️</a>
+        <a href="/legal" class="nav-btn" title="Legal & Privacy">⚖️</a>
+        
         <div style="flex-grow: 1;"></div>
-        <a href="/logout" class="nav-btn" style="color: var(--alert);" title="Logout">✕</a>
+        <a href="/logout" class="nav-btn alert-color" title="Logout">✕</a>
     </nav>
 
-    <div class="panel" style="grid-column: 2/4; flex-direction: row; align-items: center; padding: 0 20px;">
-        <span style="font-family: var(--font-mono); color: var(--neon-blue); margin-right: 20px;">REAL_TIME_FEED ::</span>
-        <marquee style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--neon-green);">
-            SYSTEM CONNECTED TO GITHUB & LINKEDIN API... ANALYZING SKILL GAPS... MARKET DEMAND: RUST +20%...
+    <div class="panel status-bar">
+        <span class="feed-label">REAL_TIME_FEED ::</span>
+        <marquee class="feed-text">
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... DETECTING GAPS... MARKET DEMAND FOR RUST +20%...
         </marquee>
     </div>
 
-    <main class="panel" style="grid-column: 2/3; grid-row: 2/3; display: flex; flex-direction: column;">
-        <div class="panel-head" style="justify-content: start; gap: 20px; align-items: center;">
-            <div style="display: flex; gap: 15px;">
-                <span onclick="switchTab('audit')" id="tab-audit" class="tab-active" style="cursor: pointer; transition: 0.3s;">AUDIT VIEW</span>
-                <span onclick="switchTab('plan')" id="tab-plan" class="tab-inactive" style="cursor: pointer; transition: 0.3s; color: var(--text-dim);">WEEKLY PLAN</span>
+    <main class="panel" style="grid-column: 2/3; grid-row: 2/3;">
+        <div class="panel-head tab-header">
+            <div>
+                <button class="tab-btn active" onclick="switchTab('audit')">AUDIT VIEW</button>
+                <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
             </div>
-            <div style="flex-grow: 1;"></div>
-            <!-- STREAK BAR -->
-            <div id="streak-container" style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 0.7rem; color: var(--text-dim);">STREAK:</span>
-                <div id="streak-squares" style="display: flex; gap: 3px;">
-                    <!-- JS will populate this -->
-                </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</span>
             </div>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">{{ user.email }}</span>
         </div>
 
-        <!-- TAB 1: AUDIT VIEW -->
-        <div id="view-audit" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
-            <div style="overflow-y: auto; flex-grow: 1; position: relative;" id="data-container">
-                <div class="loader-overlay" id="data-loader">
-                    <span style="font-family: var(--font-mono); color: var(--neon-blue);">CONNECTING TO NEURAL ENGINE...</span>
-                </div>
+        <div id="view-audit" style="display: flex; flex-direction: column; flex-grow: 1;">
+            <div style="flex-grow: 1; position: relative; padding: 20px;">
+                <canvas id="radarChart"></canvas>
             </div>
-
-            <div style="height: 160px; border-top: 1px solid var(--border); padding: 15px; display: flex; align-items: center; gap: 20px; flex-shrink: 0;">
-                <div style="width: 140px; height: 140px;"><canvas id="radarChart"></canvas></div>
+            <div style="border-top: 1px solid var(--border); padding: 15px; display: flex; align-items: center; gap: 20px;">
                 <div>
                     <div style="color: var(--text-dim); font-size: 0.8rem; font-family: var(--font-mono);">MARKET ALIGNMENT</div>
-                    <div style="font-size: 2rem; font-weight: 800; color: var(--neon-green);" id="market-score">--/100</div>
-                    <button onclick="triggerGenerator()" style="background: var(--neon-purple); border: none; color: white; padding: 5px 10px; font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; margin-top: 5px;">GENERATE MICRO-PROJECT</button>
+                    <div style="font-size: 2.5rem; font-weight: 800; color: {{ career_data.zone_a_holistic.color }};" id="market-score">
+                        {{ market_score }}/100
+                    </div>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-dim); max-width: 200px;">
+                    {{ career_data.zone_a_holistic.details }}
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: WEEKLY PLAN -->
-        <div id="view-plan" style="display: none; flex-direction: column; flex-grow: 1; padding: 20px; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; color: var(--neon-blue); font-family: var(--font-mono);">WEEKLY PROTOCOL</h3>
-                <button onclick="generatePlan()" style="background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); padding: 5px 10px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;">REFRESH PROTOCOL</button>
+        <div id="view-plan" style="display: none; flex-direction: column; flex-grow: 1;">
+            <div class="kanban-header">
+                <span>CURRENT FOCUS: <span style="color:var(--neon-green)">{{ career_data.weekly_plan.focus | upper }}</span></span>
+                <span>MODE: {{ career_data.weekly_plan.mode }}</span>
             </div>
-
-            <div id="plan-metadata" style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-dim);">
-                <!-- Focus and Reasoning -->
-            </div>
-
-            <div id="plan-items" style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Items -->
-                <div style="text-align: center; color: var(--text-dim); margin-top: 50px;">NO ACTIVE PLAN. INITIALIZE PROTOCOL.</div>
+            
+            <div class="kanban-list">
+                {% if career_data.weekly_plan and career_data.weekly_plan.tasks %}
+                    {% for task in career_data.weekly_plan.tasks %}
+                    <div class="kanban-card {% if task.type == 'Code' %}active-card{% endif %}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                            <strong style="color: var(--neon-blue);">{{ task.day }} • {{ task.type }}</strong>
+                            {% if task.done %}<span style="color: var(--neon-green)">DONE</span>{% endif %}
+                        </div>
+                        <div style="margin-bottom: 10px;">{{ task.task }}</div>
+                        
+                        {% if task.action == 'VERIFY_REPO' %}
+                            <button class="verify-btn" 
+                                    id="btn-{{ loop.index }}"
+                                    onclick="verifyRepo('{{ loop.index }}', '{{ task.verify_keyword }}')">
+                                VERIFY CODE COMMIT ⚡
+                            </button>
+                            <div id="status-{{ loop.index }}" style="font-size: 0.7rem; margin-top: 5px; font-family: monospace;"></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="kanban-card">System analyzing gaps... Check back shortly.</div>
+                {% endif %}
             </div>
         </div>
     </main>
 
     <aside style="grid-column: 3/4; grid-row: 2/3; display: flex; flex-direction: column; gap: 12px;">
-
         <div class="panel">
             <div class="panel-head">BIO_MONITOR</div>
             <div class="bio-grid">
-                <div class="bio-card" onclick="toggleBio(this)"><span class="bio-icon">🦴</span><span class="bio-label">Posture</span></div>
-                <div class="bio-card" onclick="toggleBio(this)"><span class="bio-icon">👁️</span><span class="bio-label">Vision</span></div>
-                <div class="bio-card" onclick="toggleBio(this)"><span class="bio-icon">💧</span><span class="bio-label">Hydration</span></div>
+                <div class="bio-card"><span class="bio-icon">🦴</span><span class="bio-label">Posture</span></div>
+                <div class="bio-card"><span class="bio-icon">👁️</span><span class="bio-label">Vision</span></div>
+                <div class="bio-card"><span class="bio-icon">💧</span><span class="bio-label">Hydration</span></div>
             </div>
         </div>
 
-        <div class="panel" style="flex-grow: 1; background: #000;">
-            <div class="panel-head" style="border-color: var(--neon-purple); color: var(--neon-purple);">AI_MENTOR</div>
-            <div id="chat-history" style="flex-grow: 1; padding: 15px; color: var(--text-dim); overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem;">
-                <div>> System Ready.</div>
+        <div class="panel chat-panel">
+            <div class="panel-head" style="border-color: var(--neon-purple); color: var(--neon-purple);">AI_MENTOR (JULES)</div>
+            <div id="chat-history">
+                <div style="margin-bottom: 5px;">> System Online.</div>
+                <div style="margin-bottom: 5px; color: var(--neon-blue);">> {{ greeting_message }}</div>
+                {% for skill in career_data.missing_skills %}
+                    <div style="margin-bottom: 5px; color: var(--alert);">> CRITICAL GAP: {{ skill }}. Adding to plan...</div>
+                {% endfor %}
             </div>
-            <input type="text" id="chat-input" placeholder="Ask Mentor..." style="width: 100%; background: #111; border: none; border-top: 1px solid var(--border); padding: 12px; color: #fff; font-family: var(--font-mono); outline: none;">
+            <input type="text" id="chat-input" placeholder="Query Neural Network...">
         </div>
     </aside>
 
-    <footer class="footer-bar" style="grid-column: 2/4;">
-        <span>STATUS: ONLINE</span>
-        <span style="color: var(--text-dim); font-size: 0.7rem;">CAREERDEV AI v2.0</span>
+    <footer class="footer-bar">
+        <span>STATUS: <span style="color: var(--neon-green)">CONNECTED</span></span>
+        <span>CAREERDEV AI v2.0</span>
     </footer>
 </div>
 
 <script>
-    // --- 1. REAL DATA FETCHING (NO MORE MOCKS) ---
-    async function initDashboard() {
-        try {
-            renderStreak({{ user.weekly_streak_count }});
-
-            // Call the REAL backend endpoint
-            const response = await fetch('/api/dashboard/stats');
-            const data = await response.json();
-
-            // Hide Loader
-            document.getElementById('data-loader').style.display = 'none';
-
-            // Render Zone B
-            renderTable(data.zone_b_matrix);
-
-            // Render Weekly Plan
-            if (data.weekly_plan) {
-                renderWeeklyPlan(data.weekly_plan);
-            }
-
-            // Render Chart
-            renderChart(data.zone_a_reality);
-
-            // Update Score
-            document.getElementById('market-score').innerText = data.zone_c_ticker.user_score + "/100";
-
-        } catch (error) {
-            console.error("Backend Connection Failed, Falling back to Simulation for Demo");
-            // FALLBACK TO SIMULATION IF BACKEND IS NOT READY YET (Prevents White Screen)
-            runSimulation();
-        }
-    }
-
-    // --- TAB LOGIC ---
-    function switchTab(tab) {
-        document.querySelectorAll('[id^="view-"]').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.color = 'var(--text-dim)');
-
-        document.getElementById(`view-${tab}`).style.display = 'flex';
-        document.getElementById(`tab-${tab}`).style.color = 'var(--neon-blue)';
-    }
-
-    // --- WEEKLY PLAN LOGIC ---
-    function renderWeeklyPlan(plan) {
-        document.getElementById('plan-metadata').innerHTML = `
-            <strong>FOCUS:</strong> <span style="color:var(--neon-blue)">${plan.focus_language}</span><br>
-            <strong>LOGIC:</strong> ${plan.reasoning}
-        `;
-
-        const container = document.getElementById('plan-items');
-        container.innerHTML = '';
-
-        plan.routine.forEach(task => {
-            const isDone = task.status === 'completed';
-            const div = document.createElement('div');
-            div.className = 'panel';
-            div.style.padding = '10px';
-            div.style.background = isDone ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)';
-            div.style.border = isDone ? '1px solid var(--neon-green)' : '1px solid var(--border)';
-            div.style.marginBottom = '8px';
-
-            let actionHtml = '';
-            if (task.type === 'Code' && !isDone) {
-                actionHtml = `<button onclick="verifyTask(${task.id})" style="margin-top:5px; width:100%; background:var(--neon-blue); border:none; color:#fff; padding:6px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.75rem; text-shadow:0 0 5px var(--neon-blue);">⚡ VERIFY CODE</button>`;
-            } else if (!isDone) {
-                 actionHtml = `<div style="font-size:0.7rem; color:var(--text-dim); margin-top:5px;">Manual Check Required</div>`;
-            } else {
-                 actionHtml = `<div style="font-size:0.7rem; color:var(--neon-green); margin-top:5px;">✓ VERIFIED</div>`;
-            }
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; color:var(--text-dim);">
-                    <span>${task.day} • ${task.type.toUpperCase()}</span>
-                    ${isDone ? '<span style="color:var(--neon-green)">DONE</span>' : ''}
-                </div>
-                <div style="margin: 5px 0; font-size: 0.9rem;">${task.task}</div>
-                ${actionHtml}
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    async function generatePlan() {
-        addToChat("GROWTH_ENGINE: Analyzing GitHub vs Market...");
-        try {
-            const res = await fetch('/api/growth/generate', { method: 'POST' });
-            const plan = await res.json();
-            renderWeeklyPlan(plan);
-            addToChat("GROWTH_ENGINE: New Protocol Generated.");
-        } catch(e) {
-            addToChat("ERROR: Could not generate plan.");
-        }
-    }
-
-    async function verifyTask(taskId) {
-        addToChat(`GROWTH_ENGINE: Verifying Task ID ${taskId}... Connecting to GitHub...`);
-        try {
-            const res = await fetch('/api/growth/verify', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({task_id: taskId})
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                addToChat(`SUCCESS: ${result.message}`);
-                // Refresh Plan UI
-                if (result.task) {
-                    // Quick update locally or re-fetch plan
-                    // For now, let's just re-fetch the whole plan or update the specific element
-                    // Simplest: trigger generatePlan() or just reload page?
-                    // Better: re-fetch dashboard stats.
-                    const response = await fetch('/api/dashboard/stats');
-                    const data = await response.json();
-                    renderWeeklyPlan(data.weekly_plan);
-                    renderStreak(data.zone_c_ticker.streak || {{ user.weekly_streak_count }} + 1); // Optimistic update
+    // --- 1. RADAR CHART INIT ---
+    const radarDataRaw = {{ career_data.zone_a_radar | tojson }};
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        if(document.getElementById('radarChart') && radarDataRaw) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            // Adjust colors for Cyberpunk theme
+            if(radarDataRaw.datasets) {
+                radarDataRaw.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.2)'; // Blue fill
+                radarDataRaw.datasets[0].borderColor = '#3b82f6';
+                radarDataRaw.datasets[0].pointBackgroundColor = '#fff';
+                
+                if(radarDataRaw.datasets[1]) {
+                    radarDataRaw.datasets[1].borderColor = '#10b981'; // Green
+                    radarDataRaw.datasets[1].borderDash = [5, 5];
                 }
-            } else {
-                addToChat(`FAILED: ${result.message}`);
             }
-        } catch(e) {
-            addToChat("ERROR: Verification System Offline.");
-        }
-    }
 
-    // --- GAMIFICATION ---
-    function renderStreak(count) {
-        const container = document.getElementById('streak-squares');
-        if(!container) return;
-        container.innerHTML = '';
-        const isHardcore = count >= 4;
-
-        for(let i=0; i<4; i++) {
-            const div = document.createElement('div');
-            div.style.width = '10px'; div.style.height = '10px'; div.style.borderRadius = '2px';
-
-            if (i < count) {
-                div.style.background = isHardcore ? '#ef4444' : '#10b981';
-                if (isHardcore) div.style.boxShadow = "0 0 5px #ef4444";
-            } else {
-                div.style.background = '#333';
-            }
-            container.appendChild(div);
-        }
-
-        if (isHardcore) {
-            const fire = document.createElement('span');
-            fire.innerText = "🔥";
-            fire.style.fontSize = "0.8rem";
-            container.appendChild(fire);
-        }
-    }
-
-    // --- EASTER EGG: MATRIX MODE ---
-    let konamiCursor = 0;
-    const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
-    let isMatrixActive = false;
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === konamiCode[konamiCursor]) {
-            konamiCursor++;
-            if (konamiCursor === konamiCode.length) {
-                toggleMatrixMode();
-                konamiCursor = 0;
-            }
-        } else {
-            konamiCursor = 0;
+            new Chart(ctx, {
+                type: 'radar',
+                data: radarDataRaw,
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#9ca3af', font: { family: 'JetBrains Mono' } },
+                            ticks: { display: false, backdropColor: 'transparent' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#fff', font: { family: 'JetBrains Mono' } } }
+                    }
+                }
+            });
         }
     });
 
-    function toggleMatrixMode() {
-        isMatrixActive = !isMatrixActive;
-        if (isMatrixActive) {
-            document.body.classList.add('theme-matrix');
-            addToChat("Wake up, Neo...");
-        } else {
-            document.body.classList.remove('theme-matrix');
-            addToChat("Matrix simulation disabled.");
+    // --- 2. TAB SWITCHING ---
+    function switchTab(tabName) {
+        // Esconde Views
+        document.getElementById('view-audit').style.display = 'none';
+        document.getElementById('view-plan').style.display = 'none';
+        
+        // Reseta Botões
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        
+        // Ativa Selecionado
+        document.getElementById('view-' + tabName).style.display = 'flex'; // Flex para manter layout
+        event.target.classList.add('active');
+    }
+
+    // --- 3. VERIFICATION AJAX ---
+    async function verifyRepo(taskId, keyword) {
+        const btn = document.getElementById(`btn-${taskId}`);
+        const statusDiv = document.getElementById(`status-${taskId}`);
+        
+        btn.disabled = true;
+        btn.innerHTML = "SCANNING GITHUB API...";
+        statusDiv.innerHTML = "Connecting to Neural Engine...";
+        statusDiv.style.color = "var(--neon-blue)";
+        
+        try {
+            const response = await fetch(`/api/dashboard/tasks/${taskId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                btn.style.background = "var(--neon-blue)";
+                btn.style.color = "#fff";
+                btn.innerHTML = "VERIFIED ✓";
+                statusDiv.innerHTML = `SUCCESS: ${data.message}`;
+                statusDiv.style.color = "var(--neon-green)";
+                
+                // Update Score Visual
+                let scoreEl = document.getElementById('market-score');
+                let currentScore = parseInt(scoreEl.innerText.split('/')[0]);
+                scoreEl.innerText = (currentScore + 5) + "/100";
+            } else {
+                throw new Error(data.error || "Verification failed");
+            }
+        } catch (error) {
+            btn.disabled = false;
+            btn.innerHTML = "RETRY SCAN";
+            btn.style.background = "var(--alert)";
+            btn.style.color = "#fff";
+            statusDiv.innerHTML = `ERROR: ${error.message}`;
+            statusDiv.style.color = "var(--alert)";
         }
     }
 
-    function renderTable(items) {
-        const container = document.getElementById('data-container');
-        container.innerHTML = '';
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'data-row';
-            div.innerHTML = `
-                <div style="width: 120px; font-weight: 600; font-size: 0.9rem; color:${item.color || '#fff'}">${item.skill}</div>
-                <div style="flex-grow:1; margin: 0 10px; background:rgba(255,255,255,0.1); height:6px; border-radius:3px;">
-                    <div style="width:${item.percentage || 50}%; height:100%; background:${item.color || '#3b82f6'};"></div>
-                </div>
-                <div style="width: 120px; text-align: right; font-family: var(--font-mono); font-size: 0.75rem;">
-                    ${item.verdict}
-                </div>`;
-            container.appendChild(div);
-        });
-    }
+    // --- 4. MATRIX EASTER EGG ---
+    let kCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    let kPos = 0;
+    let matrixOn = false;
 
-    function renderChart(data) {
-        const ctx = document.getElementById('radarChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: data.labels || ['Python', 'Rust', 'Systems', 'Web'],
-                datasets: [{
-                    label: 'Reality (GH)',
-                    data: data.values || [80, 20, 30, 90],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)'
-                }, {
-                    label: 'Market (LI)',
-                    data: [80, 90, 80, 50], // Ideal profile
-                    borderColor: '#10b981',
-                    borderDash: [5, 5],
-                    fill: false
-                }]
-            },
-            options: { plugins: { legend: { display: false } }, scales: { r: { grid: { color: '#333' }, ticks: { display: false } } } }
-        });
-    }
-
-    // --- 2. HEALTH BUTTON LOGIC ---
-    function toggleBio(el) {
-        el.classList.toggle('active');
-        const status = el.classList.contains('active') ? "ACTIVATED" : "DEACTIVATED";
-        const label = el.querySelector('.bio-label').innerText;
-        addToChat(`BIO_SYSTEM: ${label} monitoring ${status}.`);
-    }
-
-    // --- 3. GENERATOR LOGIC ---
-    function triggerGenerator() {
-        addToChat("Initializing Micro-Project Generator...");
-        setTimeout(() => addToChat("Analyzing Gaps... Detected: Rust System Design."), 1000);
-        setTimeout(() => addToChat("Generating Spec: 'High-Concurrency Chat Server in Rust'..."), 2500);
-    }
-
-    function addToChat(msg) {
-        const chat = document.getElementById('chat-history');
-        const div = document.createElement('div');
-        div.style.marginBottom = '5px'; div.innerText = `> ${msg}`;
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    // FALLBACK SIMULATION (If Backend is cold)
-    function runSimulation() {
-        document.getElementById('data-loader').style.display = 'none';
-        renderTable([
-            { skill: "Python", percentage: 90, verdict: "MATCH", color: "#3b82f6" },
-            { skill: "Rust", percentage: 10, verdict: "CRITICAL GAP", color: "#ef4444" },
-            { skill: "Docker", percentage: 40, verdict: "GROWING", color: "#f59e0b" }
-        ]);
-        renderChart({});
-        document.getElementById('market-score').innerText = "68/100";
-    }
-
-    // START
-    document.addEventListener("DOMContentLoaded", initDashboard);
+    document.addEventListener('keydown', function(e) {
+        if (e.key === kCode[kPos]) {
+            kPos++;
+            if (kPos === kCode.length) {
+                matrixOn = !matrixOn;
+                document.body.classList.toggle('theme-matrix', matrixOn);
+                kPos = 0;
+            }
+        } else { kPos = 0; }
+    });
 </script>
 {% endblock %}
