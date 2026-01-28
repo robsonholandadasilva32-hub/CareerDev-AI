@@ -10,7 +10,8 @@ from app.ai.prompts import (
     get_interviewer_system_prompt,
     CHALLENGE_GENERATOR_PROMPT,
     CHALLENGE_GRADER_PROMPT,
-    LINKEDIN_POST_GENERATOR_PROMPT
+    LINKEDIN_POST_GENERATOR_PROMPT,
+    PROJECT_SPEC_GENERATOR_PROMPT
 )
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
@@ -168,6 +169,16 @@ class ChatbotService:
             return f"Excited to share my progress in {skill}! Thanks to CareerDev AI for the structured learning path. 🚀 #{clean_skill} #TechJourney (Simulated)"
 
         prompt = LINKEDIN_POST_GENERATOR_PROMPT.format(skill=skill, skill_clean=clean_skill)
+        return await self._llm_response("", lang, "", prompt)
+
+    async def generate_project_spec(self, skill: str, lang: str) -> str:
+        """
+        Generates a Micro-Project Specification (Markdown) to fill a skill gap.
+        """
+        if self.simulated:
+            return f"# Project: {skill} Accelerator (Simulated)\n\n**Objective:** Build a proof of concept.\n\n**Tasks:**\n1. Setup Environment.\n2. Implement core logic.\n3. Push to GitHub."
+
+        prompt = PROJECT_SPEC_GENERATOR_PROMPT.format(skill=skill)
         return await self._llm_response("", lang, "", prompt)
 
     def _simulated_response(self, message: str, lang: str, context: str, mode: str) -> str:

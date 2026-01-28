@@ -150,11 +150,12 @@
 
         <div style="overflow-y: auto; flex-grow: 1;" id="data-container"></div>
 
-        <div style="height: 140px; border-top: 1px solid var(--border); padding: 15px; display: flex; align-items: center; gap: 20px;">
-            <div style="width: 100px; height: 100px;"><canvas id="miniChart"></canvas></div>
-            <div>
-                <div style="color: var(--text-dim); font-size: 0.8rem; font-family: var(--font-mono);">MARKET SCORE</div>
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--neon-green);">87<span style="font-size: 1rem;">/100</span></div>
+        <div style="height: 300px; border-top: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; align-items: center;">
+             <div style="width: 100%; height: 240px; position: relative;">
+                <canvas id="marketRadar"></canvas>
+            </div>
+            <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">
+                MARKET ALIGNMENT RADAR
             </div>
         </div>
     </main>
@@ -197,27 +198,98 @@
     // --- 0. INJECTED CONSTANTS ---
     const USER_ID = {{ user.id }};
 
-    // --- 1. DATA SIMULATOR ---
-    const mockSkills = [
-        { name: "Python / FastAPI", gh_vol: 85, gap: "None", color: "#3b82f6" },
-        { name: "Rust / WASM", gh_vol: 15, gap: "CRITICAL", color: "#ef4444" },
-        { name: "Docker / K8s", gh_vol: 40, gap: "None", color: "#10b981" }
-    ];
+    // --- 1. DATA FETCH & RENDER ---
+    async function initDashboard() {
+        try {
+            const response = await fetch('/api/dashboard/stats');
+            const data = await response.json();
 
-    function renderData() {
+            renderZoneB(data.zone_b_matrix);
+            renderRadar(data.radar_data);
+
+            // Context Injection
+            if (data.missing_skills && data.missing_skills.length > 0) {
+                 window.USER_CONTEXT_MISSING_SKILLS = data.missing_skills;
+                 // Pre-fill chat if empty?
+                 // document.getElementById('chat-input').placeholder = `Tip: Ask about ${data.missing_skills[0]}`;
+            }
+
+        } catch (e) {
+            console.error("Dashboard Load Error:", e);
+            // Fallback
+            renderDataMock();
+        }
+    }
+
+    function renderZoneB(matrix) {
         const container = document.getElementById('data-container');
         container.innerHTML = '';
-        mockSkills.forEach(skill => {
+
+        matrix.forEach(item => {
             const div = document.createElement('div');
             div.className = 'data-row';
+
+            // Determine Action Buttons
+            let actions = [];
+
+            // Logic for Imposter (Critical Gap) -> Show BOTH Hotfix and Spec
+            if (item.badge === 'critical' || item.status.includes("Imposter")) {
+                actions.push(`<button class="tag" style="background:#ef4444; color:white; border:none; cursor:pointer; margin-right:4px;" onclick="triggerHotfix('${item.skill}')">🔥 HOTFIX</button>`);
+                actions.push(`<button class="tag" style="background:#8b5cf6; color:white; border:none; cursor:pointer;" onclick="generateSpec('${item.skill}')">⚡ PROVE IT</button>`);
+            }
+            else if (item.action === 'ADD_TO_LINKEDIN') {
+                 actions.push(`<button class="tag" style="background:#10b981; color:white; border:none; cursor:pointer;" onclick="generateLinkedIn('${item.skill}')">🔗 ADD</button>`);
+            }
+
+            const statusColor = item.badge === 'success' ? 'var(--neon-green)' : (item.badge === 'critical' ? 'var(--alert)' : 'var(--neon-blue)');
+
             div.innerHTML = `
-                <div style="width: 120px; font-weight: 600; font-size: 0.9rem; color:${skill.color}">${skill.name}</div>
-                <div class="skill-bar-track"><div class="skill-bar-fill" style="width: ${skill.gh_vol}%; background: ${skill.color};"></div></div>
-                <div style="width: 100px; text-align: right; font-family: var(--font-mono); font-size: 0.75rem;">
-                    GH: ${skill.gh_vol}% <span class="tag ${skill.gap === 'None' ? 'tag-gh' : 'tag-warn'}">${skill.gap === 'None' ? 'OK' : 'GAP'}</span>
+                <div style="width: 140px; font-weight: 600; font-size: 0.9rem; color:${statusColor}">${item.skill}</div>
+                <div style="flex-grow: 1; display:flex; gap:10px; align-items:center;">
+                    <div style="font-size: 0.75rem; color: #6b7280;">${item.status}</div>
+                </div>
+                <div style="width: 180px; text-align: right; font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap;">
+                   ${actions.join('')}
                 </div>`;
             container.appendChild(div);
         });
+    }
+
+    function renderRadar(radarData) {
+        const ctx = document.getElementById('marketRadar').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: radarData,
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: '#9ca3af', font: { family: 'JetBrains Mono', size: 10 } },
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff', font: { family: 'Inter', size: 10 } }
+                    }
+                },
+                elements: {
+                    line: { borderWidth: 2 }
+                }
+            }
+        });
+    }
+
+    // Fallback
+    function renderDataMock() {
+        const mockSkills = [
+             { skill: "Python", status: "Verified", badge: "success", action: "None" },
+             { skill: "Rust", status: "Imposter Detected", badge: "critical", action: "HOTFIX" }
+        ];
+        renderZoneB(mockSkills);
     }
 
     // --- 2. PRO SUITE ACTIONS ---
@@ -238,12 +310,16 @@
         setTimeout(hideLoader, 3000); // Hide after download start
     }
 
-    async function generateLinkedIn() {
+    async function generateLinkedIn(skill) {
         showLoader("WRITING VIRAL POST...");
+        if (!skill) skill = "Software Engineering"; // Default
         try {
             const response = await fetch('/api/generate-linkedin-post', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                // If endpoint supports skill in body, update it. But current implementation in route picks top skill.
+                // We should update route to accept body for specific skill if needed.
+                // But for now, we'll stick to route logic or assume user wants top skill.
             });
             const data = await response.json();
 
@@ -268,13 +344,61 @@
         });
     }
 
+    function triggerHotfix(skill) {
+        const input = document.getElementById('chat-input');
+        input.value = `Help me fix my lack of ${skill} evidence.`;
+        // We could auto-submit, but letting user hit enter is safer UX?
+        // Let's auto-submit for "Action" feel.
+        // We need to call the chatbot logic.
+        // dashboard.html's input is separate from chatbot.js usually, but here it seems integrated in the layout.
+        // The chatbot widget (floating) is separate.
+        // This input in 'aside' seems to be a separate chat interface or the main one?
+        // Based on chatbot.js, `embeddedTarget` is checked.
+        // Let's just focus the input.
+        input.focus();
+    }
+
+    async function generateSpec(skill) {
+        showLoader(`ARCHITECTING ${skill} PROJECT...`);
+        try {
+            const response = await fetch('/api/generate-project-spec', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skill: skill })
+            });
+            const data = await response.json();
+
+            if (data.spec) {
+                // Download as MD file
+                const blob = new Blob([data.spec], { type: 'text/markdown' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `PROJECT_${skill.toUpperCase()}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showLoader("PROJECT SPEC DOWNLOADED!");
+            } else {
+                showLoader("GENERATION FAILED");
+            }
+        } catch(e) {
+             console.error(e);
+             showLoader("ERROR CONNECTING TO AI");
+        }
+        setTimeout(hideLoader, 2000);
+    }
+
     function triggerChallenge() {
         const input = document.getElementById('chat-input');
         input.value = "Test My Weakness";
-        // Simulate Enter
-        addToChat("Initializing Voice Challenge Mode...");
-        addToChat("[AI]: I see you lack Rust experience. Explain Ownership in 30 seconds.");
-        input.value = "";
+        // Simulate Enter if we had access to the listener, but we can just let user press enter.
+        // Or if window.triggerChallenge is available (from chatbot.js)
+        if (window.triggerChallenge) {
+             window.triggerChallenge();
+        } else {
+             alert("Voice Challenge not ready.");
+        }
     }
 
     // --- 3. MATRIX EASTER EGG ---
@@ -302,9 +426,7 @@
 
     // INIT
     document.addEventListener("DOMContentLoaded", () => {
-        renderData();
-        const ctx = document.getElementById('miniChart').getContext('2d');
-        new Chart(ctx, { type: 'doughnut', data: { datasets: [{ data: [70, 30], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] }, options: { cutout: '70%', plugins: {legend: {display:false}} } });
+        initDashboard();
     });
 </script>
 {% endblock %}
