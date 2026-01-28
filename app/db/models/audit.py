@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from datetime import datetime
-from app.db.declarative import Base
+# CORREÇÃO CRÍTICA: Importar do arquivo isolado que criamos
+from app.db.base_class import Base
 
 class LoginHistory(Base):
     __tablename__ = "login_history"
