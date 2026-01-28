@@ -21,5 +21,6 @@ class LoginHistory(Base):
     login_timestamp = Column(DateTime, default=datetime.utcnow)
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
-
-    # TODO: Implement a Cron Job to archive/delete logs older than 1 year to comply with GDPR/LGPD and save storage.
+    
+    user = relationship("User", back_populates="audit_logs")
+    # TODO: Implement a Cron Job to archive/delete logs older than 1 year to comply with GDPR/LGPD and save storage.   
