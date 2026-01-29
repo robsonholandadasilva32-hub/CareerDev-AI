@@ -38,5 +38,8 @@ class User(Base):
     # 2. Mentor Memories
     mentor_memories = relationship("app.db.models.mentor.MentorMemory", back_populates="user", cascade="all, delete-orphan")
 
-    # 3. Audit Logs (ESSENCIAL: Esta linha deve existir para o erro sumir)
-    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
+    # 3. Audit Logs (Login History)
+    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+
+    # 4. Security Audit Logs (Generic Actions)
+    security_audit_logs = relationship("app.db.models.security.SecurityAuditLog", back_populates="user", cascade="all, delete-orphan")

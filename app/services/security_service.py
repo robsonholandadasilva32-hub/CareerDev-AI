@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.db.models.security import AuditLog, UserSession
+from app.db.models.security import SecurityAuditLog, UserSession
 from datetime import datetime
 import json
 import logging
@@ -39,7 +39,7 @@ def log_audit(db: Session, user_id: int | None, action: str, ip_address: str, de
         if isinstance(details, dict):
             details = json.dumps(details, default=str)
 
-        audit = AuditLog(
+        audit = SecurityAuditLog(
             user_id=user_id,
             action=action,
             ip_address=ip_address,

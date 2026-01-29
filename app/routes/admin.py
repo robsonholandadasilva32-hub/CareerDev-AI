@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models.user import User
-from app.db.models.security import AuditLog
+from app.db.models.security import SecurityAuditLog
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,9 @@ def admin_dashboard(
     users = db.query(User).all()
 
     # Fetch recent watchdog logs
-    logs = db.query(AuditLog)\
-        .filter(AuditLog.action == "WARNING")\
-        .order_by(AuditLog.created_at.desc())\
+    logs = db.query(SecurityAuditLog)\
+        .filter(SecurityAuditLog.action == "WARNING")\
+        .order_by(SecurityAuditLog.created_at.desc())\
         .limit(50)\
         .all()
 

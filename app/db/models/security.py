@@ -4,17 +4,17 @@ from datetime import datetime
 from app.db.base_class import Base
 import uuid
 
-class AuditLog(Base):
-    __tablename__ = "audit_logs"
+class SecurityAuditLog(Base):
+    __tablename__ = "security_audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Nullable for login failures where user is unknown? Or just track known users? Let's keep nullable for now if we track system events or failures by IP.
-    action = Column(String, nullable=False) # LOGIN, LOGOUT, UPDATE_PROFILE, etc.
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    action = Column(String, nullable=False)
     ip_address = Column(String, nullable=True)
-    details = Column(Text, nullable=True) # JSON or string details
+    details = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="audit_logs")
+    user = relationship("User", back_populates="security_audit_logs")
 
 
 class UserSession(Base):
