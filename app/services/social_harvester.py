@@ -21,49 +21,23 @@ class SocialHarvester:
         # System's "High Demand" List
         self.market_high_demand_skills = ["Rust", "Go", "Python", "AI/ML", "React", "System Design", "Cloud Architecture", "TypeScript", "Kubernetes"]
 
-    async def harvest_linkedin_data(self, user_id: int, token: str):
-        """
-        Background Task: Fetches LinkedIn data using a fresh DB session.
-        """
-        logger.info(f"⚡ [SocialHarvester] Starting LinkedIn sync for user_id {user_id}...")
+    # --- Sync Helpers for DB Operations (to be run in thread) ---
 
+    def _get_user_sync(self, user_id: int) -> bool:
+        """Check if user exists."""
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            return bool(user)
+
+    def _save_linkedin_data_sync(self, user_id: int, alignment_data: dict, score_bump: int):
+        """Update User with LinkedIn Data."""
         with SessionLocal() as db:
             try:
                 user = db.query(User).filter(User.id == user_id).first()
                 if not user:
-                    logger.error(f"❌ User {user_id} not found during background harvest.")
+                    logger.error(f"❌ User {user_id} not found during LinkedIn save.")
                     return
 
-                # 1. Fetch Profile Data
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        "https://api.linkedin.com/v2/userinfo",
-                        headers={"Authorization": f"Bearer {token}"}
-                    )
-
-                if response.status_code != 200:
-                    logger.error(f"❌ LinkedIn API Error: {response.text}")
-                    return
-
-                data = response.json()
-
-                # 2. Process Data
-                first_name = data.get("given_name", "")
-                last_name = data.get("family_name", "")
-                picture = data.get("picture", "")
-
-                alignment_data = {
-                    "source": "linkedin_oauth",
-                    "connected": True,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "picture": picture,
-                    "status": "Active",
-                    "detected_role": "Lite Profile (Update via Dashboard)",
-                    "industry": "Tech"
-                }
-
-                # 3. Update DB
                 if not user.career_profile:
                     user.career_profile = CareerProfile(user_id=user.id)
 
@@ -71,14 +45,100 @@ class SocialHarvester:
 
                 # Bump score
                 current_score = user.career_profile.market_relevance_score or 0
-                user.career_profile.market_relevance_score = min(current_score + 10, 100)
+                user.career_profile.market_relevance_score = min(current_score + score_bump, 100)
 
                 db.commit()
                 logger.info(f"✅ [SocialHarvester] LinkedIn data saved for {user.name}")
-
             except Exception as e:
-                logger.error(f"🔥 Critical Error in harvest_linkedin_data: {e}")
+                logger.error(f"🔥 Error saving LinkedIn data: {e}")
                 db.rollback()
+
+    def _ensure_profile_exists_sync(self, user_id: int) -> tuple[Optional[str], Optional[str]]:
+        """Ensures profile exists and returns (target_role, None) for calculation context."""
+        with SessionLocal() as db:
+            user = db.query(User).get(user_id)
+            if not user:
+                return None, None
+
+            if not user.career_profile:
+                # Create profile if missing
+                profile = CareerProfile(user_id=user_id)
+                db.add(profile)
+                db.commit()
+                db.refresh(profile)
+
+            return user.career_profile.target_role, None # Can return more if needed
+
+    def _save_github_data_sync(self, user_id: int, skills_graph_data: dict, market_score: int, commit_metrics: dict, linkedin_alignment_data: dict, ai_summary: str):
+        """Updates User Profile with calculated GitHub Stats."""
+        with SessionLocal() as db:
+            try:
+                user = db.query(User).get(user_id)
+                if not user or not user.career_profile:
+                    return
+
+                profile = user.career_profile
+                profile.skills_graph_data = skills_graph_data
+                profile.market_relevance_score = market_score
+                profile.github_activity_metrics = commit_metrics
+                profile.linkedin_alignment_data = linkedin_alignment_data
+                profile.ai_insights_summary = ai_summary
+
+                db.commit()
+                logger.info(f"✅ Data Fusion Complete for User {user_id}. Score: {market_score}")
+            except Exception as e:
+                logger.error(f"🔥 Error saving GitHub data: {e}")
+                db.rollback()
+
+    # --- Async Main Methods ---
+
+    async def harvest_linkedin_data(self, user_id: int, token: str):
+        """
+        Background Task: Fetches LinkedIn data using non-blocking DB operations.
+        """
+        logger.info(f"⚡ [SocialHarvester] Starting LinkedIn sync for user_id {user_id}...")
+
+        # 1. Check User Existence (Sync -> Thread)
+        exists = await asyncio.to_thread(self._get_user_sync, user_id)
+        if not exists:
+            logger.error(f"❌ User {user_id} not found during background harvest.")
+            return
+
+        # 2. Fetch Profile Data (Async I/O)
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.linkedin.com/v2/userinfo",
+                    headers={"Authorization": f"Bearer {token}"}
+                )
+
+            if response.status_code != 200:
+                logger.error(f"❌ LinkedIn API Error: {response.text}")
+                return
+
+            data = response.json()
+
+            # 3. Process Data (CPU)
+            first_name = data.get("given_name", "")
+            last_name = data.get("family_name", "")
+            picture = data.get("picture", "")
+
+            alignment_data = {
+                "source": "linkedin_oauth",
+                "connected": True,
+                "first_name": first_name,
+                "last_name": last_name,
+                "picture": picture,
+                "status": "Active",
+                "detected_role": "Lite Profile (Update via Dashboard)",
+                "industry": "Tech"
+            }
+
+            # 4. Save to DB (Sync -> Thread)
+            await asyncio.to_thread(self._save_linkedin_data_sync, user_id, alignment_data, 10)
+
+        except Exception as e:
+            logger.error(f"🔥 Critical Error in harvest_linkedin_data: {e}")
 
     async def harvest_github_data(self, user_id: int, token: str):
         """Wrapper for sync_profile to match Route calls. Optimized for Async."""
@@ -100,51 +160,58 @@ class SocialHarvester:
             else:
                 logger.warning(f"User {user_id} not found during background save.")
 
-    async def sync_profile(self, db: Session, user: User, github_token: str) -> bool:
+    async def sync_profile(self, user_id: int, github_token: str, db: Optional[Session] = None) -> bool:
         """
         Orchestrates the data fusion:
         1. Harvest GitHub (Byte Distribution) - Async
         2. Process & Save (Sync -> Thread)
         """
         try:
-            user_id = user.id
-            if not user.career_profile:
-                # Create profile if missing
-                profile = CareerProfile(user_id=user_id)
-                db.add(profile)
-                db.commit()
-                db.refresh(profile)
+            # 1. Ensure Profile Exists (Sync -> Thread)
+            # Returns target_role to use in calculation
+            target_role, _ = await asyncio.to_thread(self._ensure_profile_exists_sync, user_id)
+            target_role = target_role or "Senior Developer"
 
-            # 1. Harvest GitHub (Logic Requirement 1: Real Skill Calculator)
+            # 2. Harvest GitHub (Logic Requirement 1: Real Skill Calculator) (Async I/O)
             raw_langs, commit_metrics = await self._harvest_github_raw(github_token)
 
-            # 2. Process & Save in Thread
+            # 3. Process & Save in Thread
             return await asyncio.to_thread(
-                self._process_and_save_profile, db, user, raw_langs, commit_metrics
+                self._process_and_save_profile, db, user_id, raw_langs, commit_metrics, target_role
             )
 
         except Exception as e:
             logger.error(f"Sync Profile Error: {e}", exc_info=True)
             return False
 
-    def _process_and_save_profile(self, db: Session, user: User, raw_langs: Dict[str, int], commit_metrics: Dict[str, Any]) -> bool:
+    def _process_and_save_profile(self, db_session: Optional[Session], user_or_id: Any, raw_langs: Dict[str, int], commit_metrics: Dict[str, Any], target_role: str = "Senior Developer") -> bool:
         """
         Synchronous logic to process GitHub data and update the database.
         Designed to be run in a separate thread.
+        Handles its own session if db_session is None or strictly requires a fresh one.
         """
+        # Context management for session
+        db = db_session if db_session else SessionLocal()
+        close_db = False if db_session else True
+
         try:
+            if isinstance(user_or_id, int):
+                user = db.query(User).get(user_or_id)
+            else:
+                user = user_or_id # Should be a User object attached to this session
+
+            if not user:
+                return False
+
             # 2. Process for Chart.js (Doughnut Chart)
             # Logic: Sum total bytes, convert to percentage
             total_bytes = sum(raw_langs.values())
 
             # Sort by bytes desc
             sorted_langs = sorted(raw_langs.items(), key=lambda x: x[1], reverse=True)[:6] # Top 6
-
             chart_labels = [l[0] for l in sorted_langs]
             chart_values = []
-
             for l in sorted_langs:
-                # Convert to Percentage
                 percentage = int((l[1] / total_bytes) * 100) if total_bytes > 0 else 0
                 chart_values.append(percentage)
 
@@ -152,12 +219,11 @@ class SocialHarvester:
                 "labels": chart_labels,
                 "datasets": [{
                     "data": chart_values,
-                    # Colorful palette
                     "backgroundColor": ["#00f3ff", "#bd00ff", "#00ff88", "#ffff00", "#ff0055", "#ffffff"]
                 }]
             }
 
-            # 3. Calculate Market Score (The Logic)
+            # Market Score
             market_score = self.calculate_market_overlap(raw_langs, self.market_high_demand_skills)
 
             # 4. Save to DB
@@ -174,27 +240,25 @@ class SocialHarvester:
 
             # MANDATORY: Store Raw Bytes for Phase 1 Logic
             commit_metrics["raw_languages"] = raw_langs
-            profile.github_activity_metrics = commit_metrics
 
-            # Simulated LinkedIn Data (Since we might not have a token/scraper)
-            # MOCK: claimed_skills logic for Phase 2 Verification
-            mock_claimed = list(raw_langs.keys())[:2] # Assume they claim their top 2
-            # Randomly drop one to simulate "Invisible Gold"
+            # Simulated LinkedIn Data
+            mock_claimed = list(raw_langs.keys())[:2]
             if len(mock_claimed) > 1 and random.random() > 0.5:
                 mock_claimed.pop()
-            # Randomly add one they don't have to simulate "Imposter Syndrome"
             mock_claimed.append("AWS" if "AWS" not in raw_langs else "Kubernetes")
 
-            profile.linkedin_alignment_data = {
-                "role": profile.target_role or "Software Engineer",
+            linkedin_alignment_data = {
+                "role": target_role,
                 "industry": "Tech",
                 "missing_keywords": [s for s in self.market_high_demand_skills if s not in chart_labels][:3],
                 "claimed_skills": mock_claimed
             }
 
-            # Phase 2: ASYNC AI INSIGHTS GENERATION
-            # We generate the text here to avoid runtime latency on Dashboard load
-            ai_summary = self.generate_gap_analysis(raw_langs, mock_claimed, profile.target_role or "Senior Developer")
+            # AI Summary
+            ai_summary = self.generate_gap_analysis(raw_langs, mock_claimed, target_role)
+            
+            profile.github_activity_metrics = commit_metrics
+            profile.linkedin_alignment_data = linkedin_alignment_data
             profile.ai_insights_summary = ai_summary
 
             db.commit()
@@ -205,6 +269,9 @@ class SocialHarvester:
             logger.error(f"Process & Save Error: {e}", exc_info=True)
             db.rollback()
             return False
+        finally:
+            if close_db:
+                db.close()
 
     async def _harvest_github_raw(self, token: str) -> tuple[Dict[str, int], Dict[str, Any]]:
         """
@@ -354,19 +421,10 @@ class SocialHarvester:
             if lang in market_lower:
                 matches += 1
 
-        # Calculate Score based on Top 3 intersection
-        # If user has 0 matches in top 3, score is low.
-        # But maybe we should also look at overall?
-        # Prompt says: "Compare User's Top 3 Languages vs. System's 'High Demand' List"
-
         if len(top_3) == 0: return 0
 
         # Simple ratio
         score = int((matches / 3) * 100)
-
-        # Bonus: If they have Rust or Go (hardcoded high value), give a boost?
-        # Keeping it simple as per prompt instructions.
-
         return score
 
     def generate_gap_analysis(self, github_reality: Dict[str, int], linkedin_perception: List[str], target_role: str) -> str:
