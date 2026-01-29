@@ -117,7 +117,7 @@ new Chart(document.getElementById('radarChart'), {
 });
 
 /* ---------------- RISK COMPARE CHART (NEW) ---------------- */
-// Assume que rule_risk e ml_risk estão disponíveis no dicionário career_forecast
+// Compare Rule-Based Risk vs ML-Based Risk
 new Chart(document.getElementById("riskCompareChart"), {
   type: "bar",
   data: {
@@ -128,13 +128,13 @@ new Chart(document.getElementById("riskCompareChart"), {
         {{ career_data.career_forecast.rule_risk | default(0) }},
         {{ career_data.career_forecast.ml_risk | default(0) }}
       ],
-      backgroundColor: ["#ef4444", "#fcee0a"], // Vermelho e Amarelo Cyberpunk
+      backgroundColor: ["#ef4444", "#fcee0a"], // Red & Yellow Cyberpunk theme
       borderWidth: 0,
       barThickness: 30
     }]
   },
   options: {
-    indexAxis: 'y', // Barra horizontal para caber melhor
+    indexAxis: 'y', // Horizontal bars
     responsive: true,
     maintainAspectRatio: false,
     scales: {
