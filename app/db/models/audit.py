@@ -5,7 +5,7 @@ from app.db.base_class import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    # Mantemos isso para evitar erro de redefinição de tabela
+    # Mantemos isso para garantir que ele sobrescreva definições antigas na memória
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
@@ -24,6 +24,6 @@ class AuditLog(Base):
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
 
-    # --- CORREÇÃO AQUI ---
-    # Use apenas "User"
-    user = relationship("User", back_populates="audit_logs")
+    # --- CORREÇÃO DEFINITIVA ---
+    # Usando o caminho COMPLETO para evitar erros cíclicos ou de ambiguidade
+    user = relationship("app.db.models.user.User", back_populates="audit_logs")
