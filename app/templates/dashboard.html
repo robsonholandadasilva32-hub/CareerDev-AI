@@ -40,7 +40,11 @@
                     <div class="streak-badge risk-high">⚠ HIGH RISK</div>
                 {% elif career_data.career_forecast.risk_level == 'MEDIUM' %}
                     <div class="streak-badge risk-medium">🟡 MEDIUM RISK</div>
-                {% elif career_data.weekly_plan.mode == 'ACCELERATOR' %}
+                {% else %}
+                    <div class="streak-badge" style="border-color: #10b981; color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">🟢 STABLE</div>
+                {% endif %}
+
+                {% if career_data.weekly_plan.mode == 'ACCELERATOR' %}
                     <div class="streak-badge accelerator">🚀 ACCELERATOR</div>
                 {% endif %}
             </div>
@@ -116,8 +120,13 @@ new Chart(document.getElementById('radarChart'), {
     }
 });
 
-/* ---------------- RISK COMPARE CHART (NEW) ---------------- */
-// Compare Rule-Based Risk vs ML-Based Risk
+/* ---------------- RISK COMPARE CHART (UPDATED) ---------------- */
+// 1. Definição da lógica de cores (HIGH, MEDIUM e LOW)
+const riskLevel = "{{ career_data.career_forecast.risk_level }}";
+const riskColor = riskLevel === "HIGH" ? "#ef4444"       // Red
+                : riskLevel === "MEDIUM" ? "#eab308"     // Yellow
+                : "#10b981";                             // Neon Green (Low/Stable)
+
 new Chart(document.getElementById("riskCompareChart"), {
   type: "bar",
   data: {
@@ -128,7 +137,8 @@ new Chart(document.getElementById("riskCompareChart"), {
         {{ career_data.career_forecast.rule_risk | default(0) }},
         {{ career_data.career_forecast.ml_risk | default(0) }}
       ],
-      backgroundColor: ["#ef4444", "#fcee0a"], // Red & Yellow Cyberpunk theme
+      // Aplica a cor dinâmica calculada acima
+      backgroundColor: [riskColor, riskColor], 
       borderWidth: 0,
       barThickness: 30
     }]
