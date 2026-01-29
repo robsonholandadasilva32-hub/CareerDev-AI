@@ -4,13 +4,13 @@ from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
-from app.db.session import get_db
+from app.db.session import get_db, SessionLocal
 from app.services.social_harvester import social_harvester
 from app.db.crud.users import (
     get_user_by_email,
     get_user_by_github_id,
     get_user_by_linkedin_id,
-    create_user_async
+    create_user
 )
 from app.db.models.user import User
 from app.core.security import hash_password
@@ -327,9 +327,164 @@ def _process_github_connect_sync(db: Session, user_id: int, github_id: str, toke
 
     return "success"
 
+def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, user_agent: str, production_env: bool) -> dict:
+    """
+    Handles the entire LinkedIn login/signup transactional flow in a separate thread.
+    Uses its own Session to ensure thread safety and non-blocking I/O on main loop.
+    """
+    token_str = token_data.get('access_token')
+
+    linkedin_id = user_info.get('sub') or user_info.get('id')
+    email = user_info.get('email')
+    picture = user_info.get('picture')
+
+    name = user_info.get('name')
+    if not name:
+        first = user_info.get('given_name')
+        last = user_info.get('family_name')
+        if first and last:
+            name = f"{first} {last}"
+        else:
+            name = "LinkedIn User"
+
+    if not linkedin_id:
+        return {"status": "error", "error": "linkedin_no_id", "message": "No ID found in user_info"}
+
+    if not email:
+        return {"status": "error", "error": "linkedin_no_email", "message": "No email found in user_info"}
+
+    with SessionLocal() as db:
+        try:
+            # 1. Find User (Email or ID)
+            user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
+
+            if not user:
+                user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
+
+            if user:
+                # UPDATE Existing
+                logger.info(f"DEBUG: Found existing user: {user.id}")
+                if user.linkedin_id != linkedin_id:
+                    user.linkedin_id = linkedin_id
+                    if not user.avatar_url:
+                        user.avatar_url = picture
+
+                user.linkedin_token = token_str
+                db.commit()
+                logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
+
+                if user.linkedin_id == linkedin_id:
+                    check_and_award_security_badge(db, user)
+
+            else:
+                # CREATE New
+                logger.info("DEBUG: Creating new user")
+                pwd = secrets.token_urlsafe(16)
+                hashed_password = hash_password(pwd) # CPU bound, fine here
+
+                try:
+                    user = create_user(
+                        db=db,
+                        name=name,
+                        email=email,
+                        hashed_password=hashed_password,
+                        linkedin_id=linkedin_id,
+                        avatar_url=picture,
+                        email_verified=True
+                    )
+
+                    # ZERO TOUCH
+                    user.terms_accepted = True
+                    user.terms_accepted_at = datetime.utcnow()
+                    user.linkedin_token = token_str
+                    db.commit()
+
+                    # Refresh with profile
+                    user = db.query(User).options(joinedload(User.career_profile)).filter(User.id == user.id).first()
+                    logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
+
+                except IntegrityError:
+                    db.rollback()
+                    logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
+                    user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
+                    if not user:
+                        user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
+
+                    if not user:
+                        return {"status": "error", "error": "integrity_error", "message": "IntegrityError but user not found"}
+
+                    if not user.linkedin_id:
+                        user.linkedin_id = linkedin_id
+
+                    user.linkedin_token = token_str
+                    db.commit()
+                    check_and_award_security_badge(db, user)
+
+            # 2. LOGIN LOGIC (From login_user_and_redirect)
+            user.last_login = datetime.utcnow()
+            if not user.terms_accepted:
+                user.terms_accepted = True
+                user.terms_accepted_at = datetime.utcnow()
+
+            if user.linkedin_id and user.github_id and user.terms_accepted:
+                user.is_profile_completed = True
+
+            db.commit() # Save login stats
+
+            # Session & Audit
+            sid = create_user_session(db, user.id, ip, user_agent)
+
+            try:
+                ua_parsed = user_agents.parse(user_agent)
+                audit_entry = AuditLog(
+                    user_id=user.id,
+                    session_id=sid,
+                    ip_address=ip,
+                    user_agent_raw=user_agent,
+                    device_type="Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop",
+                    browser=f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}",
+                    os=f"{ua_parsed.os.family} {ua_parsed.os.version_string}",
+                    login_timestamp=datetime.utcnow(),
+                    is_active_session=True,
+                    auth_method="social"
+                )
+                db.add(audit_entry)
+                db.commit()
+            except Exception as e:
+                logger.error(f"Failed to record AuditLog: {e}")
+
+            log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
+
+            # Generate Token
+            token = create_access_token({
+                "sub": str(user.id),
+                "email": user.email,
+                "sid": sid
+            })
+
+            # Determine Redirect
+            redirect_url = "/dashboard"
+            if not user.github_id:
+                redirect_url = "/onboarding/connect-github"
+
+            return {
+                "status": "success",
+                "user_id": user.id,
+                "token": token,
+                "redirect_url": redirect_url
+            }
+
+        except Exception as e:
+            logger.error(f"🔥 Sync Processing Error: {e}", exc_info=True)
+            return {"status": "error", "error": "internal_error", "message": str(e)}
+
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Note: 'db' dependency is not used for the heavy lifting anymore, only for lightweight or legacy parts if needed.
+    # The sync helper creates its own session.
+
     ip = get_client_ip(request)
+    user_agent = request.headers.get("user-agent", "unknown")
 
     code = request.query_params.get('code')
     state = request.query_params.get('state')
@@ -343,128 +498,65 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
 
         logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
 
-        # 2. SECURITY REFACTOR: Use fetch_access_token
-        token = await oauth.linkedin.fetch_access_token(
+        # 2. Exchange Token
+        token_data = await oauth.linkedin.fetch_access_token(
             redirect_uri=redirect_uri,
             code=str(request.query_params.get('code')),
             grant_type='authorization_code'
         )
+        token_str = token_data.get('access_token')
+        logger.info(f"🔑 LINKEDIN TOKEN RECEIVED: {token_str[:5]}...")
 
-        logger.info(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
-
-        user_info = await oauth.linkedin.userinfo(token=token)
-
+        user_info = await oauth.linkedin.userinfo(token=token_data)
         logger.info(f"👤 LINKEDIN USER INFO: {json.dumps(user_info, default=str)}")
 
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
+             # We can use the passed 'db' for this quick audit log
              log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
              return RedirectResponse("/login?error=linkedin_failed")
 
-        linkedin_id = user_info.get('sub') or user_info.get('id')
-        if not linkedin_id:
-             logger.error(f"LinkedIn Error: No ID found in user_info. Keys: {list(user_info.keys())}")
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No ID found")
-             return RedirectResponse("/login?error=linkedin_failed")
+        # 3. Offload Blocking DB Operations to Thread
+        result = await asyncio.to_thread(
+            _process_linkedin_login_sync,
+            user_info,
+            token_data,
+            ip,
+            user_agent,
+            (settings.ENVIRONMENT == "production")
+        )
 
-        email = user_info.get('email')
-        
-        name = user_info.get('name')
-        if not name:
-             first = user_info.get('given_name')
-             last = user_info.get('family_name')
-             if first and last:
-                 name = f"{first} {last}"
-             else:
-                 name = "LinkedIn User"
+        if result["status"] == "error":
+            err_code = result.get("error", "unknown")
+            msg = result.get("message", "")
+            log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Process Error: {msg}")
 
-        picture = user_info.get('picture')
+            if err_code == "linkedin_no_id" or err_code == "linkedin_no_email":
+                 return RedirectResponse("/login?error=linkedin_failed")
 
-        if not email:
-             logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No email found")
-             return RedirectResponse("/login?error=missing_linkedin_email")
+            return RedirectResponse(f"/login?error={err_code}")
 
-        # 1. Check by Email
-        user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
-        if user:
-            logger.info(f"DEBUG: Found existing user: {user.id}")
-            if user.linkedin_id != linkedin_id:
-                user.linkedin_id = linkedin_id
-                if not user.avatar_url:
-                    user.avatar_url = picture
+        # 4. Trigger Background Data Harvest
+        if token_str:
+            background_tasks.add_task(social_harvester.harvest_linkedin_data, result["user_id"], token_str)
 
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-            logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
-
-            if user.linkedin_id == linkedin_id:
-                 check_and_award_security_badge(db, user)
-
-            if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-
-            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
-
-        # 2. Check by ID (Legacy)
-        user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
-        if user:
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
-
-        # 3. Create User
-        logger.info("DEBUG: Creating new user")
-        pwd = secrets.token_urlsafe(16)
-        hashed_password = await asyncio.to_thread(hash_password, pwd)
-        try:
-            user = await create_user_async(
-                db=db,
-                name=name,
-                email=email,
-                hashed_password=hashed_password,
-                linkedin_id=linkedin_id,
-                avatar_url=picture,
-                email_verified=True
-            )
-            # ZERO TOUCH
-            user.terms_accepted = True
-            user.terms_accepted_at = datetime.utcnow()
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            user = db.query(User).options(joinedload(User.career_profile)).filter(User.id == user.id).first()
-
-            logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
-
-        except IntegrityError:
-            # Race condition handling (Aqui estava o erro provável)
-            db.rollback()
-            logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
-            user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
-            if not user:
-                 user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
-            if not user:
-                 raise Exception("IntegrityError caught but user not found on retry.")
-
-            if not user.linkedin_id:
-                user.linkedin_id = linkedin_id
-
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            check_and_award_security_badge(db, user)
-
-        if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-
-        logger.info(f"Strict Onboarding: New user created.")
-        return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
+        # 5. Create Response
+        response = RedirectResponse(result["redirect_url"], status_code=303)
+        response.set_cookie(
+            key="access_token",
+            value=result["token"],
+            httponly=True,
+            secure=(settings.ENVIRONMENT == "production"),
+            samesite="lax",
+            max_age=604800
+        )
+        return response
 
     except Exception as e:
         logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
-        log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
+        # Safe fallback audit
+        try:
+             log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
+        except:
+             pass
         return RedirectResponse("/login?error=linkedin_failed")
