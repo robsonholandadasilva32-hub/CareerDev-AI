@@ -253,36 +253,25 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
         avatar = profile.get('avatar_url')
 
         # --- STRICT LINKING LOGIC ---
-        current_user = db.query(User).filter(User.id == current_user_state.id).first()
-        if not current_user:
+        # PERFORMANCE OPTIMIZATION: Offload sync DB ops to thread
+        result = await asyncio.to_thread(
+            _process_github_connect_sync,
+            db,
+            current_user_state.id,
+            github_id,
+            token.get('access_token'),
+            avatar,
+            ip
+        )
+
+        if result == "user_not_found":
              return RedirectResponse("/login?error=user_not_found")
 
-        # Check for conflict
-        existing_user = get_user_by_github_id(db, github_id)
-        if existing_user and existing_user.id != current_user.id:
-            log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
+        if result == "github_taken":
             return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
 
-        # Update User
-        current_user.github_id = github_id
-        current_user.github_token = token.get('access_token')
-        if not current_user.avatar_url:
-            current_user.avatar_url = avatar
-
-        # ZERO TOUCH: Automatically complete profile
-        current_user.is_profile_completed = True
-        current_user.terms_accepted = True
-        current_user.terms_accepted_at = datetime.utcnow()
-
-        db.commit() 
-        logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
-
-        log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
-
-        check_and_award_security_badge(db, current_user)
-
         if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_github_data, current_user.id, token.get('access_token'))
+            background_tasks.add_task(social_harvester.harvest_github_data, current_user_state.id, token.get('access_token'))
 
         return RedirectResponse("/dashboard", status_code=303)
 
@@ -302,6 +291,41 @@ async def login_linkedin(request: Request):
     logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
 
     return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+
+def _process_github_connect_sync(db: Session, user_id: int, github_id: str, token_str: str, avatar: str, ip: str) -> str:
+    """
+    Synchronous helper to handle GitHub connection logic.
+    Offloaded to a thread to prevent blocking the event loop.
+    """
+    current_user = db.query(User).filter(User.id == user_id).first()
+    if not current_user:
+         return "user_not_found"
+
+    # Check for conflict
+    existing_user = get_user_by_github_id(db, github_id)
+    if existing_user and existing_user.id != current_user.id:
+        log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
+        return "github_taken"
+
+    # Update User
+    current_user.github_id = github_id
+    current_user.github_token = token_str
+    if not current_user.avatar_url:
+        current_user.avatar_url = avatar
+
+    # ZERO TOUCH: Automatically complete profile
+    current_user.is_profile_completed = True
+    current_user.terms_accepted = True
+    current_user.terms_accepted_at = datetime.utcnow()
+
+    db.commit()
+    logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
+
+    log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
+
+    check_and_award_security_badge(db, current_user)
+
+    return "success"
 
 @router.get("/auth/linkedin/callback")
 async def auth_linkedin_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
