@@ -3,9 +3,10 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base_class import Base
 
-# Padronizado como AuditLog para resolver o conflito
 class AuditLog(Base):
     __tablename__ = "audit_logs"
+    # ADICIONE ESTA LINHA PARA RESOLVER O ERRO "ALREADY DEFINED":
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
