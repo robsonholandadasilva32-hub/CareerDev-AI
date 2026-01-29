@@ -5,17 +5,22 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import datetime
 import user_agents
+import logging
 
+# Imports do Banco de Dados
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
+# CORREÇÃO: Usando o modelo correto AuditLog
 from app.db.models.audit import AuditLog
+
+# Imports de Serviços e Utils
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
-from app.services.security_service import get_active_sessions, get_all_user_sessions, revoke_session, log_audit
+# Certifique-se que log_audit e revoke_session existem no security_service
+from app.services.security_service import revoke_session, log_audit
 from app.core.config import settings
 from app.core.utils import get_client_ip
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,15 +35,14 @@ def get_db():
         db.close()
 
 def get_current_user(request: Request, db: Session) -> User | None:
-    # Use the user object already validated by AuthMiddleware
-    # This ensures we respect session revocation/banning checks done there.
+    # Usa o objeto user já validado pelo AuthMiddleware
     return getattr(request.state, "user", None)
 
 def parse_agent(ua_string: str) -> str:
     """Parses user agent string into a readable format."""
     try:
         user_agent = user_agents.parse(ua_string)
-        return str(user_agent) # Returns "PC / Windows / Chrome" format usually
+        return str(user_agent) # Retorna "PC / Windows / Chrome" formatado
     except Exception:
         return "Unknown Device"
 
@@ -54,20 +58,20 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     if resp := validate_onboarding_access(user):
         return resp
 
-    # Get SID for highlighting current session
+    # Obter SID para destacar a sessão atual
     token = request.cookies.get("access_token")
     payload = decode_token(token) if token else {}
     current_sid = payload.get("sid")
 
-    # Current Session Data
+    # Dados da Sessão Atual (Request)
     current_ua_string = request.headers.get("user-agent", "")
     current_device = parse_agent(current_ua_string)
     current_ip = get_client_ip(request)
 
-    # Fetch Real Sessions (History from Audit Log)
+    # --- CORREÇÃO AQUI: Consultando AuditLog para o histórico ---
     history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
-    # Process Sessions for Display
+    # Processar Sessões para Exibição
     processed_sessions = []
     for h in history:
         is_current = (str(h.session_id) == str(current_sid))
@@ -76,10 +80,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
              status = "Current" if is_current else "Active"
 
         processed_sessions.append({
-            "id": h.session_id, # Use session_id for revocation
+            "id": h.session_id, # Usado para revogação
             "device": f"{h.device_type} ({h.browser})",
             "ip_address": h.ip_address,
-            "last_active": h.login_timestamp, # Using Login Timestamp
+            "last_active": h.login_timestamp, # Usando timestamp de login
             "is_current": is_current,
             "status": status,
             "raw_ua": h.user_agent_raw,
@@ -104,10 +108,6 @@ def update_security(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    # This route previously updated language.
-    # Now it does nothing or could update other preferences.
-    # For now, we just redirect back.
-
     user = get_current_user(request, db)
     if not user:
          return RedirectResponse("/login", status_code=302)
@@ -116,6 +116,7 @@ def update_security(
     if resp := validate_onboarding_access(user):
         return resp
 
+    # Placeholder para atualizações futuras de preferências
     return RedirectResponse("/dashboard/security?success=true", status_code=302)
 
 @router.post("/dashboard/security/delete-account")
@@ -127,13 +128,11 @@ def delete_account(
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # No notifications sent.
-
     # Delete User (Cascade deletes profile/plans due to relationship config)
     db.delete(user)
     db.commit()
 
-    # Logout
+    # Logout e limpar cookie
     response = RedirectResponse("/login?msg=account_deleted", status_code=302)
     response.delete_cookie("access_token")
     return response
@@ -149,6 +148,7 @@ def get_login_history(request: Request, db: Session = Depends(get_db)):
     payload = decode_token(token) if token else {}
     current_sid = payload.get("sid")
 
+    # --- CORREÇÃO AQUI: Consultando AuditLog ---
     history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
     response_data = []
@@ -182,19 +182,21 @@ def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
     if not current_sid:
         return RedirectResponse("/login", status_code=302)
 
-    # Revoke all UserSessions except current
+    # 1. Revogar todas as UserSessions exceto a atual
     db.query(UserSession).filter(
         UserSession.user_id == user.id,
         UserSession.id != current_sid
     ).update({UserSession.is_active: False}, synchronize_session=False)
 
-    # Revoke all AuditLog except current
+    # 2. Atualizar o histórico (AuditLog) para refletir que as sessões expiraram
     db.query(AuditLog).filter(
         AuditLog.user_id == user.id,
         AuditLog.session_id != current_sid
     ).update({AuditLog.is_active_session: False}, synchronize_session=False)
 
     db.commit()
+    
+    # Log da ação
     log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions")
 
     return RedirectResponse("/dashboard/security", status_code=303)
@@ -205,13 +207,17 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # Security: Ensure session belongs to user
+    # Verifica se a sessão pertence mesmo ao usuário
     session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
+    
     if session_to_revoke:
+        # Chama serviço para remover do Redis/Banco
         revoke_session(db, session_id)
-        # Also revoke AuditLog
+        
+        # Atualiza o AuditLog específico
         db.query(AuditLog).filter(AuditLog.session_id == session_id).update({AuditLog.is_active_session: False})
         db.commit()
+        
         log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
 
     return RedirectResponse("/dashboard/security", status_code=303)
