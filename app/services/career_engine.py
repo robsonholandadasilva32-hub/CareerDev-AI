@@ -1,24 +1,17 @@
-import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 from sqlalchemy.orm import Session
-from datetime import datetime
 
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
-from app.db.models.skill_snapshot import SkillSnapshot
-from app.db.models.risk_snapshot import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
+from app.ml.risk_forecast_model import RiskForecastModel
 
-# Tenta importar o modelo de ML, usa Mock se falhar para não quebrar o servidor
-try:
-    from app.ml.risk_forecast_model import RiskForecastModel
-    ml_forecaster = RiskForecastModel()
-except ImportError:
-    class MockForecaster:
-        def predict(self, val): return 0
-    ml_forecaster = MockForecaster()
 
-logger = logging.getLogger(__name__)
+# ---------------------------------------------------------
+# ML FORECASTER (SINGLETON)
+# ---------------------------------------------------------
+ml_forecaster = RiskForecastModel()
+
 
 class CareerEngine:
     """
@@ -40,7 +33,7 @@ class CareerEngine:
         user: User
     ) -> Dict:
         # -------------------------------
-        # 1. SKILL CONFIDENCE SCORE
+        # SKILL CONFIDENCE SCORE
         # -------------------------------
         skill_confidence: Dict[str, int] = {}
         linkedin_skills = list(linkedin_input.get("skills", {}).keys())
@@ -52,7 +45,7 @@ class CareerEngine:
             skill_confidence[skill] = int(score * 100)
 
         # -------------------------------
-        # 2. CAREER RISK ALERTS (CURRENT)
+        # CAREER RISK ALERTS (CURRENT)
         # -------------------------------
         career_risks: List[Dict] = []
 
@@ -71,7 +64,7 @@ class CareerEngine:
             })
 
         # -------------------------------
-        # 3. WEEKLY GROWTH PLAN
+        # WEEKLY GROWTH PLAN
         # -------------------------------
         weekly_plan = self._generate_weekly_routine(
             github_stats=metrics,
@@ -79,7 +72,7 @@ class CareerEngine:
         )
 
         # -------------------------------
-        # 4. ACCELERATOR MODE DECISION
+        # ACCELERATOR MODE DECISION
         # -------------------------------
         if self.should_enable_accelerator(
             skill_confidence, career_risks, user.streak_count or 0
@@ -87,22 +80,16 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
-        # 5. CAREER RISK FORECAST (6 MONTHS)
+        # CAREER RISK FORECAST (6 MONTHS)
         # -------------------------------
         career_forecast = self.forecast_career_risk(
             skill_confidence, metrics
         )
 
         # -------------------------------
-        # 6. PERSISTENCE (Saving to DB)
+        # MENTOR PROACTIVE INSIGHTS
         # -------------------------------
-        # Isso garante que as tabelas que corrigimos (Risk/Skill Snapshots) sejam populadas
-        self._persist_data(db, user, skill_confidence, career_forecast)
-
-        # -------------------------------
-        # 7. MENTOR PROACTIVE INSIGHTS
-        # -------------------------------
-        mentor_insights = mentor_engine.proactive_insights(
+        mentor_engine.proactive_insights(
             db,
             user,
             {
@@ -112,7 +99,7 @@ class CareerEngine:
         )
 
         # -------------------------------
-        # 8. FINAL RESPONSE
+        # FINAL RESPONSE
         # -------------------------------
         return {
             "zone_a_holistic": {},
@@ -122,51 +109,8 @@ class CareerEngine:
             "career_risks": career_risks,
             "career_forecast": career_forecast,
             "zone_a_radar": {},
-            "missing_skills": [],
-            "mentor_insights": mentor_insights
+            "missing_skills": []
         }
-
-    # =========================================================
-    # PERSISTENCE HELPER
-    # =========================================================
-    def _persist_data(self, db: Session, user: User, skills: Dict, forecast: Dict):
-        """
-        Salva os dados calculados no banco de dados para histórico.
-        """
-        try:
-            # Salvar Skills
-            for skill, score in skills.items():
-                # Verifica se já salvou hoje para não duplicar
-                exists = db.query(SkillSnapshot).filter(
-                    SkillSnapshot.user_id == user.id,
-                    SkillSnapshot.skill == skill,
-                    # Lógica simplificada de data, idealmente filtrar por dia
-                ).order_by(SkillSnapshot.recorded_at.desc()).first()
-                
-                # Se não existe ou é antigo, salva novo
-                if not exists:
-                    db.add(SkillSnapshot(user_id=user.id, skill=skill, confidence_score=score))
-
-            # Salvar Risco (Se for Alto ou Médio)
-            if forecast.get("risk_score", 0) > 30:
-                # Evita spam de riscos iguais
-                exists_risk = db.query(RiskSnapshot).filter(
-                    RiskSnapshot.user_id == user.id,
-                    RiskSnapshot.risk_factor == "General Forecast"
-                ).order_by(RiskSnapshot.created_at.desc()).first()
-
-                if not exists_risk:
-                    db.add(RiskSnapshot(
-                        user_id=user.id,
-                        risk_factor="General Forecast",
-                        risk_score=forecast["risk_score"],
-                        mitigation_strategy=forecast["summary"]
-                    ))
-
-            db.commit()
-        except Exception as e:
-            logger.error(f"Failed to persist career data: {e}")
-            db.rollback()
 
     # =========================================================
     # WEEKLY ROUTINE GENERATOR
@@ -274,4 +218,59 @@ class CareerEngine:
             summary = "High probability of stagnation or rejection within 6 months."
         elif risk_score >= 30:
             level = "MEDIUM"
-            summary = "Moderate career risk detected within next
+            summary = "Moderate career risk detected within next 6 months."
+
+        return {
+            "risk_level": level,
+            "risk_score": risk_score,
+            "summary": summary,
+            "reasons": reasons
+        }
+
+    # =========================================================
+    # SKILL PATH SIMULATION
+    # =========================================================
+    def simulate_skill_path(
+        self,
+        user: User,
+        skill: str
+    ) -> Dict:
+        return {
+            "skill": skill,
+            "confidence_after_3_months": 70,
+            "confidence_after_6_months": 85,
+            "market_alignment": "High",
+            "summary": f"Learning {skill} significantly improves career outlook."
+        }
+
+    # =========================================================
+    # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
+    # =========================================================
+    async def get_weekly_history(
+        self,
+        db: Session,
+        user: User
+    ) -> List[Dict]:
+        routines = (
+            db.query(LearningPlan)
+            .filter(LearningPlan.user_id == user.id)
+            .order_by(LearningPlan.created_at.desc())
+            .limit(12)
+            .all()
+        )
+
+        return [
+            {
+                "week": r.week_id,
+                "focus": r.focus,
+                "completion": r.completion_rate,
+                "mode": r.mode
+            }
+            for r in routines
+        ]
+
+
+# ---------------------------------------------------------
+# SERVICE INSTANCE
+# ---------------------------------------------------------
+career_engine = CareerEngine()
