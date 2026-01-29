@@ -6,6 +6,7 @@ from app.db.models.career import CareerProfile, LearningPlan, MLRiskLog
 from app.services.mentor_engine import mentor_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 
+from app.db.models.ml_risk_log import MLRiskLog
 
 # ---------------------------------------------------------
 # ML FORECASTER (SINGLETON)
