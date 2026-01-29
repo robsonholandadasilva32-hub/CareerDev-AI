@@ -28,7 +28,7 @@ import json
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 import user_agents
-# CORREÇÃO: Importando o modelo com o nome correto
+# Importação Correta
 from app.db.models.audit import AuditLog
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,6 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     # Security: Persistent Audit Log (Forensic History)
     try:
         ua_parsed = user_agents.parse(user_agent)
-        # CORREÇÃO: Substituído LoginHistory por AuditLog
         audit_entry = AuditLog(
             user_id=user.id,
             session_id=sid,
@@ -164,8 +163,6 @@ def get_consistent_redirect_uri(request: Request, endpoint: str) -> str:
     redirect_uri = str(request.url_for(endpoint))
 
     # CRITICAL FIX: Unify HTTPS enforcement logic.
-    # If we are in production OR the generated URI is HTTP (proxy), we upgrade to HTTPS.
-    # This ensures Login and Callback steps use the exact same logic.
     if settings.ENVIRONMENT == 'production' or "http://" in redirect_uri:
         if "http://" in redirect_uri:
             redirect_uri = redirect_uri.replace("http://", "https://")
@@ -178,7 +175,6 @@ async def connect_github(request: Request, user: User = Depends(get_current_user
         return RedirectResponse("/login")
 
     # STRICT SEQUENTIAL FLOW
-    # If already connected, move to Dashboard (Zero Touch)
     if user.github_id:
         return RedirectResponse("/dashboard", status_code=303)
 
@@ -200,14 +196,12 @@ async def login_github(request: Request):
 
     logger.info(f"🔎 GITHUB LOGIN START: Generated Redirect URI: {redirect_uri}")
 
-    # SECURITY REFACTOR: Use authorize_redirect which manages state automatically
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
 @router.get("/auth/github/callback")
 async def auth_github_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     ip = get_client_ip(request)
 
-    # EXTREME VERBOSITY LOGGING
     code = request.query_params.get('code')
     state = request.query_params.get('state')
     error = request.query_params.get('error')
@@ -215,10 +209,8 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
     logger.info(f"📥 GITHUB CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
 
     try:
-        # STRICT AUTH CHECK
         current_user_state = getattr(request.state, "user", None)
         if not current_user_state:
-            # This should not happen if /login/github is protected, but safeguards callback attacks
             logger.warning("GitHub Callback attempted without session")
             return RedirectResponse("/login?error=session_expired_github")
 
@@ -227,8 +219,7 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
         logger.info(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
 
-        # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
-        # FIX: Manual fetch to avoid auto-extraction collision
+        # 2. SECURITY REFACTOR: Use fetch_access_token
         token = await oauth.github.fetch_access_token(
             redirect_uri=redirect_uri,
             code=str(request.query_params.get('code')),
@@ -242,8 +233,214 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
         logger.info(f"👤 GITHUB PROFILE: ID={profile.get('id')} | Email={profile.get('email')}")
 
-        # Get email (might be private)
         email = profile.get('email')
         if not email:
             logger.warning("⚠️ Email null in profile. Fetching /user/emails...")
-            resp_emails
+            resp_emails = await oauth.github.get('user/emails', token=token)
+            emails = resp_emails.json()
+            for e in emails:
+                if e.get('primary') and e.get('verified'):
+                    email = e['email']
+                    break
+            logger.info(f"📧 EMAIL FETCHED: {email}")
+
+        if not email:
+             log_audit(db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
+             return RedirectResponse("/login?error=github_no_email")
+
+        github_id = str(profile.get('id'))
+        name = profile.get('name') or profile.get('login')
+        avatar = profile.get('avatar_url')
+
+        # --- STRICT LINKING LOGIC ---
+        current_user = db.query(User).filter(User.id == current_user_state.id).first()
+        if not current_user:
+             return RedirectResponse("/login?error=user_not_found")
+
+        # Check for conflict
+        existing_user = get_user_by_github_id(db, github_id)
+        if existing_user and existing_user.id != current_user.id:
+            log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
+            return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
+
+        # Update User
+        current_user.github_id = github_id
+        current_user.github_token = token.get('access_token')
+        if not current_user.avatar_url:
+            current_user.avatar_url = avatar
+
+        # ZERO TOUCH: Automatically complete profile
+        current_user.is_profile_completed = True
+        current_user.terms_accepted = True
+        current_user.terms_accepted_at = datetime.utcnow()
+
+        db.commit() 
+        logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
+
+        log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
+
+        check_and_award_security_badge(db, current_user)
+
+        if token.get('access_token'):
+            background_tasks.add_task(social_harvester.harvest_github_data, current_user.id, token.get('access_token'))
+
+        return RedirectResponse("/dashboard", status_code=303)
+
+    except Exception as e:
+        logger.error(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
+        log_audit(db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
+        return RedirectResponse("/login?error=github_failed")
+
+@router.get("/login/linkedin")
+@limiter.limit("5/minute")
+async def login_linkedin(request: Request):
+    if not settings.LINKEDIN_CLIENT_ID:
+        return RedirectResponse("/login?error=linkedin_not_configured")
+
+    redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+
+    logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
+
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+
+@router.get("/auth/linkedin/callback")
+async def auth_linkedin_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    ip = get_client_ip(request)
+
+    code = request.query_params.get('code')
+    state = request.query_params.get('state')
+    error = request.query_params.get('error')
+    code_log = code[:5] if code else "None"
+    logger.info(f"📥 LINKEDIN CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
+
+    try:
+        # 1. Manual HTTPS Enforcement
+        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+
+        logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
+
+        # 2. SECURITY REFACTOR: Use fetch_access_token
+        token = await oauth.linkedin.fetch_access_token(
+            redirect_uri=redirect_uri,
+            code=str(request.query_params.get('code')),
+            grant_type='authorization_code'
+        )
+
+        logger.info(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
+
+        user_info = await oauth.linkedin.userinfo(token=token)
+
+        logger.info(f"👤 LINKEDIN USER INFO: {json.dumps(user_info, default=str)}")
+
+        if not user_info:
+             logger.error("LinkedIn Error: No user info received")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
+             return RedirectResponse("/login?error=linkedin_failed")
+
+        linkedin_id = user_info.get('sub') or user_info.get('id')
+        if not linkedin_id:
+             logger.error(f"LinkedIn Error: No ID found in user_info. Keys: {list(user_info.keys())}")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No ID found")
+             return RedirectResponse("/login?error=linkedin_failed")
+
+        email = user_info.get('email')
+        
+        name = user_info.get('name')
+        if not name:
+             first = user_info.get('given_name')
+             last = user_info.get('family_name')
+             if first and last:
+                 name = f"{first} {last}"
+             else:
+                 name = "LinkedIn User"
+
+        picture = user_info.get('picture')
+
+        if not email:
+             logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
+             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No email found")
+             return RedirectResponse("/login?error=missing_linkedin_email")
+
+        # 1. Check by Email
+        user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
+        if user:
+            logger.info(f"DEBUG: Found existing user: {user.id}")
+            if user.linkedin_id != linkedin_id:
+                user.linkedin_id = linkedin_id
+                if not user.avatar_url:
+                    user.avatar_url = picture
+
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+            logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
+
+            if user.linkedin_id == linkedin_id:
+                 check_and_award_security_badge(db, user)
+
+            if token.get('access_token'):
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
+
+            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
+
+        # 2. Check by ID (Legacy)
+        user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
+        if user:
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+
+            if token.get('access_token'):
+                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
+            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
+
+        # 3. Create User
+        logger.info("DEBUG: Creating new user")
+        pwd = secrets.token_urlsafe(16)
+        hashed_password = await asyncio.to_thread(hash_password, pwd)
+        try:
+            user = await create_user_async(
+                db=db,
+                name=name,
+                email=email,
+                hashed_password=hashed_password,
+                linkedin_id=linkedin_id,
+                avatar_url=picture,
+                email_verified=True
+            )
+            # ZERO TOUCH
+            user.terms_accepted = True
+            user.terms_accepted_at = datetime.utcnow()
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+
+            user = db.query(User).options(joinedload(User.career_profile)).filter(User.id == user.id).first()
+
+            logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
+
+        except IntegrityError:
+            # Race condition handling (Aqui estava o erro provável)
+            db.rollback()
+            logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
+            user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
+            if not user:
+                 user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
+            if not user:
+                 raise Exception("IntegrityError caught but user not found on retry.")
+
+            if not user.linkedin_id:
+                user.linkedin_id = linkedin_id
+
+            user.linkedin_token = token.get('access_token')
+            db.commit()
+
+            check_and_award_security_badge(db, user)
+
+        if token.get('access_token'):
+            background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
+
+        logger.info(f"Strict Onboarding: New user created.")
+        return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
+
+    except Exception as e:
+        logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
+        log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
+        return RedirectResponse("/login?error=linkedin_failed")
