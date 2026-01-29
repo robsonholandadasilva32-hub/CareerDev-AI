@@ -1,288 +1,80 @@
-from typing import Dict, List, Optional
-from sqlalchemy.orm import Session
-
-from app.db.models.user import User
-from app.db.models.career import CareerProfile, LearningPlan
-from app.services.mentor_engine import mentor_engine
-from app.ml.risk_forecast_model import RiskForecastModel
-
-
-# ---------------------------------------------------------
-# ML FORECASTER (SINGLETON)
-# ---------------------------------------------------------
-ml_forecaster = RiskForecastModel()
-
-
-class CareerEngine:
+def forecast_career_risk(
+    self,
+    skill_confidence: Dict[str, int],
+    metrics: Dict,
+    db: Optional[Session] = None,
+    user: Optional[User] = None
+) -> Dict:
     """
-    Core service responsible for analyzing developer career signals
-    and producing risk alerts, growth plans,
-    forecasts and mentor-driven insights.
+    Hybrid career risk forecast:
+    - Rule-based signals
+    - ML regression adjustment
+    - Persistent ML audit log
     """
 
-    # =========================================================
-    # MAIN ANALYSIS PIPELINE
-    # =========================================================
-    def analyze(
-        self,
-        db: Session,
-        raw_languages: Dict[str, int],
-        linkedin_input: Dict,
-        metrics: Dict,
-        skill_audit: Dict,
-        user: User
-    ) -> Dict:
-        # -------------------------------
-        # SKILL CONFIDENCE SCORE
-        # -------------------------------
-        skill_confidence: Dict[str, int] = {}
-        linkedin_skills = list(linkedin_input.get("skills", {}).keys())
+    # -------------------------------
+    # RULE-BASED RISK
+    # -------------------------------
+    risk_score = 0
+    reasons: List[str] = []
 
-        for skill, bytes_count in raw_languages.items():
-            score = self.calculate_verified_score(
-                skill, bytes_count, linkedin_skills
-            )
-            skill_confidence[skill] = int(score * 100)
+    avg_conf = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+    velocity = metrics.get("commits_last_30_days", 0)
 
-        # -------------------------------
-        # CAREER RISK ALERTS (CURRENT)
-        # -------------------------------
-        career_risks: List[Dict] = []
+    if avg_conf < 60:
+        risk_score += 30
+        reasons.append("Overall skill confidence trending low.")
 
-        for skill, confidence in skill_confidence.items():
-            if confidence < 40:
-                career_risks.append({
-                    "level": "HIGH",
-                    "skill": skill,
-                    "message": f"Low confidence score in {skill}. Risk of interview rejection."
-                })
+    if velocity < 10:
+        risk_score += 30
+        reasons.append("Low coding activity detected.")
 
-        if metrics.get("commits_last_30_days", 0) < 5:
-            career_risks.append({
-                "level": "MEDIUM",
-                "message": "Low coding activity detected. Skills may decay."
-            })
+    if metrics.get("velocity_score") == "Low":
+        risk_score += 20
+        reasons.append("Development velocity decreasing.")
 
-        # -------------------------------
-        # WEEKLY GROWTH PLAN
-        # -------------------------------
-        weekly_plan = self._generate_weekly_routine(
-            github_stats=metrics,
-            user_streak=user.streak_count or 0
-        )
+    rule_risk = risk_score
 
-        # -------------------------------
-        # ACCELERATOR MODE DECISION
-        # -------------------------------
-        if self.should_enable_accelerator(
-            skill_confidence, career_risks, user.streak_count or 0
-        ):
-            weekly_plan["mode"] = "ACCELERATOR"
+    # -------------------------------
+    # ML ADJUSTMENT (SAFE + LOGGED)
+    # -------------------------------
+    try:
+        ml_result = ml_forecaster.predict(avg_conf, velocity)
+        ml_risk = ml_result["ml_risk"]
 
-        # -------------------------------
-        # CAREER RISK FORECAST (HYBRID)
-        # -------------------------------
-        career_forecast = self.forecast_career_risk(
-            skill_confidence, metrics
-        )
+        # Hybrid risk (balanced)
+        risk_score = int((rule_risk + ml_risk) / 2)
 
-        # -------------------------------
-        # MENTOR PROACTIVE INSIGHTS
-        # -------------------------------
-        mentor_engine.proactive_insights(
-            db,
-            user,
-            {
-                "career_forecast": career_forecast,
-                "weekly_plan": weekly_plan
-            }
-        )
+        # Persist ML audit log (if context available)
+        if db and user:
+            db.add(MLRiskLog(
+                user_id=user.id,
+                ml_risk=ml_risk,
+                rule_risk=rule_risk,
+                model_version=ml_result["model_version"]
+            ))
+            db.commit()
 
-        # -------------------------------
-        # FINAL RESPONSE
-        # -------------------------------
-        return {
-            "zone_a_holistic": {},
-            "zone_b_matrix": skill_audit,
-            "weekly_plan": weekly_plan,
-            "skill_confidence": skill_confidence,
-            "career_risks": career_risks,
-            "career_forecast": career_forecast,
-            "zone_a_radar": {},
-            "missing_skills": []
-        }
+    except Exception:
+        # Fail-safe: rule-only risk
+        risk_score = rule_risk
 
-    # =========================================================
-    # WEEKLY ROUTINE GENERATOR
-    # =========================================================
-    def _generate_weekly_routine(
-        self,
-        github_stats: Dict,
-        user_streak: int
-    ) -> Dict:
-        raw_langs = github_stats.get("languages", {})
-        python_score = raw_langs.get("Python", 0)
-        rust_score = raw_langs.get("Rust", 0)
-
-        focus = "Rust" if python_score > 100_000 and rust_score < 5_000 else "Python"
-
-        return {
-            "mode": "GROWTH",
-            "focus": focus,
-            "streak_bonus": user_streak >= 4,
-            "tasks": [
-                {
-                    "day": "Mon",
-                    "task": f"Learn: {focus} fundamentals",
-                    "type": "Learn"
-                },
-                {
-                    "day": "Wed",
-                    "task": f"Build a CLI tool in {focus}",
-                    "type": "Code",
-                    "action": "VERIFY_REPO",
-                    "verify_keyword": focus.lower()
-                }
-            ]
-        }
-
-    # =========================================================
-    # ACCELERATOR DECISION ENGINE
-    # =========================================================
-    def should_enable_accelerator(
-        self,
-        skill_confidence: Dict[str, int],
-        career_risks: List[Dict],
-        streak: int
-    ) -> bool:
-        avg = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
-        return avg >= 80 and streak >= 4 and not any(
-            r["level"] == "HIGH" for r in career_risks
-        )
-
-    # =========================================================
-    # VERIFIED SCORE CALCULATION
-    # =========================================================
-    def calculate_verified_score(
-        self,
-        skill: str,
-        bytes_count: int,
-        linkedin_skills: List[str]
-    ) -> float:
-        base = min(bytes_count / 100_000, 1.0)
-        bonus = 0.2 if skill in linkedin_skills else 0.0
-        return min(base + bonus, 1.0)
-
-    # =========================================================
-    # CAREER RISK FORECAST (HYBRID: RULES + ML)
-    # =========================================================
-    def forecast_career_risk(
-        self,
-        skill_confidence: Dict[str, int],
-        metrics: Dict
-    ) -> Dict:
-        risk_score = 0
-        reasons: List[str] = []
-
-        avg_conf = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
-
-        if avg_conf < 60:
-            risk_score += 30
-            reasons.append("Overall skill confidence trending low.")
-
-        if metrics.get("commits_last_30_days", 0) < 10:
-            risk_score += 30
-            reasons.append("Low coding activity detected.")
-
-        if metrics.get("velocity_score") == "Low":
-            risk_score += 20
-            reasons.append("Development velocity decreasing.")
-
-        # ML adjustment (fail-safe)
-        try:
-            ml_risk = ml_forecaster.predict(avg_conf)
-            risk_score = int((risk_score + ml_risk) / 2)
-        except Exception:
-            pass
-
+    # -------------------------------
+    # FINAL CLASSIFICATION
+    # -------------------------------
+    if risk_score >= 60:
+        level = "HIGH"
+        summary = "High probability of stagnation or rejection within 6 months."
+    elif risk_score >= 30:
+        level = "MEDIUM"
+        summary = "Moderate career risk detected within next 6 months."
+    else:
         level = "LOW"
         summary = "Career trajectory stable."
 
-        if risk_score >= 60:
-            level = "HIGH"
-            summary = "High probability of stagnation or rejection within 6 months."
-        elif risk_score >= 30:
-            level = "MEDIUM"
-            summary = "Moderate career risk detected within next 6 months."
-
-        return {
-            "risk_level": level,
-            "risk_score": risk_score,
-            "summary": summary,
-            "reasons": reasons
-        }
-
-    # =========================================================
-    # SKILL PATH SIMULATION (UNIFIED)
-    # =========================================================
-    def simulate_skill_path(
-        self,
-        user: User,
-        skill: str,
-        months: int = 6
-    ) -> Dict:
-        """
-        Simulates expected skill growth over time.
-
-        - Backward compatible (months optional)
-        - Growth capped
-        - Market alignment fail-safe
-        """
-        base_confidence = 40
-        growth = min(90, base_confidence + months * 7)
-
-        market_trends = getattr(self, "market_trends", [])
-
-        return {
-            "skill": skill,
-            "months": months,
-            "expected_confidence": growth,
-            "market_alignment": (
-                "High" if skill in market_trends else "Medium"
-            ),
-            "summary": (
-                f"Learning {skill} for {months} months significantly improves career outlook."
-            )
-        }
-
-    # =========================================================
-    # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
-    # =========================================================
-    async def get_weekly_history(
-        self,
-        db: Session,
-        user: User
-    ) -> List[Dict]:
-        routines = (
-            db.query(LearningPlan)
-            .filter(LearningPlan.user_id == user.id)
-            .order_by(LearningPlan.created_at.desc())
-            .limit(12)
-            .all()
-        )
-
-        return [
-            {
-                "week": r.week_id,
-                "focus": r.focus,
-                "completion": r.completion_rate,
-                "mode": r.mode
-            }
-            for r in routines
-        ]
-
-
-# ---------------------------------------------------------
-# SERVICE INSTANCE
-# ---------------------------------------------------------
-career_engine = CareerEngine()
+    return {
+        "risk_level": level,
+        "risk_score": risk_score,
+        "summary": summary,
+        "reasons": reasons
+    }
