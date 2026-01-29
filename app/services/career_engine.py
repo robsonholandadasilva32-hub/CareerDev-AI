@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
@@ -80,7 +80,7 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
-        # CAREER RISK FORECAST (6 MONTHS)
+        # CAREER RISK FORECAST (HYBRID)
         # -------------------------------
         career_forecast = self.forecast_career_risk(
             skill_confidence, metrics
@@ -198,18 +198,13 @@ class CareerEngine:
             risk_score += 20
             reasons.append("Development velocity decreasing.")
 
-        # -------------------------------
-        # ML RISK ADJUSTMENT (FAIL-SAFE)
-        # -------------------------------
+        # ML adjustment (fail-safe)
         try:
             ml_risk = ml_forecaster.predict(avg_conf)
             risk_score = int((risk_score + ml_risk) / 2)
         except Exception:
             pass
 
-        # -------------------------------
-        # FINAL CLASSIFICATION
-        # -------------------------------
         level = "LOW"
         summary = "Career trajectory stable."
 
@@ -228,19 +223,36 @@ class CareerEngine:
         }
 
     # =========================================================
-    # SKILL PATH SIMULATION
+    # SKILL PATH SIMULATION (UNIFIED)
     # =========================================================
     def simulate_skill_path(
         self,
         user: User,
-        skill: str
+        skill: str,
+        months: int = 6
     ) -> Dict:
+        """
+        Simulates expected skill growth over time.
+
+        - Backward compatible (months optional)
+        - Growth capped
+        - Market alignment fail-safe
+        """
+        base_confidence = 40
+        growth = min(90, base_confidence + months * 7)
+
+        market_trends = getattr(self, "market_trends", [])
+
         return {
             "skill": skill,
-            "confidence_after_3_months": 70,
-            "confidence_after_6_months": 85,
-            "market_alignment": "High",
-            "summary": f"Learning {skill} significantly improves career outlook."
+            "months": months,
+            "expected_confidence": growth,
+            "market_alignment": (
+                "High" if skill in market_trends else "Medium"
+            ),
+            "summary": (
+                f"Learning {skill} for {months} months significantly improves career outlook."
+            )
         }
 
     # =========================================================
