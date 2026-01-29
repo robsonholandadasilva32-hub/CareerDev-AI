@@ -81,21 +81,30 @@ class SocialHarvester:
                 db.rollback()
 
     async def harvest_github_data(self, user_id: int, token: str):
-        """Wrapper for sync_profile to match Route calls"""
-        # Create session here too
+        """Wrapper for sync_profile to match Route calls. Optimized for Async."""
+        try:
+            # 1. API Call (Async IO) - No DB Lock
+            raw_langs, commit_metrics = await self._harvest_github_raw(token)
+
+            # 2. DB Update (Thread with fresh session)
+            await asyncio.to_thread(self._save_github_data_new_session, user_id, raw_langs, commit_metrics)
+        except Exception as e:
+            logger.error(f"Harvest GitHub Data Error: {e}", exc_info=True)
+
+    def _save_github_data_new_session(self, user_id: int, raw_langs: Dict, commit_metrics: Dict):
+        """Helper to manage DB session in a separate thread."""
         with SessionLocal() as db:
-            # re-fetch user to attach to session
             user = db.query(User).get(user_id)
             if user:
-                await self.sync_profile(db, user, token)
+                self._process_and_save_profile(db, user, raw_langs, commit_metrics)
+            else:
+                logger.warning(f"User {user_id} not found during background save.")
 
     async def sync_profile(self, db: Session, user: User, github_token: str) -> bool:
         """
         Orchestrates the data fusion:
-        1. Harvest GitHub (Byte Distribution)
-        2. Process for Chart.js
-        3. Calculate Market Score
-        4. Update DB
+        1. Harvest GitHub (Byte Distribution) - Async
+        2. Process & Save (Sync -> Thread)
         """
         try:
             user_id = user.id
@@ -109,6 +118,21 @@ class SocialHarvester:
             # 1. Harvest GitHub (Logic Requirement 1: Real Skill Calculator)
             raw_langs, commit_metrics = await self._harvest_github_raw(github_token)
 
+            # 2. Process & Save in Thread
+            return await asyncio.to_thread(
+                self._process_and_save_profile, db, user, raw_langs, commit_metrics
+            )
+
+        except Exception as e:
+            logger.error(f"Sync Profile Error: {e}", exc_info=True)
+            return False
+
+    def _process_and_save_profile(self, db: Session, user: User, raw_langs: Dict[str, int], commit_metrics: Dict[str, Any]) -> bool:
+        """
+        Synchronous logic to process GitHub data and update the database.
+        Designed to be run in a separate thread.
+        """
+        try:
             # 2. Process for Chart.js (Doughnut Chart)
             # Logic: Sum total bytes, convert to percentage
             total_bytes = sum(raw_langs.values())
@@ -138,6 +162,12 @@ class SocialHarvester:
 
             # 4. Save to DB
             profile = user.career_profile
+            # Ensure profile exists (idempotency for thread safety if passed from elsewhere)
+            if not profile:
+                 profile = CareerProfile(user_id=user.id)
+                 db.add(profile)
+                 # We don't commit here to avoid partial state, we commit at end.
+                 user.career_profile = profile
 
             profile.skills_graph_data = skills_graph_data
             profile.market_relevance_score = market_score
@@ -168,11 +198,12 @@ class SocialHarvester:
             profile.ai_insights_summary = ai_summary
 
             db.commit()
-            logger.info(f"✅ Data Fusion Complete for User {user_id}. Score: {market_score}")
+            logger.info(f"✅ Data Fusion Complete for User {user.id}. Score: {market_score}")
             return True
 
         except Exception as e:
-            logger.error(f"Sync Profile Error: {e}", exc_info=True)
+            logger.error(f"Process & Save Error: {e}", exc_info=True)
+            db.rollback()
             return False
 
     async def _harvest_github_raw(self, token: str) -> tuple[Dict[str, int], Dict[str, Any]]:
