@@ -157,13 +157,13 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 
 def get_consistent_redirect_uri(request: Request, endpoint: str) -> str:
     """
-    Generates a consistent Redirect URI, forcing HTTPS if in production
-    or if the app appears to be behind a proxy (implied by http check).
+    Generates a consistent Redirect URI.
+    Forces HTTPS only in production.
     """
     redirect_uri = str(request.url_for(endpoint))
 
     # CRITICAL FIX: Unify HTTPS enforcement logic.
-    if settings.ENVIRONMENT == 'production' or "http://" in redirect_uri:
+    if settings.ENVIRONMENT == 'production':
         if "http://" in redirect_uri:
             redirect_uri = redirect_uri.replace("http://", "https://")
 
