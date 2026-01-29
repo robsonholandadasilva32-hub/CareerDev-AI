@@ -4,6 +4,13 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.services.mentor_engine import mentor_engine
+from app.ml.risk_forecast_model import RiskForecastModel
+
+
+# ---------------------------------------------------------
+# ML FORECASTER (SINGLETON)
+# ---------------------------------------------------------
+ml_forecaster = RiskForecastModel()
 
 
 class CareerEngine:
@@ -167,7 +174,7 @@ class CareerEngine:
         return min(base + bonus, 1.0)
 
     # =========================================================
-    # CAREER RISK FORECAST (PREDICTIVE)
+    # CAREER RISK FORECAST (HYBRID: RULES + ML)
     # =========================================================
     def forecast_career_risk(
         self,
@@ -175,19 +182,34 @@ class CareerEngine:
         metrics: Dict
     ) -> Dict:
         risk_score = 0
-        reasons = []
+        reasons: List[str] = []
 
-        avg = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
-        if avg < 60:
+        avg_conf = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+
+        if avg_conf < 60:
             risk_score += 30
             reasons.append("Overall skill confidence trending low.")
+
         if metrics.get("commits_last_30_days", 0) < 10:
             risk_score += 30
             reasons.append("Low coding activity detected.")
+
         if metrics.get("velocity_score") == "Low":
             risk_score += 20
             reasons.append("Development velocity decreasing.")
 
+        # -------------------------------
+        # ML RISK ADJUSTMENT (FAIL-SAFE)
+        # -------------------------------
+        try:
+            ml_risk = ml_forecaster.predict(avg_conf)
+            risk_score = int((risk_score + ml_risk) / 2)
+        except Exception:
+            pass
+
+        # -------------------------------
+        # FINAL CLASSIFICATION
+        # -------------------------------
         level = "LOW"
         summary = "Career trajectory stable."
 
@@ -218,37 +240,4 @@ class CareerEngine:
             "confidence_after_3_months": 70,
             "confidence_after_6_months": 85,
             "market_alignment": "High",
-            "summary": f"Learning {skill} significantly improves career outlook."
-        }
-
-    # =========================================================
-    # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
-    # =========================================================
-    async def get_weekly_history(
-        self,
-        db: Session,
-        user: User
-    ) -> List[Dict]:
-        routines = (
-            db.query(LearningPlan)
-            .filter(LearningPlan.user_id == user.id)
-            .order_by(LearningPlan.created_at.desc())
-            .limit(12)
-            .all()
-        )
-
-        return [
-            {
-                "week": r.week_id,
-                "focus": r.focus,
-                "completion": r.completion_rate,
-                "mode": r.mode
-            }
-            for r in routines
-        ]
-
-
-# ---------------------------------------------------------
-# SERVICE INSTANCE
-# ---------------------------------------------------------
-career_engine = CareerEngine()
+            "summary": f"Learning {skill} si
