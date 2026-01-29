@@ -19,7 +19,8 @@ class CareerEngine:
         raw_languages: Dict[str, int],
         linkedin_input: Dict,
         metrics: Dict,
-        skill_audit: Dict
+        skill_audit: Dict,
+        user: User
     ) -> Dict:
         # -------------------------------
         # SKILL CONFIDENCE SCORE
@@ -60,20 +61,30 @@ class CareerEngine:
         # -------------------------------
         weekly_plan = self._generate_weekly_routine(
             github_stats=metrics,
-            user_streak=metrics.get("streak", 0)
+            user_streak=user.streak_count or 0
         )
+
+        # -------------------------------
+        # ACCELERATOR MODE DECISION
+        # -------------------------------
+        if self.should_enable_accelerator(
+            skill_confidence=skill_confidence,
+            career_risks=career_risks,
+            streak=user.streak_count or 0
+        ):
+            weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
-            "zone_a_holistic": {},          # reservado p/ expansão futura
+            "zone_a_holistic": {},
             "zone_b_matrix": skill_audit,
             "weekly_plan": weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
-            "zone_a_radar": {},             # reservado p/ chart
-            "missing_skills": []            # reservado p/ gap analysis
+            "zone_a_radar": {},
+            "missing_skills": []
         }
 
     # =========================================================
@@ -99,7 +110,7 @@ class CareerEngine:
         }
 
         return {
-            "mode": "GROWTH",
+            "mode": "GROWTH",  # pode ser sobrescrito para ACCELERATOR
             "focus": focus,
             "streak_bonus": user_streak >= 4,
             "tasks": [
@@ -120,6 +131,28 @@ class CareerEngine:
         }
 
     # =========================================================
+    # ACCELERATOR DECISION ENGINE
+    # =========================================================
+    def should_enable_accelerator(
+        self,
+        skill_confidence: Dict[str, int],
+        career_risks: List[Dict],
+        streak: int
+    ) -> bool:
+        """
+        Accelerator is enabled only when:
+        - Average skill confidence >= 80
+        - Weekly streak >= 4
+        - No HIGH career risks
+        """
+        avg_confidence = (
+            sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+        )
+        has_high_risk = any(r["level"] == "HIGH" for r in career_risks)
+
+        return avg_confidence >= 80 and streak >= 4 and not has_high_risk
+
+    # =========================================================
     # VERIFIED SCORE CALCULATION
     # =========================================================
     def calculate_verified_score(
@@ -128,10 +161,6 @@ class CareerEngine:
         bytes_count: int,
         linkedin_skills: List[str]
     ) -> float:
-        """
-        Produces a normalized confidence score [0.0–1.0]
-        based on GitHub code volume + LinkedIn signal.
-        """
         base = min(bytes_count / 100_000, 1.0)
         bonus = 0.2 if skill in linkedin_skills else 0.0
         return min(base + bonus, 1.0)
@@ -144,9 +173,6 @@ class CareerEngine:
         db: Session,
         user: User
     ) -> List[Dict]:
-        """
-        Returns the last 12 weekly learning plans for dashboard charts.
-        """
         routines = (
             db.query(LearningPlan)
             .filter(LearningPlan.user_id == user.id)
