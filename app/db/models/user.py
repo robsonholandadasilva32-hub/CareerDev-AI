@@ -34,3 +34,7 @@ class User(Base):
     # --- CORREÇÃO DEFINITIVA ---
     # Usando o caminho COMPLETO para eliminar a ambiguidade "Multiple classes found"
     audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
+
+    # ✅ NOVO
+    skill_snapshots = relationship("SkillSnapshot", back_populates="user")
+    mentor_memories = relationship("MentorMemory", back_populates="user")
