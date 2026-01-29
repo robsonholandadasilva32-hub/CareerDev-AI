@@ -1,10 +1,12 @@
-# ... (imports anteriores mantidos) ...
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from app.db.base_class import Base
 
 class User(Base):
     __tablename__ = "users"
-    
-    # ... (mesmos campos de antes) ...
+
+    # --- Identidade Core ---
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
@@ -12,10 +14,12 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # ... (outros campos mantidos) ...
+    # --- Integrações Sociais ---
     github_username = Column(String, nullable=True)
     github_token = Column(String, nullable=True)
     linkedin_profile_url = Column(String, nullable=True)
+
+    # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)
     accelerator_mode = Column(Boolean, default=False)
     
@@ -26,5 +30,5 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
     
-    # CORREÇÃO AQUI: Mudei de "LoginHistory" para "AuditLog"
+    # ATUALIZADO: Aponta para "AuditLog"
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
