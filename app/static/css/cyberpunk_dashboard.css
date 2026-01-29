@@ -296,3 +296,34 @@ body {
 .risk-medium:hover {
     box-shadow: 0 0 25px #eab308;
 }
+
+/* Tooltip Badge Integration */
+.streak-badge {
+    position: relative; /* Necessário para posicionar o tooltip */
+    cursor: help;
+}
+
+.streak-badge::after {
+    content: attr(aria-label);
+    opacity: 0;
+    transition: opacity .2s;
+    /* Estilos do Tooltip Cyberpunk */
+    position: absolute;
+    bottom: -35px; /* Aparece abaixo do badge */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.streak-badge:hover::after {
+    opacity: 1;
+}
