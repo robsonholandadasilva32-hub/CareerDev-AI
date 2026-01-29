@@ -24,17 +24,30 @@ class User(Base):
     accelerator_mode = Column(Boolean, default=False)
     
     # --- Relacionamentos ---
-    career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    weekly_routines = relationship("WeeklyRoutine", back_populates="user", cascade="all, delete-orphan")
-    badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
-    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
-    learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
-    skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
     
-    # --- CORREÇÃO DEFINITIVA ---
-    # Usando o caminho COMPLETO para eliminar a ambiguidade "Multiple classes found"
-    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
+    # 1. Perfil de Carreira
+    career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
-    # ✅ NOVO
-    skill_snapshots = relationship("SkillSnapshot", back_populates="user")
+    # 2. Rotinas
+    weekly_routines = relationship("WeeklyRoutine", back_populates="user", cascade="all, delete-orphan")
+
+    # 3. Badges
+    badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
+
+    # 4. Sessões
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+    # 5. Planos de Aprendizado
+    learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
+
+    # 6. Skill Snapshots
+    # Usamos o caminho completo para evitar erro de "Multiple classes found" e removemos a duplicata que existia no GitHub
+    skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
+
+    # 7. Memórias do Mentor (Feature Nova)
     mentor_memories = relationship("MentorMemory", back_populates="user")
+
+    # --- NOTA IMPORTANTE ---
+    # O relacionamento 'audit_logs' foi REMOVIDO deste arquivo propositalmente.
+    # Ele agora é gerenciado automaticamente pelo 'backref' configurado no arquivo app/db/models/audit.py
+    # Isso resolve o conflito de importação circular e ArgumentError.
