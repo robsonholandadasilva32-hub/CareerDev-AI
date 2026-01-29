@@ -7,5 +7,5 @@ from app.db.models.security import UserSession
 from app.db.models.gamification import Badge, UserBadge
 from app.db.models.weekly_routine import WeeklyRoutine
 
-# --- CORREÇÃO AQUI: Importar AuditLog, não AuditLog ---
+# Importar AuditLog
 from app.db.models.audit import AuditLog
