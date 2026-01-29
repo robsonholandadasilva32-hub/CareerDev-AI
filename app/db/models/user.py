@@ -32,8 +32,7 @@ class User(Base):
 
     # Caminho completo para evitar erro de importação
     skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
-
-    # CORREÇÃO: Usar caminho completo para MentorMemory
     mentor_memories = relationship("app.db.models.mentor.MentorMemory", back_populates="user", cascade="all, delete-orphan")
 
-    # Lembrete: audit_logs foi removido daqui pois é gerenciado via backref no audit.py
+    # --- CORREÇÃO: Adicionar explicitamente de volta ---
+    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
