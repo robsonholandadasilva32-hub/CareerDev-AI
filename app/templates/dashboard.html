@@ -8,7 +8,6 @@
 
 <div class="grid-layout">
 
-    <!-- NAV DOCK -->
     <nav class="panel nav-dock">
         <div class="brand-logo">C/AI</div>
         <a href="/dashboard" class="nav-btn active">⌘</a>
@@ -20,15 +19,13 @@
         <a href="/logout" class="nav-btn alert-color">✕</a>
     </nav>
 
-    <!-- STATUS BAR -->
     <div class="panel status-bar" style="grid-column: 2/4;">
         <span class="feed-label">REAL_TIME_FEED ::</span>
         <marquee class="feed-text">
-            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API...
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... ML_RISK_ENGINE: ACTIVE...
         </marquee>
     </div>
 
-    <!-- MAIN PANEL -->
     <main class="panel" style="grid-column: 2/3;">
         <div class="panel-head tab-header">
             <div>
@@ -36,7 +33,6 @@
                 <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
             </div>
 
-            <!-- STATUS BADGES -->
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
 
@@ -50,31 +46,49 @@
             </div>
         </div>
 
-        <!-- AUDIT VIEW -->
         <div id="view-audit" style="padding:20px;">
-            <canvas id="radarChart"></canvas>
-            <canvas id="skillTimelineChart" style="margin-top:20px;"></canvas>
-
-            <div style="margin-top:10px;">
-                <div style="font-size:0.8rem;">MARKET ALIGNMENT</div>
-                <div style="font-size:2rem;font-weight:800;">
-                    {{ market_score }}/100
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <h4 style="margin-bottom: 10px; opacity: 0.8;">SKILL RADAR</h4>
+                    <canvas id="radarChart"></canvas>
                 </div>
+                
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div style="font-size:0.8rem; letter-spacing: 1px;">MARKET ALIGNMENT</div>
+                    <div style="font-size:3rem; font-weight:800; color: #00f0ff; text-shadow: 0 0 10px #00f0ff;">
+                        {{ market_score }}/100
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 10px; opacity: 0.8; font-size: 0.9rem;">RISK MODEL DIVERGENCE (RULE vs ML)</h4>
+                        <div style="height: 150px;">
+                            <canvas id="riskCompareChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <h4 style="margin-bottom: 15px; opacity: 0.8;">CONFIDENCE TIMELINE</h4>
+                <canvas id="skillTimelineChart"></canvas>
             </div>
         </div>
 
-        <!-- WEEKLY PLAN -->
         <div id="view-plan" style="display:none;padding:20px;">
             <div class="kanban-header">
                 CURRENT FOCUS:
-                <span>{{ career_data.weekly_plan.focus | upper }}</span>
+                <span style="color: #fcee0a;">{{ career_data.weekly_plan.focus | upper }}</span>
             </div>
 
             <div class="kanban-list">
                 {% for task in career_data.weekly_plan.tasks %}
                 <div class="kanban-card">
-                    <strong>{{ task.day }}</strong>
-                    <div>{{ task.task }}</div>
+                    <strong style="color: #00f0ff;">{{ task.day }}</strong>
+                    <div style="margin-top: 5px;">{{ task.task }}</div>
+                    {% if task.action == 'VERIFY_REPO' %}
+                        <div style="font-size: 0.7rem; margin-top: 5px; opacity: 0.7;">[Waiting for commit...]</div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -84,37 +98,99 @@
 </div>
 
 <script>
-/* ---------------- RADAR ---------------- */
+/* ---------------- RADAR CHART ---------------- */
 new Chart(document.getElementById('radarChart'), {
     type: 'radar',
     data: {{ career_data.zone_a_radar | tojson }},
-    options: { scales:{ r:{ min:0,max:100 }}}
+    options: {
+        scales: {
+            r: {
+                min: 0,
+                max: 100,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                pointLabels: { color: '#fff' }
+            }
+        },
+        plugins: { legend: { display: false } }
+    }
+});
+
+/* ---------------- RISK COMPARE CHART (NEW) ---------------- */
+// Assume que rule_risk e ml_risk estão disponíveis no dicionário career_forecast
+new Chart(document.getElementById("riskCompareChart"), {
+  type: "bar",
+  data: {
+    labels: ["Rule-Based", "ML-Based"],
+    datasets: [{
+      label: 'Risk Score',
+      data: [
+        {{ career_data.career_forecast.rule_risk | default(0) }},
+        {{ career_data.career_forecast.ml_risk | default(0) }}
+      ],
+      backgroundColor: ["#ef4444", "#fcee0a"], // Vermelho e Amarelo Cyberpunk
+      borderWidth: 0,
+      barThickness: 30
+    }]
+  },
+  options: {
+    indexAxis: 'y', // Barra horizontal para caber melhor
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        x: {
+            min: 0, max: 100,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: { color: '#fff' }
+        },
+        y: {
+            grid: { display: false },
+            ticks: { color: '#fff', font: { family: 'JetBrains Mono' } }
+        }
+    },
+    plugins: { legend: { display: false } }
+  }
 });
 
 /* ---------------- SKILL TIMELINE ---------------- */
 async function loadSkillTimeline(){
-    const res = await fetch("/api/analytics/skill-timeline");
-    const data = await res.json();
+    try {
+        const res = await fetch("/api/analytics/skill-timeline");
+        const data = await res.json();
 
-    const labels = [];
-    const datasets = [];
+        const labels = [];
+        const datasets = [];
+        const colors = ['#00f0ff', '#fcee0a', '#ff003c']; // Cyberpunk palette
 
-    Object.keys(data).forEach(skill=>{
-        if(!labels.length){
-            data[skill].forEach(p=>labels.push(p.date.split("T")[0]));
-        }
-        datasets.push({
-            label: skill,
-            data: data[skill].map(p=>p.confidence),
-            tension: 0.3
+        Object.keys(data).forEach((skill, index) => {
+            if(!labels.length){
+                data[skill].forEach(p => labels.push(p.date.split("T")[0]));
+            }
+            datasets.push({
+                label: skill,
+                data: data[skill].map(p => p.confidence),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length],
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 0
+            });
         });
-    });
 
-    new Chart(document.getElementById("skillTimelineChart"), {
-        type:"line",
-        data:{ labels, datasets },
-        options:{ scales:{ y:{ min:0,max:100 }}}
-    });
+        new Chart(document.getElementById("skillTimelineChart"), {
+            type:"line",
+            data:{ labels, datasets },
+            options:{
+                responsive: true,
+                scales:{
+                    y:{ min:0, max:100, grid: { color: 'rgba(255,255,255,0.1)' } },
+                    x:{ grid: { display: false } }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to load timeline", e);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", loadSkillTimeline);
@@ -124,7 +200,8 @@ function switchTab(tab){
     document.getElementById('view-audit').style.display = 'none';
     document.getElementById('view-plan').style.display = 'none';
     document.getElementById('view-' + tab).style.display = 'block';
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
 }
 </script>
