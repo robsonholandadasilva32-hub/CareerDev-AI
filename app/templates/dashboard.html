@@ -36,17 +36,16 @@
                 <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
             </div>
 
+            <!-- STATUS BADGES -->
             <div style="display:flex; align-items:center; gap:10px;">
                 <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
 
                 {% if career_data.career_forecast.risk_level == 'HIGH' %}
-                    <div class="streak-badge" style="background:var(--alert);">
-                        ⚠ CAREER RISK
-                    </div>
+                    <div class="streak-badge risk-high">⚠ HIGH RISK</div>
+                {% elif career_data.career_forecast.risk_level == 'MEDIUM' %}
+                    <div class="streak-badge risk-medium">🟡 MEDIUM RISK</div>
                 {% elif career_data.weekly_plan.mode == 'ACCELERATOR' %}
-                    <div class="streak-badge" style="background:var(--neon-purple);">
-                        🚀 ACCELERATOR
-                    </div>
+                    <div class="streak-badge accelerator">🚀 ACCELERATOR</div>
                 {% endif %}
             </div>
         </div>
@@ -85,17 +84,18 @@
 </div>
 
 <script>
-/* RADAR */
+/* ---------------- RADAR ---------------- */
 new Chart(document.getElementById('radarChart'), {
     type: 'radar',
     data: {{ career_data.zone_a_radar | tojson }},
     options: { scales:{ r:{ min:0,max:100 }}}
 });
 
-/* TIMELINE */
+/* ---------------- SKILL TIMELINE ---------------- */
 async function loadSkillTimeline(){
     const res = await fetch("/api/analytics/skill-timeline");
     const data = await res.json();
+
     const labels = [];
     const datasets = [];
 
@@ -103,16 +103,30 @@ async function loadSkillTimeline(){
         if(!labels.length){
             data[skill].forEach(p=>labels.push(p.date.split("T")[0]));
         }
-        datasets.push({ label:skill, data:data[skill].map(p=>p.confidence) });
+        datasets.push({
+            label: skill,
+            data: data[skill].map(p=>p.confidence),
+            tension: 0.3
+        });
     });
 
     new Chart(document.getElementById("skillTimelineChart"), {
         type:"line",
-        data:{ labels,datasets },
+        data:{ labels, datasets },
         options:{ scales:{ y:{ min:0,max:100 }}}
     });
 }
+
 document.addEventListener("DOMContentLoaded", loadSkillTimeline);
+
+/* ---------------- TABS ---------------- */
+function switchTab(tab){
+    document.getElementById('view-audit').style.display = 'none';
+    document.getElementById('view-plan').style.display = 'none';
+    document.getElementById('view-' + tab).style.display = 'block';
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+}
 </script>
 
 {% endblock %}
