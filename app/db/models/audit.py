@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-# Importamos 'backref' aqui
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base_class import Base
 
@@ -8,7 +7,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True) # Sem index=True para evitar erro
+    id = Column(Integer, primary_key=True) # Sem index=True
     user_id = Column(Integer, ForeignKey("users.id"))
     session_id = Column(String, nullable=True)
 
@@ -24,10 +23,6 @@ class AuditLog(Base):
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
 
-    # --- CORREÇÃO FINAL ---
-    # Usamos backref=backref(...) para injetar 'audit_logs' no User automaticamente.
-    # Isso garante que User e AuditLog estejam sempre sincronizados.
-    user = relationship(
-        "app.db.models.user.User",
-        backref=backref("audit_logs", cascade="all, delete-orphan")
-    )
+    # --- RELACIONAMENTO ---
+    # Deve usar back_populates="audit_logs" para casar com o arquivo User
+    user = relationship("app.db.models.user.User", back_populates="audit_logs")
