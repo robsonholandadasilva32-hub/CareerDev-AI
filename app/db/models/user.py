@@ -30,9 +30,9 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
 
-    # Caminho completo para evitar erro de importação
+    # Mantemos estes com caminho completo pois já funcionam
     skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
     mentor_memories = relationship("app.db.models.mentor.MentorMemory", back_populates="user", cascade="all, delete-orphan")
 
-    # --- CORREÇÃO: Adicionar explicitamente de volta ---
-    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
+    # ❌ REMOVIDO: audit_logs = relationship(...)
+    # O arquivo audit.py vai criar isso automaticamente no User.
