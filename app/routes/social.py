@@ -28,7 +28,8 @@ import json
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 import user_agents
-from app.db.models.audit import LoginHistory
+# CORREÇÃO: Importando o modelo com o nome correto
+from app.db.models.audit import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,8 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     # Security: Persistent Audit Log (Forensic History)
     try:
         ua_parsed = user_agents.parse(user_agent)
-        login_history = LoginHistory(
+        # CORREÇÃO: Substituído LoginHistory por AuditLog
+        audit_entry = AuditLog(
             user_id=user.id,
             session_id=sid,
             ip_address=ip,
@@ -122,10 +124,10 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
             is_active_session=True,
             auth_method="social"
         )
-        db.add(login_history)
+        db.add(audit_entry)
         db.commit()
     except Exception as e:
-        logger.error(f"Failed to record LoginHistory: {e}")
+        logger.error(f"Failed to record AuditLog: {e}")
 
     # Security: Audit Log
     log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
@@ -244,233 +246,4 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
         email = profile.get('email')
         if not email:
             logger.warning("⚠️ Email null in profile. Fetching /user/emails...")
-            resp_emails = await oauth.github.get('user/emails', token=token)
-            emails = resp_emails.json()
-            for e in emails:
-                if e.get('primary') and e.get('verified'):
-                    email = e['email']
-                    break
-            logger.info(f"📧 EMAIL FETCHED: {email}")
-
-        if not email:
-             log_audit(db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
-             return RedirectResponse("/login?error=github_no_email")
-
-        github_id = str(profile.get('id'))
-        name = profile.get('name') or profile.get('login')
-        avatar = profile.get('avatar_url')
-
-        # --- STRICT LINKING LOGIC ---
-        # Re-fetch user attached to current session
-        current_user = db.query(User).filter(User.id == current_user_state.id).first()
-        if not current_user:
-             return RedirectResponse("/login?error=user_not_found")
-
-        # Check for conflict
-        existing_user = get_user_by_github_id(db, github_id)
-        if existing_user and existing_user.id != current_user.id:
-            log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
-            return RedirectResponse("/onboarding/connect-github?error=github_taken", status_code=302)
-
-        # Update User
-        current_user.github_id = github_id
-        current_user.github_token = token.get('access_token')
-        if not current_user.avatar_url:
-            current_user.avatar_url = avatar
-
-        # ZERO TOUCH: Automatically complete profile
-        current_user.is_profile_completed = True
-        current_user.terms_accepted = True
-        current_user.terms_accepted_at = datetime.utcnow()
-
-        db.commit() # Sync commit
-        logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
-
-        log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
-
-        # Check Security Badge
-        check_and_award_security_badge(db, current_user)
-
-        # TRIGGER DATA HARVEST
-        if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_github_data, current_user.id, token.get('access_token'))
-
-        # Redirect Directly to Dashboard (Zero Touch)
-        return RedirectResponse("/dashboard", status_code=303)
-
-    except Exception as e:
-        logger.error(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
-        log_audit(db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
-        return RedirectResponse("/login?error=github_failed")
-
-@router.get("/login/linkedin")
-@limiter.limit("5/minute")
-async def login_linkedin(request: Request):
-    if not settings.LINKEDIN_CLIENT_ID:
-        return RedirectResponse("/login?error=linkedin_not_configured")
-
-    # Generate redirect_uri and FORCE HTTPS
-    redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
-
-    logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
-
-    # SECURITY REFACTOR: Remove nonce=None to allow default state handling if applicable, or ensure state is managed.
-    # Authlib default is to generate state.
-    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
-
-@router.get("/auth/linkedin/callback")
-async def auth_linkedin_callback(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    ip = get_client_ip(request)
-
-    # EXTREME VERBOSITY LOGGING
-    code = request.query_params.get('code')
-    state = request.query_params.get('state')
-    error = request.query_params.get('error')
-    code_log = code[:5] if code else "None"
-    logger.info(f"📥 LINKEDIN CALLBACK RECEIVED: Code={code_log}... | State={state} | Error={error}")
-
-    try:
-        # 1. Manual HTTPS Enforcement (Crucial for Railway)
-        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
-
-        logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
-
-        # 2. SECURITY REFACTOR: Use fetch_access_token (Prevents Collision)
-        # FIX: Manual fetch to avoid auto-extraction collision
-        # Note: This bypasses built-in state validation but fixes the double redirect_uri crash.
-        token = await oauth.linkedin.fetch_access_token(
-            redirect_uri=redirect_uri,
-            code=str(request.query_params.get('code')),
-            grant_type='authorization_code'
-        )
-
-        logger.info(f"🔑 LINKEDIN TOKEN RECEIVED: {token.get('access_token')[:5]}...")
-
-        user_info = await oauth.linkedin.userinfo(token=token)
-
-        logger.info(f"👤 LINKEDIN USER INFO: {json.dumps(user_info, default=str)}")
-
-        if not user_info:
-             logger.error("LinkedIn Error: No user info received")
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
-             return RedirectResponse("/login?error=linkedin_failed")
-
-        # Support OIDC 'sub' and legacy 'id'
-        linkedin_id = user_info.get('sub') or user_info.get('id')
-        if not linkedin_id:
-             logger.error(f"LinkedIn Error: No ID found in user_info. Keys: {list(user_info.keys())}")
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No ID found")
-             return RedirectResponse("/login?error=linkedin_failed")
-
-        email = user_info.get('email')
-        
-        # Robust name extraction
-        name = user_info.get('name')
-        if not name:
-             first = user_info.get('given_name')
-             last = user_info.get('family_name')
-             if first and last:
-                 name = f"{first} {last}"
-             else:
-                 name = "LinkedIn User" # Fallback
-
-        picture = user_info.get('picture')
-
-        if not email:
-             logger.warning(f"LinkedIn Error: No email found in user_info. Keys: {list(user_info.keys())}")
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No email found")
-             return RedirectResponse("/login?error=missing_linkedin_email")
-
-        # 1. Check by Email (Fix: Prioritize Email to prevent loop)
-        user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
-        if user:
-            logger.info(f"DEBUG: Found existing user: {user.id}")
-            # Update ID if missing
-            if user.linkedin_id != linkedin_id:
-                user.linkedin_id = linkedin_id
-                if not user.avatar_url:
-                    user.avatar_url = picture
-
-            # Always update token
-            user.linkedin_token = token.get('access_token')
-            db.commit() # Fix: Sync commit
-            logger.info(f"✅ USER UPDATED: {user.id} LinkedIn ID Linked.")
-
-            # Check Security Badge
-            if user.linkedin_id == linkedin_id: # Only if freshly linked or already linked
-                 check_and_award_security_badge(db, user)
-
-            # Trigger Harvest
-            if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-
-            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
-
-        # 2. Check by ID (Legacy/Fallback)
-        user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
-        if user:
-            # Always update token
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            # Trigger Harvest (even for existing users)
-            if token.get('access_token'):
-                background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-            return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
-
-        # 3. Create User (with Idempotency Check)
-        logger.info("DEBUG: Creating new user")
-        pwd = secrets.token_urlsafe(16)
-        hashed_password = await asyncio.to_thread(hash_password, pwd)
-        try:
-            user = await create_user_async(
-                db=db,
-                name=name,
-                email=email,
-                hashed_password=hashed_password,
-                linkedin_id=linkedin_id,
-                avatar_url=picture,
-                email_verified=True
-            )
-            # ZERO TOUCH: Implicit acceptance
-            user.terms_accepted = True
-            user.terms_accepted_at = datetime.utcnow()
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            # FIX: Reload user with profile to prevent DetachedInstanceError in background task
-            user = db.query(User).options(joinedload(User.career_profile)).filter(User.id == user.id).first()
-
-            logger.info(f"✅ NEW USER CREATED: {user.id} ({email})")
-
-        except IntegrityError:
-            # Race condition: User created in parallel
-            db.rollback()
-            logger.warning(f"LinkedIn Race Condition: User {email} already exists. Fetching...")
-            user = db.query(User).options(joinedload(User.career_profile)).filter(User.email == email).first()
-            if not user:
-                 user = db.query(User).options(joinedload(User.career_profile)).filter(User.linkedin_id == linkedin_id).first()
-            if not user:
-                 raise Exception("IntegrityError caught but user not found on retry.")
-
-            # Update missing ID if needed
-            if not user.linkedin_id:
-                user.linkedin_id = linkedin_id
-
-            user.linkedin_token = token.get('access_token')
-            db.commit()
-
-            # Check Security Badge
-            check_and_award_security_badge(db, user)
-
-        # Trigger Harvest (New User)
-        if token.get('access_token'):
-            background_tasks.add_task(social_harvester.harvest_linkedin_data, user.id, token.get('access_token'))
-
-        logger.info(f"Strict Onboarding: New user created.")
-        return login_user_and_redirect(request, user, db, redirect_url="/dashboard")
-
-    except Exception as e:
-        logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
-        log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
-        return RedirectResponse("/login?error=linkedin_failed")
+            resp_emails
