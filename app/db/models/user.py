@@ -24,30 +24,16 @@ class User(Base):
     accelerator_mode = Column(Boolean, default=False)
     
     # --- Relacionamentos ---
-    
-    # 1. Perfil de Carreira
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
-
-    # 2. Rotinas
     weekly_routines = relationship("WeeklyRoutine", back_populates="user", cascade="all, delete-orphan")
-
-    # 3. Badges
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
-
-    # 4. Sessões
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
-
-    # 5. Planos de Aprendizado
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
 
-    # 6. Skill Snapshots
-    # Usamos o caminho completo para evitar erro de "Multiple classes found" e removemos a duplicata que existia no GitHub
+    # Caminho completo para evitar erro de importação
     skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
 
-    # 7. Memórias do Mentor (Feature Nova)
+    # CORREÇÃO: Usar caminho completo para MentorMemory
     mentor_memories = relationship("app.db.models.mentor.MentorMemory", back_populates="user", cascade="all, delete-orphan")
 
-    # --- NOTA IMPORTANTE ---
-    # O relacionamento 'audit_logs' foi REMOVIDO deste arquivo propositalmente.
-    # Ele agora é gerenciado automaticamente pelo 'backref' configurado no arquivo app/db/models/audit.py
-    # Isso resolve o conflito de importação circular e ArgumentError.
+    # Lembrete: audit_logs foi removido daqui pois é gerenciado via backref no audit.py
