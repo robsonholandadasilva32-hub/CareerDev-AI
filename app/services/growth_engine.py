@@ -182,7 +182,7 @@ class GrowthEngine:
         # Trigger Harvest
         if user.github_token:
              # Use the async harvester
-             await social_harvester.sync_profile(db, user, user.github_token)
+             await social_harvester.sync_profile(user.id, user.github_token)
         else:
              # Simulation / Fail
              return {"success": False, "message": "GitHub Token required for verification."}
