@@ -1,17 +1,14 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+# Importamos 'backref' aqui
+from sqlalchemy.orm import relationship, backref
 from datetime import datetime
 from app.db.base_class import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    # Mantemos o extend_existing para segurança
     __table_args__ = {'extend_existing': True}
 
-    # --- CORREÇÃO AQUI ---
-    # Removido "index=True". Como é primary_key, o índice já é automático.
-    id = Column(Integer, primary_key=True) 
-    
+    id = Column(Integer, primary_key=True) # Sem index=True para evitar erro
     user_id = Column(Integer, ForeignKey("users.id"))
     session_id = Column(String, nullable=True)
 
@@ -27,5 +24,10 @@ class AuditLog(Base):
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
 
-    # Relacionamento (Usando caminho completo para evitar conflitos)
-    user = relationship("app.db.models.user.User", back_populates="audit_logs")
+    # --- CORREÇÃO FINAL ---
+    # Usamos backref=backref(...) para injetar 'audit_logs' no User automaticamente.
+    # Isso garante que User e AuditLog estejam sempre sincronizados.
+    user = relationship(
+        "app.db.models.user.User",
+        backref=backref("audit_logs", cascade="all, delete-orphan")
+    )
