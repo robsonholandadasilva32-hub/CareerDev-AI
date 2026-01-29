@@ -1,11 +1,11 @@
 import logging
 from sqlalchemy.orm import Session
 
-from app.db.models.mentor_memory import MentorMemory
+# --- CORREÇÃO 1: Importar do arquivo correto ---
+from app.db.models.mentor import MentorMemory
 from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
-
 
 class MentorEngine:
     """
@@ -33,11 +33,15 @@ class MentorEngine:
         Persiste uma memória do mentor.
         """
         try:
+            # --- CORREÇÃO 2: Adaptação aos campos do Banco de Dados ---
+            # O modelo atual usa 'context_key' e 'memory_value'.
+            # Se não houver context_key específico, usamos a categoria como chave.
+            final_key = context_key if context_key else category
+            
             memory = MentorMemory(
                 user_id=user.id,
-                category=category,
-                content=content,
-                context_key=context_key
+                context_key=final_key,   # Adaptado de category/context_key
+                memory_value=content     # Adaptado de 'content'
             )
             db.add(memory)
             db.commit()
@@ -123,11 +127,11 @@ class MentorEngine:
         Salva contexto explícito do usuário (preferências, decisões, eventos).
         """
         try:
+            # --- CORREÇÃO 3: Instanciação direta ajustada ---
             memory = MentorMemory(
                 user_id=user.id,
-                category="CONTEXT",
-                context_key=key,
-                content=value
+                context_key=key,       # Mapeado corretamente
+                memory_value=value     # Mapeado de 'content' para 'memory_value'
             )
             db.add(memory)
             db.commit()
