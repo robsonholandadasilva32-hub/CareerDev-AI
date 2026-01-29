@@ -245,7 +245,7 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
             logger.info(f"📧 EMAIL FETCHED: {email}")
 
         if not email:
-             log_audit(db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
+             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
              return RedirectResponse("/login?error=github_no_email")
 
         github_id = str(profile.get('id'))
@@ -277,7 +277,7 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
     except Exception as e:
         logger.error(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
-        log_audit(db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
+        await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
         return RedirectResponse("/login?error=github_failed")
 
 @router.get("/login/linkedin")
