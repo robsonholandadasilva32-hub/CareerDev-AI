@@ -6,6 +6,46 @@
 <link href="/static/css/cyberpunk_dashboard.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<style>
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(5px);
+        justify-content: center;
+        align-items: center;
+    }
+    .modal.show {
+        display: flex;
+    }
+    .modal-content {
+        background-color: #0f111a;
+        border: 1px solid var(--neon-blue);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        padding: 30px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        color: #fff;
+        font-family: 'JetBrains Mono', monospace;
+        position: relative;
+    }
+    .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .modal-close:hover { color: var(--alert); }
+</style>
+
 <div class="grid-layout">
 
     <nav class="panel nav-dock">
@@ -35,14 +75,14 @@
 
             <div style="display:flex; align-items:center; gap:10px;">
                 
-                <div class="streak-badge" aria-label="Consecutive weeks of activity">
+                <div class="streak-badge" aria-label="Click to analyze risk factors" style="cursor: pointer;">
                     🔥 STREAK: {{ user_streak }} WEEKS
                 </div>
 
                 {% if career_data.career_forecast.risk_level == 'HIGH' %}
-                    <div class="streak-badge risk-high">⚠ HIGH RISK</div>
+                    <div class="streak-badge risk-high" onclick="openRiskModal()">⚠ HIGH RISK</div>
                 {% elif career_data.career_forecast.risk_level == 'MEDIUM' %}
-                    <div class="streak-badge risk-medium">🟡 MEDIUM RISK</div>
+                    <div class="streak-badge risk-medium" onclick="openRiskModal()">🟡 MEDIUM RISK</div>
                 {% else %}
                     <div class="streak-badge" style="border-color: #10b981; color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">🟢 STABLE</div>
                 {% endif %}
@@ -54,7 +94,6 @@
         </div>
 
         <div id="view-audit" style="padding:20px;">
-            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div>
                     <h4 style="margin-bottom: 10px; opacity: 0.8;">SKILL RADAR</h4>
@@ -104,16 +143,31 @@
 
 </div>
 
+<div id="riskModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeRiskModal()">×</span>
+        <h3 style="color: var(--alert); margin-top: 0;">⚠️ RISK ANALYSIS</h3>
+        <p style="opacity: 0.7; font-size: 0.8rem; margin-bottom: 15px;">AI EXPLAINABILITY REPORT</p>
+        
+        <div id="riskDetails" style="line-height: 1.6;">
+            Analyzing...
+        </div>
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeRiskModal()" class="nav-btn" style="width: auto; height: auto; padding: 5px 15px; font-size: 0.8rem; border: 1px solid var(--neon-blue); color: var(--neon-blue);">ACKNOWLEDGE</button>
+        </div>
+    </div>
+</div>
+
 <script>
-/* ---------------- RADAR CHART ---------------- */
+/* ---------------- CHART SETUP ---------------- */
 new Chart(document.getElementById('radarChart'), {
     type: 'radar',
     data: {{ career_data.zone_a_radar | tojson }},
     options: {
         scales: {
             r: {
-                min: 0,
-                max: 100,
+                min: 0, max: 100,
                 grid: { color: 'rgba(255, 255, 255, 0.1)' },
                 angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                 pointLabels: { color: '#fff' }
@@ -123,12 +177,8 @@ new Chart(document.getElementById('radarChart'), {
     }
 });
 
-/* ---------------- RISK COMPARE CHART ---------------- */
-// Lógica de cores (HIGH, MEDIUM e LOW/STABLE)
 const riskLevel = "{{ career_data.career_forecast.risk_level }}";
-const riskColor = riskLevel === "HIGH" ? "#ef4444"       // Red
-                : riskLevel === "MEDIUM" ? "#eab308"     // Yellow
-                : "#10b981";                             // Neon Green (Low/Stable)
+const riskColor = riskLevel === "HIGH" ? "#ef4444" : riskLevel === "MEDIUM" ? "#eab308" : "#10b981";
 
 new Chart(document.getElementById("riskCompareChart"), {
   type: "bar",
@@ -140,40 +190,31 @@ new Chart(document.getElementById("riskCompareChart"), {
         {{ career_data.career_forecast.rule_risk | default(0) }},
         {{ career_data.career_forecast.ml_risk | default(0) }}
       ],
-      // Aplica a cor dinâmica calculada acima
       backgroundColor: [riskColor, riskColor], 
       borderWidth: 0,
       barThickness: 30
     }]
   },
   options: {
-    indexAxis: 'y', // Horizontal bars
+    indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-        x: {
-            min: 0, max: 100,
-            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-            ticks: { color: '#fff' }
-        },
-        y: {
-            grid: { display: false },
-            ticks: { color: '#fff', font: { family: 'JetBrains Mono' } }
-        }
+        x: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#fff' } },
+        y: { grid: { display: false }, ticks: { color: '#fff', font: { family: 'JetBrains Mono' } } }
     },
     plugins: { legend: { display: false } }
   }
 });
 
-/* ---------------- SKILL TIMELINE ---------------- */
+/* ---------------- TIMELINE ---------------- */
 async function loadSkillTimeline(){
     try {
         const res = await fetch("/api/analytics/skill-timeline");
         const data = await res.json();
-
         const labels = [];
         const datasets = [];
-        const colors = ['#00f0ff', '#fcee0a', '#ff003c']; // Cyberpunk palette
+        const colors = ['#00f0ff', '#fcee0a', '#ff003c'];
 
         Object.keys(data).forEach((skill, index) => {
             if(!labels.length){
@@ -205,18 +246,73 @@ async function loadSkillTimeline(){
         console.error("Failed to load timeline", e);
     }
 }
-
 document.addEventListener("DOMContentLoaded", loadSkillTimeline);
 
-/* ---------------- TABS ---------------- */
+/* ---------------- UI LOGIC ---------------- */
 function switchTab(tab){
     document.getElementById('view-audit').style.display = 'none';
     document.getElementById('view-plan').style.display = 'none';
     document.getElementById('view-' + tab).style.display = 'block';
-    
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
 }
+
+/* ---------------- MODAL LOGIC (INTEGRATED) ---------------- */
+// Função global para abrir o modal
+async function openRiskModal() {
+    const modal = document.getElementById("riskModal");
+    const details = document.getElementById("riskDetails");
+    
+    modal.classList.add("show");
+    details.innerHTML = "Accessing Neural Network Interpretation...";
+
+    try {
+        const res = await fetch("/api/risk/explain");
+        const data = await res.json();
+        
+        // Formatação simples do JSON para HTML
+        let html = `<strong>SUMMARY:</strong> ${data.summary}<br><br>`;
+        if(data.factors) {
+            html += "<strong>KEY FACTORS:</strong><ul>";
+            data.factors.forEach(f => {
+                html += `<li>${f.factor}: <span style="color:${f.impact === 'High' ? '#ef4444' : '#eab308'}">${f.impact}</span></li>`;
+            });
+            html += "</ul>";
+        }
+        details.innerHTML = html;
+
+    } catch (e) {
+        details.innerHTML = "Error fetching explanation. Neural link offline.";
+    }
+}
+
+function closeRiskModal() {
+    document.getElementById("riskModal").classList.remove("show");
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+    const modal = document.getElementById("riskModal");
+    if (event.target == modal) {
+        closeRiskModal();
+    }
+}
+
+// Event Listeners para os Badges (Streak e Risk)
+document.addEventListener("DOMContentLoaded", () => {
+    // Adiciona o click handler ao primeiro .streak-badge (o do Streak)
+    const streakBadge = document.querySelector(".streak-badge");
+    if(streakBadge) {
+        streakBadge.onclick = openRiskModal;
+    }
+    
+    // Opcional: Adiciona também aos badges de Risco para melhor UX
+    const highRisk = document.querySelector(".risk-high");
+    if(highRisk) highRisk.onclick = openRiskModal;
+    
+    const medRisk = document.querySelector(".risk-medium");
+    if(medRisk) medRisk.onclick = openRiskModal;
+});
 </script>
 
 {% endblock %}
