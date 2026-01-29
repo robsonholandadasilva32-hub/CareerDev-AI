@@ -14,7 +14,9 @@ class AuditLog(Base):
     details = Column(Text, nullable=True) # JSON or string details
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Resolution: Accepted main branch fix to avoid collision with app.db.models.audit.AuditLog
     # user = relationship("User", back_populates="audit_logs")
+    user = relationship("User")
 
 
 class UserSession(Base):

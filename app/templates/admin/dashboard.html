@@ -47,6 +47,30 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination Controls -->
+        {% if pagination and pagination.total_pages > 1 %}
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; color: var(--text-color);">
+            <div>
+                Page {{ pagination.page }} of {{ pagination.total_pages }} (Total: {{ pagination.total_users }})
+            </div>
+            <div style="display: flex; gap: 10px;">
+                {% if pagination.has_prev %}
+                <a href="?page={{ pagination.page - 1 }}&limit={{ pagination.limit }}"
+                   style="padding: 6px 12px; border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; text-decoration: none; background: rgba(255, 255, 255, 0.05);">
+                   &larr; Previous
+                </a>
+                {% endif %}
+
+                {% if pagination.has_next %}
+                <a href="?page={{ pagination.page + 1 }}&limit={{ pagination.limit }}"
+                   style="padding: 6px 12px; border: 1px solid var(--accent-color); color: var(--text-color); border-radius: 4px; text-decoration: none; background: rgba(255, 255, 255, 0.05);">
+                   Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </section>
 
     <!-- Watchdog Logs -->

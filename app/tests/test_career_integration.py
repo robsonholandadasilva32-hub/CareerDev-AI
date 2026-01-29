@@ -4,6 +4,7 @@ from app.db.models.user import User
 from app.db.models.career import CareerProfile
 from app.db.models.gamification import UserBadge
 from app.db.models.security import AuditLog, UserSession
+from app.db.models.ml_risk_log import MLRiskLog
 from app.services.career_engine import career_engine
 
 @pytest.mark.asyncio
