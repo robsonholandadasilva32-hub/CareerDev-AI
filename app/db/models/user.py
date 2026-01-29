@@ -45,7 +45,7 @@ class User(Base):
     skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
 
     # 7. Memórias do Mentor (Feature Nova)
-    mentor_memories = relationship("MentorMemory", back_populates="user")
+    mentor_memories = relationship("app.db.models.mentor.MentorMemory", back_populates="user", cascade="all, delete-orphan")
 
     # --- NOTA IMPORTANTE ---
     # O relacionamento 'audit_logs' foi REMOVIDO deste arquivo propositalmente.
