@@ -5,10 +5,13 @@ from app.db.base_class import Base
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    # Mantemos isso para garantir que ele sobrescreva definições antigas na memória
+    # Mantemos o extend_existing para segurança
     __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True, index=True)
+    # --- CORREÇÃO AQUI ---
+    # Removido "index=True". Como é primary_key, o índice já é automático.
+    id = Column(Integer, primary_key=True) 
+    
     user_id = Column(Integer, ForeignKey("users.id"))
     session_id = Column(String, nullable=True)
 
@@ -24,6 +27,5 @@ class AuditLog(Base):
     is_active_session = Column(Boolean, default=True)
     auth_method = Column(String, nullable=True)
 
-    # --- CORREÇÃO DEFINITIVA ---
-    # Usando o caminho COMPLETO para evitar erros cíclicos ou de ambiguidade
+    # Relacionamento (Usando caminho completo para evitar conflitos)
     user = relationship("app.db.models.user.User", back_populates="audit_logs")
