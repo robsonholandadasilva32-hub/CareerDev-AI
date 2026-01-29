@@ -30,7 +30,6 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
     
-    # --- CORREÇÃO AQUI ---
-    # Volte para o nome simples. O conflito de "Multiple classes" já foi resolvido 
-    # ao limparmos os outros arquivos.
-    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    # --- CORREÇÃO DEFINITIVA ---
+    # Usando o caminho COMPLETO para eliminar a ambiguidade "Multiple classes found"
+    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
