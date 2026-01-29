@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
@@ -7,7 +7,7 @@ import logging
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.services.social_harvester import social_harvester
-from app.services.github_verifier import github_verifier   # ✅ NOVO
+from app.services.github_verifier import github_verifier
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, revoke_session, log_audit
 from app.db.session import get_db
@@ -20,12 +20,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-# --- DEPENDÊNCIA DE SEGURANÇA ---
-def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
+
+# -------------------------------------------------
+# DEPENDÊNCIA DE SEGURANÇA
+# -------------------------------------------------
+def get_current_user_secure(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     if not getattr(request.state, "user", None):
         return None
 
     user_id = request.state.user.id
+
     user = (
         db.query(User)
         .options(
@@ -37,9 +44,16 @@ def get_current_user_secure(request: Request, db: Session = Depends(get_db)):
     )
     return user
 
-# --- ROTA PRINCIPAL ---
+
+# -------------------------------------------------
+# DASHBOARD
+# -------------------------------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user_secure)):
+async def dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_secure)
+):
     if not user:
         return RedirectResponse("/login", status_code=302)
 
@@ -47,8 +61,12 @@ async def dashboard(request: Request, db: Session = Depends(get_db), user: User 
     if redirect:
         return redirect
 
+    # Atualiza / recalcula dados de carreira
     await career_engine.analyze_profile(db, user)
     career_data = await career_engine.get_career_dashboard_data(db, user)
+
+    # >>> ADIÇÃO AQUI <<<
+    weekly_history = await career_engine.get_weekly_history(db, user)
 
     market_score = career_data.get("zone_a_holistic", {}).get("score", 0)
     user_streak = getattr(user, "streak_count", 0)
@@ -63,14 +81,15 @@ async def dashboard(request: Request, db: Session = Depends(get_db), user: User 
             "market_score": market_score,
             "user_streak": user_streak,
             "career_data": career_data,
+            "weekly_history": weekly_history,  # ✅ NOVO
             "greeting_message": greeting_message,
         }
     )
 
-# ------------------------------------------------------------------
-# ✅ API REAL: VERIFICAÇÃO DE CÓDIGO (SEM SIMULAÇÃO)
-# ------------------------------------------------------------------
 
+# -------------------------------------------------
+# API REAL: VERIFICAÇÃO DE CÓDIGO
+# -------------------------------------------------
 @router.post("/api/verify/repo", response_class=JSONResponse)
 async def verify_repo(
     payload: dict,
@@ -84,9 +103,7 @@ async def verify_repo(
     if not language:
         raise HTTPException(status_code=400, detail="Language not provided")
 
-    # Busca commits reais
     commits = social_harvester.get_recent_commits(user.github_username)
-
     verified = github_verifier.verify(commits, language)
 
     if verified:
