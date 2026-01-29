@@ -44,6 +44,9 @@
                 <canvas id="radarChart"></canvas>
             </div>
 
+            <!-- ADDITION: SKILL TIMELINE -->
+            <canvas id="skillTimelineChart" style="margin-top:20px;"></canvas>
+
             <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
                 <div style="font-size: 0.8rem; color: var(--text-dim);">MARKET ALIGNMENT</div>
                 <div style="font-size: 2rem; font-weight: 800; color: {{ career_data.zone_a_holistic.color }};">
@@ -121,100 +124,47 @@
         <span>CAREERDEV AI v2.0</span>
     </footer>
 
-    <!-- COOKIE BANNER -->
-    <div id="cookie-banner"
-         style="position: fixed; bottom: 20px; left: 100px; right: 20px;
-                background: #0f111a; border: 1px solid var(--neon-blue);
-                padding: 15px; border-radius: 8px; display: none;
-                align-items: center; justify-content: space-between;
-                z-index: 9999;">
-        <span style="font-size: 0.8rem;">🍪 We use cookies to analyze GitHub traffic.</span>
-        <div>
-            <button onclick="acceptCookies()" style="background: var(--neon-green); border: none; padding: 5px 15px;">
-                ACCEPT
-            </button>
-            <button onclick="document.getElementById('cookie-banner').style.display='none'">
-                CLOSE
-            </button>
-        </div>
-    </div>
-
 </div>
 
 <script>
-/* ---------------- COOKIES ---------------- */
-if (!localStorage.getItem('cookiesAccepted')) {
-    document.getElementById('cookie-banner').style.display = 'flex';
-}
-function acceptCookies() {
-    localStorage.setItem('cookiesAccepted', 'true');
-    document.getElementById('cookie-banner').style.display = 'none';
-}
-
 /* ---------------- RADAR CHART ---------------- */
 const radarDataRaw = {{ career_data.zone_a_radar | tojson }};
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('radarChart') && radarDataRaw) {
-        const ctx = document.getElementById('radarChart').getContext('2d');
-        radarDataRaw.datasets[0].backgroundColor = 'rgba(59,130,246,0.2)';
-        radarDataRaw.datasets[0].borderColor = '#3b82f6';
-
-        new Chart(ctx, {
+        new Chart(document.getElementById('radarChart'), {
             type: 'radar',
             data: radarDataRaw,
-            options: {
-                maintainAspectRatio: false,
-                scales: { r: { beginAtZero: true, max: 100 } },
-                plugins: { legend: { display: false } }
-            }
+            options: { scales: { r: { min: 0, max: 100 }}, plugins: { legend: { display: false }}}
         });
     }
 });
 
-/* ---------------- TABS ---------------- */
-function switchTab(tab) {
-    document.getElementById('view-audit').style.display = 'none';
-    document.getElementById('view-plan').style.display = 'none';
-    document.getElementById('view-' + tab).style.display = 'flex';
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-}
+/* ---------------- SKILL TIMELINE ---------------- */
+async function loadSkillTimeline() {
+    const res = await fetch("/api/analytics/skill-timeline");
+    const timeline = await res.json();
 
-/* ---------------- VERIFY REPO (REAL) ---------------- */
-async function verifyRepo(taskId, keyword) {
-    const btn = document.getElementById(`btn-${taskId}`);
-    const status = document.getElementById(`status-${taskId}`);
+    const labels = [];
+    const datasets = [];
 
-    btn.disabled = true;
-    btn.innerText = "SCANNING…";
-    status.innerText = "";
-
-    try {
-        const res = await fetch("/api/verify/repo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ language: keyword })
-        });
-
-        const data = await res.json();
-
-        if (data.verified) {
-            btn.innerText = "VERIFIED ✓";
-            btn.style.background = "var(--neon-green)";
-            status.innerText = "Code verified on GitHub.";
-        } else {
-            btn.innerText = "NOT FOUND";
-            btn.style.background = "var(--alert)";
-            status.innerText = "No compatible commits detected.";
-            btn.disabled = false;
+    Object.keys(timeline).forEach(skill => {
+        const data = timeline[skill].map(p => p.confidence);
+        if (labels.length === 0) {
+            timeline[skill].forEach(p => labels.push(p.date.split("T")[0]));
         }
-    } catch {
-        btn.innerText = "ERROR";
-        btn.style.background = "var(--alert)";
-        status.innerText = "Verification failed.";
-        btn.disabled = false;
-    }
+        datasets.push({ label: skill, data, tension: 0.3 });
+    });
+
+    new Chart(document.getElementById("skillTimelineChart"), {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+            scales: { y: { min: 0, max: 100 }},
+            plugins: { legend: { labels: { color: "#9ca3af" }}}
+        }
+    });
 }
+document.addEventListener("DOMContentLoaded", loadSkillTimeline);
 </script>
 
 {% endblock %}
