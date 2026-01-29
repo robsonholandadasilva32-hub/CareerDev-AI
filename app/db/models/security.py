@@ -14,7 +14,7 @@ class AuditLog(Base):
     details = Column(Text, nullable=True) # JSON or string details
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="audit_logs")
+    # user = relationship("User", back_populates="audit_logs")
 
 
 class UserSession(Base):

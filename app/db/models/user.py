@@ -16,8 +16,10 @@ class User(Base):
 
     # --- Integrações Sociais ---
     github_username = Column(String, nullable=True)
+    github_id = Column(String, nullable=True)
     github_token = Column(String, nullable=True)
     linkedin_profile_url = Column(String, nullable=True)
+    linkedin_id = Column(String, nullable=True)
 
     # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)
