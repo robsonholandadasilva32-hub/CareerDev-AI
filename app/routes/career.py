@@ -42,7 +42,7 @@ async def analyze_resume(
         return JSONResponse({"error": "Failed to analyze"}, status_code=500)
 
 @router.get("/analytics", response_class=HTMLResponse)
-async def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
+def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
     # 1. Auth & Onboarding Guard
     user_id = get_current_user_from_request(request)
     if not user_id:
