@@ -3,9 +3,9 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base_class import Base
 
-# Vamos usar AuditLog, já que é isso que o servidor insiste em ver
+# Padronizado como AuditLog para resolver o conflito
 class AuditLog(Base):
-    __tablename__ = "audit_logs" # Nome da tabela no banco
+    __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
