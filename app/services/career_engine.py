@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
-from app.db.models.career import CareerProfile, LearningPlan
+from app.db.models.career import CareerProfile, LearningPlan, MLRiskLog
 from app.services.mentor_engine import mentor_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 
@@ -82,8 +82,9 @@ class CareerEngine:
         # -------------------------------
         # CAREER RISK FORECAST (HYBRID)
         # -------------------------------
+        # Atualizado para passar db e user para log de ML
         career_forecast = self.forecast_career_risk(
-            skill_confidence, metrics
+            db, user, skill_confidence, metrics
         )
 
         # -------------------------------
@@ -174,10 +175,12 @@ class CareerEngine:
         return min(base + bonus, 1.0)
 
     # =========================================================
-    # CAREER RISK FORECAST (HYBRID: RULES + ML)
+    # CAREER RISK FORECAST (HYBRID: RULES + ML + LOGGING)
     # =========================================================
     def forecast_career_risk(
         self,
+        db: Session,
+        user: User,
         skill_confidence: Dict[str, int],
         metrics: Dict
     ) -> Dict:
@@ -186,11 +189,13 @@ class CareerEngine:
 
         avg_conf = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
 
+        # --- Lógica Baseada em Regras ---
         if avg_conf < 60:
             risk_score += 30
             reasons.append("Overall skill confidence trending low.")
 
-        if metrics.get("commits_last_30_days", 0) < 10:
+        commits_30d = metrics.get("commits_last_30_days", 0)
+        if commits_30d < 10:
             risk_score += 30
             reasons.append("Low coding activity detected.")
 
@@ -198,13 +203,30 @@ class CareerEngine:
             risk_score += 20
             reasons.append("Development velocity decreasing.")
 
-        # ML adjustment (fail-safe)
+        # --- Ajuste via ML e Persistência de Log ---
         try:
-            ml_risk = ml_forecaster.predict(avg_conf)
-            risk_score = int((risk_score + ml_risk) / 2)
-        except Exception:
+            # Predição com mais contexto
+            ml_result = ml_forecaster.predict(avg_conf, commits_30d)
+            
+            # Persistência do Log
+            new_log = MLRiskLog(
+                user_id=user.id,
+                ml_risk=ml_result["ml_risk"],
+                rule_risk=risk_score,
+                model_version=ml_result.get("model_version", "v1.0")
+            )
+            db.add(new_log)
+            db.commit()
+
+            # Cálculo Híbrido Final
+            risk_score = int((risk_score + ml_result["ml_risk"]) / 2)
+            
+        except Exception as e:
+            db.rollback() # Garante integridade da sessão em caso de erro no log
+            # Em produção, idealmente logar o erro 'e' em um sistema de observabilidade
             pass
 
+        # --- Classificação Final ---
         level = "LOW"
         summary = "Career trajectory stable."
 
