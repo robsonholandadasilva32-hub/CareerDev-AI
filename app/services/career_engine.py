@@ -6,8 +6,6 @@ from app.db.models.career import CareerProfile, LearningPlan, MLRiskLog
 from app.services.mentor_engine import mentor_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 
-from app.db.models.ml_risk_log import MLRiskLog
-
 # ---------------------------------------------------------
 # ML FORECASTER (SINGLETON)
 # ---------------------------------------------------------
@@ -243,6 +241,23 @@ class CareerEngine:
             "risk_score": risk_score,
             "summary": summary,
             "reasons": reasons
+        }
+
+    # =========================================================
+    # RISK EXPLAINABILITY (XAI)
+    # =========================================================
+    def explain_risk(self, user: User) -> Dict:
+        """
+        Provides a human-readable explanation of risk factors.
+        Currently hardcoded for demo/MVP purposes.
+        """
+        return {
+            "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",
+            "factors": [
+                {"factor": "Skill Gap", "impact": "High"},
+                {"factor": "Commit Velocity", "impact": "Medium"},
+                {"factor": "Market Demand", "impact": "High"}
+            ]
         }
 
     # =========================================================
