@@ -29,6 +29,7 @@ class User(Base):
     badges = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
+    skill_snapshots = relationship("app.db.models.skill_snapshot.SkillSnapshot", back_populates="user", cascade="all, delete-orphan")
     
     # --- CORREÇÃO DEFINITIVA ---
     # Usando o caminho COMPLETO para eliminar a ambiguidade "Multiple classes found"
