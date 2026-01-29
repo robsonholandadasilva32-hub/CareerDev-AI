@@ -8,7 +8,8 @@ from app.db.models.career import CareerProfile, LearningPlan
 class CareerEngine:
     """
     Core service responsible for analyzing developer career signals
-    and producing risk alerts, skill confidence, and weekly growth plans.
+    and producing risk alerts, skill confidence, growth plans,
+    and forward-looking career risk forecasts.
     """
 
     # =========================================================
@@ -38,7 +39,7 @@ class CareerEngine:
             skill_confidence[skill] = int(score * 100)
 
         # -------------------------------
-        # CAREER RISK ALERTS
+        # CAREER RISK ALERTS (CURRENT)
         # -------------------------------
         career_risks: List[Dict] = []
 
@@ -75,6 +76,14 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
+        # CAREER RISK FORECAST (6 MONTHS)
+        # -------------------------------
+        career_forecast = self.forecast_career_risk(
+            skill_confidence=skill_confidence,
+            metrics=metrics
+        )
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -83,6 +92,7 @@ class CareerEngine:
             "weekly_plan": weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
+            "career_forecast": career_forecast,
             "zone_a_radar": {},
             "missing_skills": []
         }
@@ -139,12 +149,6 @@ class CareerEngine:
         career_risks: List[Dict],
         streak: int
     ) -> bool:
-        """
-        Accelerator is enabled only when:
-        - Average skill confidence >= 80
-        - Weekly streak >= 4
-        - No HIGH career risks
-        """
         avg_confidence = (
             sum(skill_confidence.values()) / max(len(skill_confidence), 1)
         )
@@ -164,6 +168,51 @@ class CareerEngine:
         base = min(bytes_count / 100_000, 1.0)
         bonus = 0.2 if skill in linkedin_skills else 0.0
         return min(base + bonus, 1.0)
+
+    # =========================================================
+    # CAREER RISK FORECAST (PREDICTIVE)
+    # =========================================================
+    def forecast_career_risk(
+        self,
+        skill_confidence: Dict[str, int],
+        metrics: Dict
+    ) -> Dict:
+        risk_score = 0
+        reasons: List[str] = []
+
+        avg_conf = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+
+        if avg_conf < 60:
+            risk_score += 30
+            reasons.append("Overall skill confidence trending low.")
+
+        if metrics.get("commits_last_30_days", 0) < 10:
+            risk_score += 30
+            reasons.append("Low coding activity detected.")
+
+        if metrics.get("velocity_score") == "Low":
+            risk_score += 20
+            reasons.append("Development velocity decreasing.")
+
+        forecast = {
+            "risk_level": "LOW",
+            "risk_score": risk_score,
+            "summary": "Career trajectory stable.",
+            "reasons": reasons
+        }
+
+        if risk_score >= 60:
+            forecast["risk_level"] = "HIGH"
+            forecast["summary"] = (
+                "High probability of stagnation or rejection within 6 months."
+            )
+        elif risk_score >= 30:
+            forecast["risk_level"] = "MEDIUM"
+            forecast["summary"] = (
+                "Moderate career risk detected within next 6 months."
+            )
+
+        return forecast
 
     # =========================================================
     # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
