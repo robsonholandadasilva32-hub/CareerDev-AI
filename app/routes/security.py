@@ -9,7 +9,7 @@ import user_agents
 from app.db.session import SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
-from app.db.models.audit import LoginHistory
+from app.db.models.audit import AuditLog
 from app.core.jwt import decode_token
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, get_all_user_sessions, revoke_session, log_audit
@@ -65,7 +65,7 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     current_ip = get_client_ip(request)
 
     # Fetch Real Sessions (History from Audit Log)
-    history = db.query(LoginHistory).filter(LoginHistory.user_id == user.id).order_by(desc(LoginHistory.login_timestamp)).limit(20).all()
+    history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
     # Process Sessions for Display
     processed_sessions = []
@@ -149,7 +149,7 @@ def get_login_history(request: Request, db: Session = Depends(get_db)):
     payload = decode_token(token) if token else {}
     current_sid = payload.get("sid")
 
-    history = db.query(LoginHistory).filter(LoginHistory.user_id == user.id).order_by(desc(LoginHistory.login_timestamp)).limit(20).all()
+    history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
     response_data = []
     for h in history:
@@ -188,11 +188,11 @@ def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
         UserSession.id != current_sid
     ).update({UserSession.is_active: False}, synchronize_session=False)
 
-    # Revoke all LoginHistory except current
-    db.query(LoginHistory).filter(
-        LoginHistory.user_id == user.id,
-        LoginHistory.session_id != current_sid
-    ).update({LoginHistory.is_active_session: False}, synchronize_session=False)
+    # Revoke all AuditLog except current
+    db.query(AuditLog).filter(
+        AuditLog.user_id == user.id,
+        AuditLog.session_id != current_sid
+    ).update({AuditLog.is_active_session: False}, synchronize_session=False)
 
     db.commit()
     log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions")
@@ -209,8 +209,8 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
     session_to_revoke = db.query(UserSession).filter(UserSession.id == session_id, UserSession.user_id == user.id).first()
     if session_to_revoke:
         revoke_session(db, session_id)
-        # Also revoke LoginHistory
-        db.query(LoginHistory).filter(LoginHistory.session_id == session_id).update({LoginHistory.is_active_session: False})
+        # Also revoke AuditLog
+        db.query(AuditLog).filter(AuditLog.session_id == session_id).update({AuditLog.is_active_session: False})
         db.commit()
         log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
 
