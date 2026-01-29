@@ -34,7 +34,10 @@
             </div>
 
             <div style="display:flex; align-items:center; gap:10px;">
-                <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
+                
+                <div class="streak-badge" aria-label="Consecutive weeks of activity">
+                    🔥 STREAK: {{ user_streak }} WEEKS
+                </div>
 
                 {% if career_data.career_forecast.risk_level == 'HIGH' %}
                     <div class="streak-badge risk-high">⚠ HIGH RISK</div>
@@ -120,8 +123,8 @@ new Chart(document.getElementById('radarChart'), {
     }
 });
 
-/* ---------------- RISK COMPARE CHART (UPDATED) ---------------- */
-// 1. Definição da lógica de cores (HIGH, MEDIUM e LOW)
+/* ---------------- RISK COMPARE CHART ---------------- */
+// Lógica de cores (HIGH, MEDIUM e LOW/STABLE)
 const riskLevel = "{{ career_data.career_forecast.risk_level }}";
 const riskColor = riskLevel === "HIGH" ? "#ef4444"       // Red
                 : riskLevel === "MEDIUM" ? "#eab308"     // Yellow
