@@ -16,10 +16,21 @@ class User(Base):
     is_banned = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # --- New/Missing Columns ---
+    email_verified = Column(Boolean, default=False)
+    is_profile_completed = Column(Boolean, default=False)
+    terms_accepted = Column(Boolean, default=False)
+    terms_accepted_at = Column(DateTime, nullable=True)
+    last_login = Column(DateTime, nullable=True)
+    avatar_url = Column(String, nullable=True)
+
     # --- Integrações Sociais ---
+    github_id = Column(String, nullable=True, unique=True)
     github_username = Column(String, nullable=True)
     github_token = Column(String, nullable=True)
     linkedin_profile_url = Column(String, nullable=True)
+    linkedin_id = Column(String, nullable=True, unique=True)
+    linkedin_token = Column(String, nullable=True)
 
     # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)

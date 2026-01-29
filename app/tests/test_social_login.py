@@ -18,7 +18,7 @@ from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker
 
 from app.main import app
-from app.db.declarative import Base
+from app.db.base_class import Base
 from app.db.session import get_db
 # Ensure all models are loaded for relationships
 from app.db.models.user import User
@@ -86,12 +86,18 @@ async def test_linkedin_callback_success(client, db_session):
         'family_name': 'User'
     }
 
+    # Patch SessionLocal to use test db
+    mock_session_cls = MagicMock()
+    mock_session_cls.return_value.__enter__.return_value = db_session
+    mock_session_cls.return_value.__exit__.return_value = None
+
     # Patch fetch_access_token (Bypassing authorize_access_token wrapper)
     # AND userinfo
     # AND hash_password to avoid bcrypt issues
     with patch('app.routes.social.oauth.linkedin.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
          patch('app.routes.social.oauth.linkedin.userinfo', new_callable=AsyncMock) as mock_userinfo, \
-         patch('app.routes.social.hash_password', return_value="mock_hashed_pwd") as mock_hash:
+         patch('app.routes.social.hash_password', return_value="mock_hashed_pwd") as mock_hash, \
+         patch('app.routes.social.SessionLocal', mock_session_cls):
 
         mock_fetch.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
@@ -101,8 +107,8 @@ async def test_linkedin_callback_success(client, db_session):
 
         # Assert
         assert response.status_code == 303
-        # Strict onboarding: New user needs GitHub -> Redirect to /login/github which triggers GitHub auth
-        assert response.headers["location"] == "/login/github"
+        # Strict onboarding: New user needs GitHub -> Redirect to /onboarding/connect-github
+        assert response.headers["location"] == "/onboarding/connect-github"
 
         # Verify fetch_access_token was called correctly
         mock_fetch.assert_called_once()
@@ -181,7 +187,7 @@ async def test_github_connect_existing_user(client, db_session):
     # 1. Create existing user (as if logged in via LinkedIn)
     existing_user = User(
         email="linkeduser@example.com",
-        name="LinkedIn User",
+        full_name="LinkedIn User",
         hashed_password="fake_hash",
         linkedin_id="linkedin-original-123",
         # is_active removed as it's not a column
