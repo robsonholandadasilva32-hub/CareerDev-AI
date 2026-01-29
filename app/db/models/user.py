@@ -30,5 +30,6 @@ class User(Base):
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     learning_plans = relationship("LearningPlan", back_populates="user", cascade="all, delete-orphan")
     
-    # ATUALIZADO: Aponta para "AuditLog"
-    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    # --- CORREÇÃO BLINDADA AQUI ---
+    # Usamos o caminho completo "app.db.models.audit.AuditLog" para o SQLAlchemy não se confundir
+    audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
