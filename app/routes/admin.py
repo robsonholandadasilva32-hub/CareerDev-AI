@@ -24,11 +24,22 @@ def get_current_admin(request: Request):
 @router.get("/admin/dashboard", response_class=HTMLResponse)
 def admin_dashboard(
     request: Request,
+    page: int = 1,
+    limit: int = 50,
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin)
 ):
-    # Fetch all users
-    users = db.query(User).all()
+    # Calculate offset
+    offset = (page - 1) * limit
+
+    # Fetch total users
+    total_users = db.query(User).count()
+
+    # Calculate total pages
+    total_pages = (total_users + limit - 1) // limit
+
+    # Fetch users with pagination
+    users = db.query(User).offset(offset).limit(limit).all()
 
     # Fetch recent watchdog logs
     logs = db.query(SecurityAuditLog)\
@@ -43,7 +54,15 @@ def admin_dashboard(
             "request": request,
             "user": admin,
             "users": users,
-            "logs": logs
+            "logs": logs,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total_users": total_users,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1,
+            }
         }
     )
 

@@ -14,6 +14,9 @@ class SecurityAuditLog(Base):
     details = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Resolution: We accept the explicit back_populates from the perf branch.
+    # It uses a specific name "security_audit_logs" which avoids the collision 
+    # with the generic "audit_logs" mentioned in the main branch comments.
     user = relationship("User", back_populates="security_audit_logs")
 
 
