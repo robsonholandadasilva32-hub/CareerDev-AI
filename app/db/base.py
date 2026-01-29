@@ -7,11 +7,11 @@ from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.weekly_routine import WeeklyRoutine
 
-# Modelos de Segurança, Gamificação e Auditoria
+# Modelos Auxiliares
 from app.db.models.security import UserSession
 from app.db.models.gamification import Badge, UserBadge
 from app.db.models.audit import AuditLog
 from app.db.models.skill_snapshot import SkillSnapshot
 
-# --- ADICIONE ESTA LINHA ---
+# --- ADICIONE ESTA LINHA OBRIGATÓRIA ---
 from app.db.models.mentor import MentorMemory
