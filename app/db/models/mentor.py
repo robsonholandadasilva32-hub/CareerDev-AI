@@ -9,10 +9,10 @@ class MentorMemory(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
-    # Campos da memória (Exemplo - ajuste conforme sua necessidade)
-    context_key = Column(String, index=True) # Ex: "preferencia_aprendizado"
-    memory_value = Column(Text)              # Ex: "Gosta de exemplos práticos"
+    # Campos da memória
+    context_key = Column(String, index=True) # Ex: "preferencia_ensino"
+    memory_value = Column(Text)              # Ex: "Visual, gosta de diagramas"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relacionamento Reverso (Usando caminho completo para evitar conflitos)
+    # Relacionamento Reverso (Caminho completo para segurança)
     user = relationship("app.db.models.user.User", back_populates="mentor_memories")
