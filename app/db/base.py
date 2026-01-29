@@ -12,6 +12,7 @@ from app.db.models.security import UserSession
 from app.db.models.gamification import Badge, UserBadge
 from app.db.models.audit import AuditLog
 from app.db.models.skill_snapshot import SkillSnapshot
-
-# --- ADICIONE ESTA LINHA OBRIGATÓRIA ---
 from app.db.models.mentor import MentorMemory
+
+# --- ADICIONE ESTA LINHA ---
+from app.db.models.risk_snapshot import RiskSnapshot
