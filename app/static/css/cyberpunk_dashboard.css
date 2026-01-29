@@ -292,3 +292,7 @@ body {
 .risk-high { 
     animation: pulse 2s infinite; 
 }
+
+.risk-medium:hover {
+    box-shadow: 0 0 25px #eab308;
+}
