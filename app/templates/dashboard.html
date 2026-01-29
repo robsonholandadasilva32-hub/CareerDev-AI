@@ -11,157 +11,105 @@
     <!-- NAV DOCK -->
     <nav class="panel nav-dock">
         <div class="brand-logo">C/AI</div>
-        <a href="/dashboard" class="nav-btn active" title="Command Center">⌘</a>
-        <a href="/accessibility" class="nav-btn" title="Universal Accessibility">🧠</a>
-        <a href="/dashboard/network" class="nav-btn" title="Network Node">🌐</a>
-        <a href="/dashboard/security" class="nav-btn" title="Security & Sessions">🛡️</a>
-        <a href="/legal" class="nav-btn" title="Legal & Privacy">⚖️</a>
+        <a href="/dashboard" class="nav-btn active">⌘</a>
+        <a href="/accessibility" class="nav-btn">🧠</a>
+        <a href="/dashboard/network" class="nav-btn">🌐</a>
+        <a href="/dashboard/security" class="nav-btn">🛡️</a>
+        <a href="/legal" class="nav-btn">⚖️</a>
         <div style="flex-grow: 1;"></div>
-        <a href="/logout" class="nav-btn alert-color" title="Logout">✕</a>
+        <a href="/logout" class="nav-btn alert-color">✕</a>
     </nav>
 
     <!-- STATUS BAR -->
-    <div class="panel status-bar" style="grid-column: 2/4; grid-row: 1/2;">
+    <div class="panel status-bar" style="grid-column: 2/4;">
         <span class="feed-label">REAL_TIME_FEED ::</span>
         <marquee class="feed-text">
-            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... DETECTING GAPS...
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API...
         </marquee>
     </div>
 
     <!-- MAIN PANEL -->
-    <main class="panel" style="grid-column: 2/3; grid-row: 2/3; position: relative; overflow: hidden;">
+    <main class="panel" style="grid-column: 2/3;">
         <div class="panel-head tab-header">
             <div>
                 <button class="tab-btn active" onclick="switchTab('audit')">AUDIT VIEW</button>
                 <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
             </div>
-            <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
+
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="streak-badge">🔥 STREAK: {{ user_streak }} WEEKS</div>
+
+                {% if career_data.career_forecast.risk_level == 'HIGH' %}
+                    <div class="streak-badge" style="background:var(--alert);">
+                        ⚠ CAREER RISK
+                    </div>
+                {% elif career_data.weekly_plan.mode == 'ACCELERATOR' %}
+                    <div class="streak-badge" style="background:var(--neon-purple);">
+                        🚀 ACCELERATOR
+                    </div>
+                {% endif %}
+            </div>
         </div>
 
         <!-- AUDIT VIEW -->
-        <div id="view-audit" style="display: flex; flex-direction: column; height: 100%; padding: 20px;">
-            <div style="flex-grow: 1; position: relative;">
-                <canvas id="radarChart"></canvas>
-            </div>
-
-            <!-- ADDITION: SKILL TIMELINE -->
+        <div id="view-audit" style="padding:20px;">
+            <canvas id="radarChart"></canvas>
             <canvas id="skillTimelineChart" style="margin-top:20px;"></canvas>
 
-            <div style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
-                <div style="font-size: 0.8rem; color: var(--text-dim);">MARKET ALIGNMENT</div>
-                <div style="font-size: 2rem; font-weight: 800; color: {{ career_data.zone_a_holistic.color }};">
+            <div style="margin-top:10px;">
+                <div style="font-size:0.8rem;">MARKET ALIGNMENT</div>
+                <div style="font-size:2rem;font-weight:800;">
                     {{ market_score }}/100
                 </div>
             </div>
         </div>
 
         <!-- WEEKLY PLAN -->
-        <div id="view-plan" style="display: none; flex-direction: column; height: 100%; padding: 20px; overflow-y: auto;">
-            <div class="kanban-header" style="margin-bottom: 20px;">
+        <div id="view-plan" style="display:none;padding:20px;">
+            <div class="kanban-header">
                 CURRENT FOCUS:
-                <span style="color:var(--neon-green)">
-                    {{ career_data.weekly_plan.focus | default('ANALYZING...') | upper }}
-                </span>
+                <span>{{ career_data.weekly_plan.focus | upper }}</span>
             </div>
 
             <div class="kanban-list">
-                {% if career_data.weekly_plan and career_data.weekly_plan.tasks %}
-                    {% for task in career_data.weekly_plan.tasks %}
-                    <div class="kanban-card {% if task.type == 'Code' %}active-card{% endif %}">
-                        <div style="display: flex; justify-content: space-between;">
-                            <strong style="color: var(--neon-blue);">{{ task.day }}</strong>
-                            <span style="font-size: 0.7rem; opacity: 0.7;">{{ task.type }}</span>
-                        </div>
-
-                        <div style="margin: 8px 0;">{{ task.task }}</div>
-
-                        {% if task.action == 'VERIFY_REPO' %}
-                        <button
-                            class="verify-btn"
-                            id="btn-{{ loop.index }}"
-                            onclick="verifyRepo('{{ loop.index }}', '{{ task.verify_keyword }}')">
-                            VERIFY WORK ⚡
-                        </button>
-                        <div id="status-{{ loop.index }}" style="font-size: 0.7rem; margin-top: 5px;"></div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="kanban-card">
-                        System analyzing gaps... Check back shortly.
-                    </div>
-                {% endif %}
+                {% for task in career_data.weekly_plan.tasks %}
+                <div class="kanban-card">
+                    <strong>{{ task.day }}</strong>
+                    <div>{{ task.task }}</div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </main>
 
-    <!-- RIGHT ASIDE -->
-    <aside style="grid-column: 3/4; grid-row: 2/3; display: flex; flex-direction: column; gap: 12px;">
-        <div class="panel">
-            <div class="panel-head">BIO_MONITOR</div>
-            <div class="bio-grid">
-                <div class="bio-card"><span class="bio-icon">🦴</span><span class="bio-label">Posture</span></div>
-                <div class="bio-card"><span class="bio-icon">👁️</span><span class="bio-label">Vision</span></div>
-                <div class="bio-card"><span class="bio-icon">💧</span><span class="bio-label">Hydration</span></div>
-            </div>
-        </div>
-
-        <div class="panel chat-panel">
-            <div class="panel-head" style="color: var(--neon-purple); border-color: var(--neon-purple);">
-                AI_MENTOR
-            </div>
-            <div id="chat-history">
-                <div>> System Online.</div>
-                <div style="color: var(--neon-blue);">> {{ greeting_message }}</div>
-            </div>
-            <input type="text" id="chat-input" placeholder="Ask Mentor...">
-        </div>
-    </aside>
-
-    <!-- FOOTER -->
-    <footer class="footer-bar" style="grid-column: 2/4; grid-row: 3/4;">
-        <span>STATUS: <span style="color: var(--neon-green)">ONLINE</span></span>
-        <span>CAREERDEV AI v2.0</span>
-    </footer>
-
 </div>
 
 <script>
-/* ---------------- RADAR CHART ---------------- */
-const radarDataRaw = {{ career_data.zone_a_radar | tojson }};
-document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById('radarChart') && radarDataRaw) {
-        new Chart(document.getElementById('radarChart'), {
-            type: 'radar',
-            data: radarDataRaw,
-            options: { scales: { r: { min: 0, max: 100 }}, plugins: { legend: { display: false }}}
-        });
-    }
+/* RADAR */
+new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {{ career_data.zone_a_radar | tojson }},
+    options: { scales:{ r:{ min:0,max:100 }}}
 });
 
-/* ---------------- SKILL TIMELINE ---------------- */
-async function loadSkillTimeline() {
+/* TIMELINE */
+async function loadSkillTimeline(){
     const res = await fetch("/api/analytics/skill-timeline");
-    const timeline = await res.json();
-
+    const data = await res.json();
     const labels = [];
     const datasets = [];
 
-    Object.keys(timeline).forEach(skill => {
-        const data = timeline[skill].map(p => p.confidence);
-        if (labels.length === 0) {
-            timeline[skill].forEach(p => labels.push(p.date.split("T")[0]));
+    Object.keys(data).forEach(skill=>{
+        if(!labels.length){
+            data[skill].forEach(p=>labels.push(p.date.split("T")[0]));
         }
-        datasets.push({ label: skill, data, tension: 0.3 });
+        datasets.push({ label:skill, data:data[skill].map(p=>p.confidence) });
     });
 
     new Chart(document.getElementById("skillTimelineChart"), {
-        type: "line",
-        data: { labels, datasets },
-        options: {
-            scales: { y: { min: 0, max: 100 }},
-            plugins: { legend: { labels: { color: "#9ca3af" }}}
-        }
+        type:"line",
+        data:{ labels,datasets },
+        options:{ scales:{ y:{ min:0,max:100 }}}
     });
 }
 document.addEventListener("DOMContentLoaded", loadSkillTimeline);
