@@ -108,28 +108,33 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
     logger.info(f"Creating session for user {user.id} | IP: {ip} | UA: {user_agent[:30]}...")
     sid = create_user_session(db, user.id, ip, user_agent)
 
-    # Security: Persistent Audit Log (Forensic History)
+    # Security: Forensics & Audit
+    device_type = "Unknown"
+    browser_info = "Unknown"
+    os_info = "Unknown"
+
     try:
         ua_parsed = user_agents.parse(user_agent)
-        audit_entry = AuditLog(
-            user_id=user.id,
-            session_id=sid,
-            ip_address=ip,
-            user_agent_raw=user_agent,
-            device_type="Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop",
-            browser=f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}",
-            os=f"{ua_parsed.os.family} {ua_parsed.os.version_string}",
-            login_timestamp=datetime.utcnow(),
-            is_active_session=True,
-            auth_method="social"
-        )
-        db.add(audit_entry)
-        db.commit()
+        device_type = "Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop"
+        browser_info = f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}"
+        os_info = f"{ua_parsed.os.family} {ua_parsed.os.version_string}"
     except Exception as e:
-        logger.error(f"Failed to record AuditLog: {e}")
+        logger.error(f"Failed to parse User Agent: {e}")
 
-    # Security: Audit Log
-    log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
+    log_audit(
+        db=db,
+        user_id=user.id,
+        action="LOGIN",
+        ip_address=ip,
+        details={
+            "session_id": sid,
+            "method": "social",
+            "device": device_type,
+            "os": os_info,
+            "browser": browser_info,
+            "user_agent": user_agent
+        }
+    )
 
     token = create_access_token({
         "sub": str(user.id),
@@ -434,26 +439,34 @@ def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, use
             # Session & Audit
             sid = create_user_session(db, user.id, ip, user_agent)
 
+            # Security: Forensics & Audit
+            device_type = "Unknown"
+            browser_info = "Unknown"
+            os_info = "Unknown"
+
             try:
                 ua_parsed = user_agents.parse(user_agent)
-                audit_entry = AuditLog(
-                    user_id=user.id,
-                    session_id=sid,
-                    ip_address=ip,
-                    user_agent_raw=user_agent,
-                    device_type="Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop",
-                    browser=f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}",
-                    os=f"{ua_parsed.os.family} {ua_parsed.os.version_string}",
-                    login_timestamp=datetime.utcnow(),
-                    is_active_session=True,
-                    auth_method="social"
-                )
-                db.add(audit_entry)
-                db.commit()
+                device_type = "Mobile" if ua_parsed.is_mobile else "Tablet" if ua_parsed.is_tablet else "Desktop"
+                browser_info = f"{ua_parsed.browser.family} {ua_parsed.browser.version_string}"
+                os_info = f"{ua_parsed.os.family} {ua_parsed.os.version_string}"
             except Exception as e:
-                logger.error(f"Failed to record AuditLog: {e}")
+                logger.error(f"Failed to parse User Agent: {e}")
 
-            log_audit(db, user.id, "LOGIN", ip, {"session_id": sid, "method": "social"})
+            log_audit(
+                db=db,
+                user_id=user.id,
+                action="LOGIN",
+                ip_address=ip,
+                details={
+                    "session_id": sid,
+                    "method": "social",
+                    "provider": "linkedin",
+                    "device": device_type,
+                    "os": os_info,
+                    "browser": browser_info,
+                    "user_agent": user_agent
+                }
+            )
 
             # Generate Token
             token = create_access_token({
