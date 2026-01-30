@@ -125,12 +125,14 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
         action="LOGIN",
         ip_address=ip,
         details={
-            "session_id": sid,
             "method": "social",
-            "device": device_type,
-            "os": os_info,
-            "browser": browser_info,
-            "user_agent": user_agent
+            "session_id": sid,
+            "device_info": {
+                "user_agent": user_agent,
+                "device": device_type,
+                "os": os_info,
+                "browser": browser_info
+            }
         }
     )
 
@@ -482,13 +484,15 @@ def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, use
                 action="LOGIN",
                 ip_address=ip,
                 details={
-                    "session_id": sid,
                     "method": "social",
                     "provider": "linkedin",
-                    "device": device_type,
-                    "os": os_info,
-                    "browser": browser_info,
-                    "user_agent": user_agent
+                    "session_id": sid,
+                    "device_info": {
+                        "user_agent": user_agent,
+                        "device": device_type,
+                        "os": os_info,
+                        "browser": browser_info
+                    }
                 }
             )
 

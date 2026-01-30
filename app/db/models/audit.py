@@ -11,6 +11,8 @@ class AuditLog(Base):
     id = Column(Integer, primary_key=True) # Sem index=True
     user_id = Column(Integer, ForeignKey("users.id"))
     session_id = Column(String, nullable=True)
+    action = Column(String, nullable=True) # Added to resolve conflict with security.py
+    details = Column(String, nullable=True) # Added to resolve conflict with security.py
 
     # Dados Forenses
     ip_address = Column(String, nullable=True)
