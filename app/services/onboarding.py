@@ -5,7 +5,7 @@ def get_next_onboarding_step(user: User) -> str:
     """
     Determines the next step in the onboarding flow for a user.
     """
-    if not user.github_id:
+    if not user.github_username:
         return "/onboarding/connect-github"
     # Zero Touch: Profile completion is automatic or skipped
     return "/dashboard"
@@ -18,10 +18,10 @@ def validate_onboarding_access(user: User):
     if not user:
         return RedirectResponse("/login")
 
-    if not user.linkedin_id:
+    if not user.linkedin_profile_url:
          return RedirectResponse("/logout")
 
-    if not user.github_id:
+    if not user.github_username:
          return RedirectResponse("/onboarding/connect-github", status_code=303)
 
     # Zero Touch: We no longer block access for profile completion
