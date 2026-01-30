@@ -21,7 +21,7 @@ def get_db():
     finally:
         db.close()
 
-def get_current_user(request: Request, db: Session) -> User | None:
+def get_current_user_optional(request: Request, db: Session) -> User | None:
     token = request.cookies.get("access_token")
     if not token:
         return None
@@ -34,19 +34,24 @@ def get_current_user(request: Request, db: Session) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-@router.get("/dashboard/accessibility", response_class=HTMLResponse)
+@router.get("/accessibility", response_class=HTMLResponse)
 def accessibility_panel(request: Request, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
+    user = get_current_user_optional(request, db)
 
-    # Protection
-    if user is None:
-        return RedirectResponse("/login", status_code=302)
-
-    # GUARD: Ensure Onboarding is Complete (REMOVED)
-    return templates.TemplateResponse(
-        "accessibility.html",
-        {
-            "request": request,
-            "user": user
-        }
-    )
+    if user:
+        # Authenticated User -> Dashboard View
+        return templates.TemplateResponse(
+            "accessibility.html",
+            {
+                "request": request,
+                "user": user
+            }
+        )
+    else:
+        # Public User -> Public View
+        return templates.TemplateResponse(
+            "accessibility_public.html",
+            {
+                "request": request
+            }
+        )

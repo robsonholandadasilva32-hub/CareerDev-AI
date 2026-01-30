@@ -46,7 +46,7 @@ def parse_agent(ua_string: str) -> str:
     except Exception:
         return "Unknown Device"
 
-@router.get("/dashboard/security", response_class=HTMLResponse)
+@router.get("/security", response_class=HTMLResponse)
 def security_panel(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
 
@@ -103,7 +103,7 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-@router.post("/dashboard/security/update")
+@router.post("/security/update")
 def update_security(
     request: Request,
     db: Session = Depends(get_db)
@@ -117,9 +117,9 @@ def update_security(
         return resp
 
     # Placeholder para atualizações futuras de preferências
-    return RedirectResponse("/dashboard/security?success=true", status_code=302)
+    return RedirectResponse("/security?success=true", status_code=302)
 
-@router.post("/dashboard/security/delete-account")
+@router.post("/security/delete-account")
 def delete_account(
     request: Request,
     db: Session = Depends(get_db)
@@ -168,7 +168,7 @@ def get_login_history(request: Request, db: Session = Depends(get_db)):
 
     return JSONResponse(content=response_data)
 
-@router.post("/dashboard/security/revoke_all")
+@router.post("/security/revoke_all")
 def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -199,9 +199,9 @@ def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
     # Log da ação
     log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions")
 
-    return RedirectResponse("/dashboard/security", status_code=303)
+    return RedirectResponse("/security", status_code=303)
 
-@router.post("/dashboard/security/revoke/{session_id}")
+@router.post("/security/revoke/{session_id}")
 def revoke_user_session_route(session_id: str, request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -220,4 +220,4 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
         
         log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
 
-    return RedirectResponse("/dashboard/security", status_code=303)
+    return RedirectResponse("/security", status_code=303)

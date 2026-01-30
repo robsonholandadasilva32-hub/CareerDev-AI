@@ -221,9 +221,9 @@ function handleVoiceCommand(cmd) {
     if (cmd.includes("dashboard") || cmd.includes("home")) {
         window.location.href = "/dashboard";
     } else if (cmd.includes("config") || cmd.includes("security")) {
-        window.location.href = "/dashboard/security";
+        window.location.href = "/security";
     } else if (cmd.includes("accessibility")) {
-        window.location.href = "/dashboard/accessibility";
+        window.location.href = "/accessibility";
     } else if (cmd.includes("logout") || cmd.includes("exit")) {
         window.location.href = "/logout";
     } else if (cmd.includes("down") || cmd.includes("scroll down")) {
