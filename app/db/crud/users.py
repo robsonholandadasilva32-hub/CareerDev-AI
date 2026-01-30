@@ -23,7 +23,7 @@ def create_user(
     **kwargs
 ) -> User:
     user = User(
-        name=name,
+        full_name=name,
         email=email,
         hashed_password=hashed_password,
         **kwargs
