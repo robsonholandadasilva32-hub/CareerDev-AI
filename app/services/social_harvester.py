@@ -48,7 +48,7 @@ class SocialHarvester:
                 user.career_profile.market_relevance_score = min(current_score + score_bump, 100)
 
                 db.commit()
-                logger.info(f"✅ [SocialHarvester] LinkedIn data saved for {user.name}")
+                logger.info(f"✅ [SocialHarvester] LinkedIn data saved for {user.full_name}")
             except Exception as e:
                 logger.error(f"🔥 Error saving LinkedIn data: {e}")
                 db.rollback()
