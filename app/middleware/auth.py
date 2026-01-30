@@ -62,7 +62,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     user_id = int(payload.get("sub"))
                     sid = payload.get("sid")
 
-                    # Offload Sync DB Ops to Thread
+                    # Offload Sync DB Ops to Thread using Starlette's native helper
                     user = await run_in_threadpool(self._authenticate_user_sync, user_id, sid)
 
                     if user:
