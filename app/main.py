@@ -155,11 +155,12 @@ app.add_middleware(
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key=settings.SESSION_SECRET_KEY,
+    secret_key=settings.SECRET_KEY, # Ensure this is not None
     session_cookie="careerdev_session",
-    same_site="lax",
-    https_only=False, # HOTFIX: Allow HTTP for now to unblock the user
-    max_age=1800 # 30 minutes session invalidation
+    https_only=False,    # <--- CRITICAL for IP Access
+    same_site="lax",     # <--- CRITICAL for compatibility
+    max_age=None,        # <--- Let it be a session cookie for now
+    path="/"
 )
 
 # 2. If protocol is HTTP, Force Redirect to HTTPS
