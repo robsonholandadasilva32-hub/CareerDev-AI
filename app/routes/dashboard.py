@@ -62,8 +62,27 @@ async def dashboard(
         return redirect
 
     # Atualiza / recalcula dados de carreira
-    await career_engine.analyze_profile(db, user)
-    career_data = await career_engine.get_career_dashboard_data(db, user)
+    profile = user.career_profile
+    raw_languages = profile.github_activity_metrics.get("raw_languages", {}) if profile and profile.github_activity_metrics else {}
+    linkedin_input = profile.linkedin_alignment_data or {} if profile else {}
+    metrics = profile.github_activity_metrics or {} if profile else {}
+    skill_audit = profile.skills_graph_data or {} if profile else {}
+
+    career_data = career_engine.analyze(
+        db=db,
+        raw_languages=raw_languages,
+        linkedin_input=linkedin_input,
+        metrics=metrics,
+        skill_audit=skill_audit,
+        user=user
+    )
+
+    # Patch Missing Data for Dashboard
+    if not career_data.get("zone_a_radar"):
+        career_data["zone_a_radar"] = skill_audit
+
+    if not career_data.get("zone_a_holistic"):
+        career_data["zone_a_holistic"] = {"score": profile.market_relevance_score if profile else 0}
 
     # >>> ADIÇÃO AQUI <<<
     weekly_history = await career_engine.get_weekly_history(db, user)
