@@ -154,7 +154,7 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
         key="access_token",
         value=token,
         httponly=True,
-        secure=(settings.ENVIRONMENT == "production"),
+        secure=(request.url.scheme == "https"),
         samesite="lax",
         max_age=604800
     )
@@ -600,7 +600,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             key="access_token",
             value=result["token"],
             httponly=True,
-            secure=(settings.ENVIRONMENT == "production"),
+            secure=(request.url.scheme == "https"),
             samesite="lax",
             max_age=604800
         )

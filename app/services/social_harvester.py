@@ -96,16 +96,16 @@ class SocialHarvester:
         """
         Background Task: Fetches LinkedIn data using non-blocking DB operations.
         """
-        logger.info(f"⚡ [SocialHarvester] Starting LinkedIn sync for user_id {user_id}...")
-
-        # 1. Check User Existence (Sync -> Thread)
-        exists = await asyncio.to_thread(self._get_user_sync, user_id)
-        if not exists:
-            logger.error(f"❌ User {user_id} not found during background harvest.")
-            return
-
-        # 2. Fetch Profile Data (Async I/O)
         try:
+            logger.info(f"⚡ [SocialHarvester] Starting LinkedIn sync for user_id {user_id}...")
+
+            # 1. Check User Existence (Sync -> Thread)
+            exists = await asyncio.to_thread(self._get_user_sync, user_id)
+            if not exists:
+                logger.error(f"❌ User {user_id} not found during background harvest.")
+                return
+
+            # 2. Fetch Profile Data (Async I/O)
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     "https://api.linkedin.com/v2/userinfo",
@@ -138,12 +138,15 @@ class SocialHarvester:
             await asyncio.to_thread(self._save_linkedin_data_sync, user_id, alignment_data, 10)
 
         except Exception as e:
-            logger.error(f"🔥 Critical Error in harvest_linkedin_data: {e}")
+            logger.exception(f"🔥 Critical Harvester Crash (LinkedIn): {e}")
 
     async def harvest_github_data(self, user_id: int, token: str):
         """Wrapper for sync_profile to match Route calls"""
-        # Optimized: Calls sync_profile which handles DB in threads
-        await self.sync_profile(user_id, token)
+        try:
+            # Optimized: Calls sync_profile which handles DB in threads
+            await self.sync_profile(user_id, token)
+        except Exception as e:
+            logger.exception(f"🔥 Critical Harvester Crash (GitHub): {e}")
 
     async def sync_profile(self, user_id: int, github_token: str, db: Optional[Session] = None) -> bool:
         """
