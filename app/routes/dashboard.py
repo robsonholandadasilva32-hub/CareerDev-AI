@@ -107,6 +107,30 @@ async def dashboard(
 
 
 # -------------------------------------------------
+# NETWORK
+# -------------------------------------------------
+@router.get("/dashboard/network", response_class=HTMLResponse)
+async def network(
+    request: Request,
+    user: User = Depends(get_current_user_secure)
+):
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse(
+        "network.html",
+        {
+            "request": request,
+            "user": user,
+        }
+    )
+
+
+# -------------------------------------------------
 # API REAL: VERIFICAÇÃO DE CÓDIGO
 # -------------------------------------------------
 @router.post("/api/verify/repo", response_class=JSONResponse)
