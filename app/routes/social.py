@@ -54,9 +54,6 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
 raw_secret = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
 linkedin_secret = raw_secret.strip()
 
-# Log length and first/last chars to detect hidden spaces or quotes
-logger.error(f"DEBUG SOCIAL: Secret loaded? {bool(linkedin_secret)} | Stripped Length: {len(linkedin_secret)} | Value: {linkedin_secret[:2]}***{linkedin_secret[-1:] if linkedin_secret else ''}")
-
 if settings.LINKEDIN_CLIENT_ID:
     if not linkedin_secret:
          raise ValueError("LINKEDIN_CLIENT_SECRET is present but empty!")
