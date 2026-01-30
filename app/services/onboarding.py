@@ -18,10 +18,10 @@ def validate_onboarding_access(user: User):
     if not user:
         return RedirectResponse("/login")
 
-    if not user.linkedin_profile_url:
+    if not user.linkedin_profile_url and not user.linkedin_id:
          return RedirectResponse("/logout")
 
-    if not user.github_username:
+    if not user.github_username and not user.github_id:
          return RedirectResponse("/onboarding/connect-github", status_code=303)
 
     # Zero Touch: We no longer block access for profile completion

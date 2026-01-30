@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker
 
 from app.main import app
-from app.db.declarative import Base
+from app.db.base import Base
 from app.db.session import get_db
 from app.db.models.user import User
 # Ensure all models are loaded for relationships
@@ -107,9 +107,9 @@ async def test_github_linking_flow(client, db_session):
 
         response = await client.get("/auth/github/callback?code=gh_code", cookies=cookies, follow_redirects=False)
 
-        # 4. Verify Redirect to Complete Profile
+        # 4. Verify Redirect to Dashboard (Logic Fixed)
         assert response.status_code == 303
-        assert response.headers["location"] == "/onboarding/complete-profile"
+        assert response.headers["location"] == "/dashboard"
 
         # 5. Verify User Updated
         db_session.refresh(user)
@@ -170,8 +170,7 @@ async def test_dashboard_protection(client, db_session):
     db_session.commit()
 
     response = await client.get("/dashboard", cookies=cookies, follow_redirects=False)
-    assert response.status_code == 303
-    assert response.headers["location"] == "/onboarding/complete-profile"
+    assert response.status_code == 200 # Now allowed (Logic Fixed)
 
     # 5. Complete profile
     db_session.query(User).filter(User.id == user.id).update({"is_profile_completed": True})
@@ -231,7 +230,6 @@ async def test_navigation_leak(client, db_session):
 
     response = await client.get("/onboarding/connect-github", cookies=cookies, follow_redirects=False)
 
-    # If github_id is set, it redirects to complete-profile (which then redirects to dashboard if complete)
-    # But wait, connect-github now redirects to complete-profile if github_id is present.
+    # If github_id is set, it redirects to dashboard
     assert response.status_code == 303
-    assert response.headers["location"] == "/onboarding/complete-profile"
+    assert response.headers["location"] == "/dashboard"
