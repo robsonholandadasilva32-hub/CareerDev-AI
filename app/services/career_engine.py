@@ -326,6 +326,10 @@ class CareerEngine:
         db: Session,
         user: User
     ) -> List[Dict]:
+        """
+        Asynchronously retrieves weekly learning history.
+        Offloads the synchronous DB query to a thread to prevent blocking the event loop.
+        """
         return await asyncio.to_thread(self._get_weekly_history_sync, db, user.id)
 
 
