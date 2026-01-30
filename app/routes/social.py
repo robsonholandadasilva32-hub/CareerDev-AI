@@ -513,7 +513,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
              # We can use the passed 'db' for this quick audit log
-             log_audit(db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
+             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
              return RedirectResponse("/login?error=linkedin_failed")
 
         # 3. Offload Blocking DB Operations to Thread
@@ -556,7 +556,7 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
         # Safe fallback audit
         try:
-             log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
+             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
         except:
              pass
         return RedirectResponse("/login?error=linkedin_failed")
