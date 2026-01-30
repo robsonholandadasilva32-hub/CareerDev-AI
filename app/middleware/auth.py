@@ -9,9 +9,36 @@ from app.db.models.security import UserSession
 import logging
 from datetime import datetime, timedelta
 import asyncio
+from collections import OrderedDict
+import time
 
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="app/templates")
+
+class SimpleTTLCache:
+    def __init__(self, ttl: int = 60, max_size: int = 1000):
+        self.ttl = ttl
+        self.max_size = max_size
+        self.cache = OrderedDict()
+
+    def get(self, key):
+        if key not in self.cache:
+            return None
+        value, timestamp = self.cache[key]
+        if time.time() - timestamp > self.ttl:
+            del self.cache[key]
+            return None
+        self.cache.move_to_end(key)
+        return value
+
+    def set(self, key, value):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = (value, time.time())
+        if len(self.cache) > self.max_size:
+            self.cache.popitem(last=False)
+
+AUTH_CACHE = SimpleTTLCache(ttl=60)
 
 def _process_auth_sync(user_id: int, sid: str):
     """
@@ -65,8 +92,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     user_id = int(payload.get("sub"))
                     sid = payload.get("sid")
 
-                    # Offload blocking DB operations to a thread
-                    user, is_banned = await asyncio.to_thread(_process_auth_sync, user_id, sid)
+                    # Check Cache
+                    cached = AUTH_CACHE.get(token)
+                    if cached:
+                        user, is_banned = cached
+                    else:
+                        # Offload blocking DB operations to a thread
+                        user, is_banned = await asyncio.to_thread(_process_auth_sync, user_id, sid)
+                        if user:
+                            AUTH_CACHE.set(token, (user, is_banned))
 
                     if user:
                         if is_banned:
