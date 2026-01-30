@@ -410,7 +410,7 @@ def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, use
             else:
                 # CREATE New
                 logger.info("DEBUG: Creating new user")
-                pwd = secrets.token_urlsafe(16)
+                pwd = secrets.token_urlsafe(32)
                 hashed_password = hash_password(pwd) # CPU bound, fine here
 
                 try:
