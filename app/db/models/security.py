@@ -16,7 +16,8 @@ class AuditLog(Base):
 
     # user = relationship("User", back_populates="audit_logs")
     # Conflict fix: User.audit_logs points to app.db.models.audit.AuditLog
-    user = relationship("User")
+    # Adding overlaps to silence warning about conflict with User.audit_logs and AuditLog.user (from audit.py)
+    user = relationship("User", overlaps="audit_logs, user")
 
 
 class UserSession(Base):
