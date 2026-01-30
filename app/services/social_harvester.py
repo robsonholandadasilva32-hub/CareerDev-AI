@@ -432,6 +432,26 @@ class SocialHarvester:
 
         return "<br>".join(insights)
 
+    def _scan_github_sync(self, user_id: int):
+        """Sync helper for legacy scan simulation."""
+        with SessionLocal() as db:
+            user = db.query(User).get(user_id)
+            if not user or not user.career_profile:
+                return
+
+            profile = user.career_profile
+            # Boost score slightly to show 'activity' effect
+            current = profile.market_relevance_score or 0
+            profile.market_relevance_score = min(current + 2, 100)
+
+            # Update velocity
+            metrics = profile.github_activity_metrics or {}
+            metrics["velocity_score"] = "High (Verified)"
+            metrics["commits_last_30_days"] = (metrics.get("commits_last_30_days", 0) + 1)
+            profile.github_activity_metrics = metrics
+
+            db.commit()
+
     # Legacy / Simulation Support (Optional - kept if needed for fallback)
     async def scan_github(self, db: Session, user: User):
         """
@@ -446,18 +466,7 @@ class SocialHarvester:
         # Simulate delay and update
         await asyncio.sleep(1)
 
-        profile = user.career_profile
-        if profile:
-             # Boost score slightly to show 'activity' effect
-             current = profile.market_relevance_score or 0
-             profile.market_relevance_score = min(current + 2, 100)
-
-             # Update velocity
-             metrics = profile.github_activity_metrics or {}
-             metrics["velocity_score"] = "High (Verified)"
-             metrics["commits_last_30_days"] = (metrics.get("commits_last_30_days", 0) + 1)
-             profile.github_activity_metrics = metrics
-
-             db.commit()
+        # Offload DB update to thread to avoid blocking main loop
+        await asyncio.to_thread(self._scan_github_sync, user.id)
 
 social_harvester = SocialHarvester()
