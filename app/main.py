@@ -157,9 +157,9 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY, # Ensure this is not None
     session_cookie="careerdev_session",
-    https_only=False,    # <--- CRITICAL for IP Access
-    same_site="lax",     # <--- CRITICAL for compatibility
-    max_age=None,        # <--- Let it be a session cookie for now
+    https_only=False, # <--- FORCE FALSE
+    same_site="lax", # <--- FORCE LAX
+    max_age=None, # <--- REMOVE LIMIT
     path="/"
 )
 
