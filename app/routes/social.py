@@ -28,8 +28,6 @@ import json
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 import user_agents
-# Importação Correta
-from app.db.models.audit import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +248,14 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
             logger.info(f"📧 EMAIL FETCHED: {email}")
 
         if not email:
-             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, "GitHub: No email found")
+             await asyncio.to_thread(
+                 log_audit,
+                 db=db,
+                 user_id=None,
+                 action="SOCIAL_ERROR",
+                 ip_address=ip,
+                 details="GitHub: No email found"
+             )
              return RedirectResponse("/login?error=github_no_email")
 
         github_id = str(profile.get('id'))
@@ -282,7 +287,14 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
 
     except Exception as e:
         logger.error(f"🔥 GITHUB ERROR: {str(e)}", exc_info=True)
-        await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, f"GitHub Exception: {e}")
+        await asyncio.to_thread(
+            log_audit,
+            db=db,
+            user_id=None,
+            action="SOCIAL_ERROR",
+            ip_address=ip,
+            details=f"GitHub Exception: {e}"
+        )
         return RedirectResponse("/login?error=github_failed")
 
 @router.get("/login/linkedin")
@@ -309,7 +321,13 @@ def _process_github_connect_sync(db: Session, user_id: int, github_id: str, toke
     # Check for conflict
     existing_user = get_user_by_github_id(db, github_id)
     if existing_user and existing_user.id != current_user.id:
-        log_audit(db, current_user.id, "CONNECT_SOCIAL_FAIL", ip, "GitHub: Account already linked to another user")
+        log_audit(
+            db=db,
+            user_id=current_user.id,
+            action="CONNECT_SOCIAL_FAIL",
+            ip_address=ip,
+            details="GitHub: Account already linked to another user"
+        )
         return "github_taken"
 
     # Update User
@@ -326,7 +344,13 @@ def _process_github_connect_sync(db: Session, user_id: int, github_id: str, toke
     db.commit()
     logger.info(f"✅ GITHUB LINKED: User {current_user.id} updated.")
 
-    log_audit(db, current_user.id, "CONNECT_SOCIAL", ip, "GitHub Connected")
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="CONNECT_SOCIAL",
+        ip_address=ip,
+        details="GitHub Connected"
+    )
 
     check_and_award_security_badge(db, current_user)
 
@@ -526,7 +550,14 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         if not user_info:
              logger.error("LinkedIn Error: No user info received")
              # We can use the passed 'db' for this quick audit log
-             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, "LinkedIn: No user info received")
+             await asyncio.to_thread(
+                 log_audit,
+                 db=db,
+                 user_id=None,
+                 action="SOCIAL_ERROR",
+                 ip_address=ip,
+                 details="LinkedIn: No user info received"
+             )
              return RedirectResponse("/login?error=linkedin_failed")
 
         # 3. Offload Blocking DB Operations to Thread
@@ -542,7 +573,13 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         if result["status"] == "error":
             err_code = result.get("error", "unknown")
             msg = result.get("message", "")
-            log_audit(db, None, "SOCIAL_ERROR", ip, f"LinkedIn Process Error: {msg}")
+            log_audit(
+                db=db,
+                user_id=None,
+                action="SOCIAL_ERROR",
+                ip_address=ip,
+                details=f"LinkedIn Process Error: {msg}"
+            )
 
             if err_code == "linkedin_no_id" or err_code == "linkedin_no_email":
                  return RedirectResponse("/login?error=linkedin_failed")
@@ -569,7 +606,14 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
         logger.error(f"🔥 LINKEDIN ERROR: {str(e)}", exc_info=True)
         # Safe fallback audit
         try:
-             await asyncio.to_thread(log_audit, db, None, "SOCIAL_ERROR", ip, f"LinkedIn Exception: {e}")
+             await asyncio.to_thread(
+                 log_audit,
+                 db=db,
+                 user_id=None,
+                 action="SOCIAL_ERROR",
+                 ip_address=ip,
+                 details=f"LinkedIn Exception: {e}"
+             )
         except:
              pass
         return RedirectResponse("/login?error=linkedin_failed")
