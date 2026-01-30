@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.db.declarative import Base
+from app.db.base import Base
 from app.db.models.user import User
 from app.db.models.security import UserSession
 # Import other models to ensure Metadata is populated
@@ -67,14 +67,11 @@ def client(db_session):
 def test_career_analytics_performance(client, db_session):
     # 1. Setup User
     user = User(
-        name="Perf User",
+        full_name="Perf User",
         email="perf@example.com",
         hashed_password="hash",
-        is_profile_completed=True,
-        linkedin_id="li_perf",
-        github_id="gh_perf",
-        is_premium=True,
-        subscription_status="active"
+        linkedin_profile_url="li_perf",
+        github_username="gh_perf",
     )
     db_session.add(user)
     db_session.commit()
