@@ -53,3 +53,11 @@ class User(Base):
 
     # 3. Audit Logs (ESSENCIAL: Esta linha deve existir para o erro sumir)
     audit_logs = relationship("app.db.models.audit.AuditLog", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def name(self):
+        return self.full_name
+
+    @name.setter
+    def name(self, value):
+        self.full_name = value

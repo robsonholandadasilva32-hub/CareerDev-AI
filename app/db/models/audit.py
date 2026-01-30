@@ -28,4 +28,5 @@ class AuditLog(Base):
 
     # --- RELACIONAMENTO ---
     # Aponta para User com caminho completo e espera encontrar 'audit_logs' lá
-    user = relationship("app.db.models.user.User", back_populates="audit_logs")
+    # Including both to satisfy user request and fix the warning
+    user = relationship("app.db.models.user.User", back_populates="audit_logs", overlaps="audit_logs, user")
