@@ -8,7 +8,7 @@ from app.services.growth_engine import growth_engine
 
 def test_hardcore_mode_activation():
     # Setup
-    user = User(id=1, weekly_streak_count=5)
+    user = User(id=1, streak_count=5)
     user.career_profile = CareerProfile(user_id=1, github_activity_metrics={"raw_languages": {"Python": 1000}})
     mock_db = MagicMock()
 
@@ -22,7 +22,7 @@ def test_hardcore_mode_activation():
 
 def test_normal_mode():
     # Setup
-    user = User(id=1, weekly_streak_count=1)
+    user = User(id=1, streak_count=1)
     user.career_profile = CareerProfile(user_id=1, github_activity_metrics={"raw_languages": {"Python": 1000}})
     mock_db = MagicMock()
 

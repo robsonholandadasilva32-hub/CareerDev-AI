@@ -24,6 +24,14 @@ class MockUser:
     is_profile_completed = True
     preferred_language = "pt"
     avatar_url = "http://example.com/avatar.jpg"
+    streak_count = 5
+
+    # Mock career_profile with necessary attributes
+    career_profile = MagicMock()
+    career_profile.github_activity_metrics = {}
+    career_profile.linkedin_alignment_data = {}
+    career_profile.skills_graph_data = {}
+    career_profile.market_relevance_score = 50
 
 def mock_get_current_user_secure():
     return MockUser()
@@ -41,20 +49,17 @@ def setup_overrides():
 @patch("app.routes.dashboard.career_engine")
 def test_dashboard_render_user_context(mock_career_engine):
     # Setup mocks for career_engine
-    mock_career_engine.analyze_profile = AsyncMock(return_value={"level": "Junior", "focus": "Backend", "trends": {}})
-    mock_career_engine.generate_plan.return_value = []
-    mock_career_engine.get_career_dashboard_data = AsyncMock(return_value={
-        "zone_a_reality": {
-            "chart_type": "doughnut",
-            "data": {"labels": [], "values": []},
-            "insight": "Test Insight"
-        },
-        "zone_b_action": [],
-        "zone_c_ticker": {
-            "user_score": 50,
-            "market_pulse": "Stable"
-        }
-    })
+    mock_career_engine.analyze.return_value = {
+        "zone_a_holistic": {"score": 50},
+        "zone_b_matrix": {},
+        "weekly_plan": {"mode": "GROWTH", "tasks": []},
+        "skill_confidence": {},
+        "career_risks": [],
+        "career_forecast": {"risk_level": "LOW"},
+        "zone_a_radar": {},
+        "missing_skills": []
+    }
+    mock_career_engine.get_weekly_history = AsyncMock(return_value=[])
 
     # Make request
     # Note: TestClient raises exceptions from the app by default.

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
@@ -297,14 +298,14 @@ class CareerEngine:
     # =========================================================
     # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
     # =========================================================
-    async def get_weekly_history(
+    def _get_weekly_history_sync(
         self,
         db: Session,
-        user: User
+        user_id: int
     ) -> List[Dict]:
         routines = (
             db.query(LearningPlan)
-            .filter(LearningPlan.user_id == user.id)
+            .filter(LearningPlan.user_id == user_id)
             .order_by(LearningPlan.created_at.desc())
             .limit(12)
             .all()
@@ -319,6 +320,17 @@ class CareerEngine:
             }
             for r in routines
         ]
+
+    async def get_weekly_history(
+        self,
+        db: Session,
+        user: User
+    ) -> List[Dict]:
+        """
+        Asynchronously retrieves weekly learning history.
+        Offloads the synchronous DB query to a thread to prevent blocking the event loop.
+        """
+        return await asyncio.to_thread(self._get_weekly_history_sync, db, user.id)
 
 
 # ---------------------------------------------------------

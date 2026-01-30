@@ -9,6 +9,7 @@ from app.db.models.user import User
 from app.db.models.security import UserSession
 import logging
 from datetime import datetime, timedelta
+import asyncio
 
 logger = logging.getLogger(__name__)
 templates = Jinja2Templates(directory="app/templates")
@@ -46,7 +47,16 @@ def _authenticate_user_sync(user_id: int, sid: str):
                 if user.is_banned:
                     # Signal to the async caller that access is blocked
                     raise AuthBlockedError("Access Revoked", user_id)
+                
+                # Critical: Expunge user so it can be used safely after session closes
+                db.expunge(user)
                 return user
+        return None
+    except AuthBlockedError:
+        # Re-raise explicit auth errors to be caught by dispatch
+        raise
+    except Exception as e:
+        logger.error(f"Error in _authenticate_user_sync: {e}")
         return None
     finally:
         db.close()

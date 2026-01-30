@@ -1,8 +1,10 @@
 import datetime
+import asyncio
 from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
 from app.services.social_harvester import social_harvester
+from app.db.session import SessionLocal
 import logging
 
 logger = logging.getLogger(__name__)
@@ -66,7 +68,7 @@ class GrowthEngine:
 
         # 3. Check Hardcore Mode (Gamification Rule)
         # Rule: If streak >= 4 weeks, UNLOCK "HARDCORE MODE"
-        is_hardcore = user.weekly_streak_count >= 4
+        is_hardcore = (user.streak_count or 0) >= 4
         if is_hardcore:
              focus_skill = "System Design"
              reasoning = "🔥 HARDCORE MODE ACTIVE: Streak >= 4. Tutorials disabled. Ruthless Challenges only."
@@ -161,23 +163,83 @@ class GrowthEngine:
 
         return plan
 
+    def _verify_task_sync(self, user_id: int, task_id: int) -> dict:
+        """
+        Synchronous logic for task verification.
+        Refreshes user data, checks completion, and updates DB.
+        """
+        with SessionLocal() as db:
+            user = db.query(User).get(user_id)
+            if not user or not user.career_profile:
+                return {"success": False, "message": "User not found or no profile."}
+
+            profile = user.career_profile
+            plan = profile.active_weekly_plan
+
+            if not plan:
+                return {"success": False, "message": "No active plan."}
+
+            routine = plan.get("routine", [])
+            task = next((t for t in routine if t["id"] == task_id), None)
+
+            if not task:
+                return {"success": False, "message": "Task not found."}
+
+            if task["status"] == "completed":
+                return {"success": True, "message": "Already completed."}
+
+            # Logic: Check metrics (which were just updated by sync_profile)
+            metrics = profile.github_activity_metrics or {}
+            raw_langs = metrics.get("raw_languages", {})
+
+            verify_key = task.get("verify_key")
+            verified = False
+
+            if verify_key:
+                 if raw_langs.get(verify_key, raw_langs.get(verify_key.title(), 0)) > 0:
+                      verified = True
+            else:
+                 verified = True
+
+            if verified:
+                 task["status"] = "completed"
+
+                 now = datetime.datetime.utcnow()
+
+                 last_check_str = plan.get("last_verified_at")
+                 last_check = None
+                 if last_check_str:
+                     try:
+                         last_check = datetime.datetime.fromisoformat(last_check_str)
+                     except:
+                         pass
+
+                 is_new_week = True
+                 if last_check:
+                      if last_check.isocalendar()[1] == now.isocalendar()[1] and last_check.year == now.year:
+                           is_new_week = False
+
+                 if is_new_week:
+                  user.streak_count = (user.streak_count or 0) + 1
+                  # user.last_weekly_check does not exist in User model.
+                  # We should store it in the plan or profile logic,
+                  # but for now we just update streak and rely on plan logic if needed.
+                  # Ideally we store last_verified in plan.
+                  plan["last_verified_at"] = now.isoformat()
+
+                 profile.active_weekly_plan = dict(plan)
+                 db.commit()
+
+                 return {"success": True, "message": "Task Verified! Streak Updated.", "task": task}
+            else:
+                 return {"success": False, "message": f"No code detected for {verify_key}. Push code to GitHub and try again."}
+
     async def verify_task(self, db: Session, user: User, task_id: int) -> dict:
         """
         Triggers a SocialHarvester scan and checks if the task can be marked complete.
         """
         if not user.career_profile or not user.career_profile.active_weekly_plan:
             return {"success": False, "message": "No active plan."}
-
-        plan = user.career_profile.active_weekly_plan
-        routine = plan.get("routine", [])
-
-        # Find Task
-        task = next((t for t in routine if t["id"] == task_id), None)
-        if not task:
-            return {"success": False, "message": "Task not found."}
-
-        if task["status"] == "completed":
-             return {"success": True, "message": "Already completed."}
 
         # Trigger Harvest
         if user.github_token:
@@ -187,55 +249,7 @@ class GrowthEngine:
              # Simulation / Fail
              return {"success": False, "message": "GitHub Token required for verification."}
 
-        # Reload Profile after sync
-        db.refresh(user)
-        profile = user.career_profile
-        metrics = profile.github_activity_metrics or {}
-        raw_langs = metrics.get("raw_languages", {})
-
-        # Verification Logic
-        # Check if the 'verify_key' (language) exists in raw_languages
-        verify_key = task.get("verify_key")
-
-        verified = False
-        if verify_key:
-             # Check if lang exists
-             # In a real scenario, we'd check for *recent* commits in that lang
-             # For now, we check if volume > 0 or if velocity is High
-             if raw_langs.get(verify_key, raw_langs.get(verify_key.title(), 0)) > 0:
-                  verified = True
-        else:
-             # If no verify key (Learn task), we might just trust them or check login streak
-             verified = True # 'Learn' tasks usually manual check, but here we assume button click verifies
-
-        if verified:
-             task["status"] = "completed"
-
-             # Check for Streak Update
-             # If all tasks completed? Or just one?
-             # Let's say if it's the first task completed this week, bump streak?
-             # Or just bump streak if they engage.
-
-             # Simple Logic: If not checked in this week, bump streak
-             now = datetime.datetime.utcnow()
-             last_check = user.last_weekly_check
-
-             is_new_week = True
-             if last_check:
-                  # Check if same ISO week
-                  if last_check.isocalendar()[1] == now.isocalendar()[1] and last_check.year == now.year:
-                       is_new_week = False
-
-             if is_new_week:
-                  user.weekly_streak_count += 1
-                  user.last_weekly_check = now
-
-             # Update Plan in DB (Since we modified the dict in place, we need to reassign to trigger SQLAlchemy update)
-             profile.active_weekly_plan = dict(plan)
-             db.commit()
-
-             return {"success": True, "message": "Task Verified! Streak Updated.", "task": task}
-        else:
-             return {"success": False, "message": f"No code detected for {verify_key}. Push code to GitHub and try again."}
+        # Reload Profile after sync and verify (Threaded)
+        return await asyncio.to_thread(self._verify_task_sync, user.id, task_id)
 
 growth_engine = GrowthEngine()
