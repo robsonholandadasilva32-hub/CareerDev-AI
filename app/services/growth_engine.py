@@ -234,11 +234,18 @@ class GrowthEngine:
             else:
                  return {"success": False, "message": f"No code detected for {verify_key}. Push code to GitHub and try again."}
 
+    def _check_plan_sync(self, user_id: int, db: Session) -> bool:
+        u = db.query(User).filter(User.id == user_id).first()
+        if u and u.career_profile and u.career_profile.active_weekly_plan:
+            return True
+        return False
+
     async def verify_task(self, db: Session, user: User, task_id: int) -> dict:
         """
         Triggers a SocialHarvester scan and checks if the task can be marked complete.
         """
-        if not user.career_profile or not user.career_profile.active_weekly_plan:
+        has_plan = await asyncio.to_thread(self._check_plan_sync, user.id, db)
+        if not has_plan:
             return {"success": False, "message": "No active plan."}
 
         # Trigger Harvest

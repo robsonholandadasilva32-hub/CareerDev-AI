@@ -17,6 +17,36 @@ from app.ai.prompts import (
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
 
+def _fetch_user_and_profile_sync(user_id: int, db: Session):
+    """
+    Synchronously fetch user and ensure career_profile is loaded.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    profile = None
+    if user:
+        profile = user.career_profile
+        # Touch lazy loaded fields to ensure they are available
+        if profile:
+             _ = profile.skills_snapshot
+             _ = profile.github_activity_metrics
+    return user, profile
+
+def _save_challenge_trigger_sync(db: Session, profile_id: int, question: str, skill: str):
+    profile = db.query(CareerProfile).get(profile_id)
+    if profile:
+        profile.active_challenge = {
+            "skill": skill,
+            "question": question,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        db.commit()
+
+def _save_challenge_grading_sync(db: Session, profile_id: int):
+    profile = db.query(CareerProfile).get(profile_id)
+    if profile:
+        profile.active_challenge = None
+        db.commit()
+
 def _fetch_user_and_build_context(user_id: int, db: Session, mode: str) -> Tuple[str, str]:
     """
     Synchronously fetches user data and builds context to be run in a thread.
@@ -76,9 +106,8 @@ class ChatbotService:
         profile = None
         user = None
         if user_id and db:
-             user = db.query(User).filter(User.id == user_id).first()
-             if user:
-                 profile = user.career_profile
+             # Offload blocking DB fetch
+             user, profile = await asyncio.to_thread(_fetch_user_and_profile_sync, user_id, db)
 
         # 1. TRIGGER CHALLENGE
         if message == "/trigger_challenge" and profile:
@@ -141,13 +170,9 @@ class ChatbotService:
             # We call LLM directly
             question = await self._llm_response("", lang, "", prompt)
 
-        # Save State
-        profile.active_challenge = {
-            "skill": skill,
-            "question": question,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        db.commit()
+        # Save State (Offload sync commit)
+        if profile:
+             await asyncio.to_thread(_save_challenge_trigger_sync, db, profile.id, question, skill)
 
         return {"message": question, "meta": {"mode": "challenge"}}
 
@@ -162,9 +187,9 @@ class ChatbotService:
             prompt = CHALLENGE_GRADER_PROMPT.format(question=question, answer=answer)
             grade = await self._llm_response("", lang, "", prompt)
 
-        # Clear State
-        profile.active_challenge = None
-        db.commit()
+        # Clear State (Offload sync commit)
+        if profile:
+             await asyncio.to_thread(_save_challenge_grading_sync, db, profile.id)
 
         return {"message": grade, "meta": {"mode": "standard"}}
 
