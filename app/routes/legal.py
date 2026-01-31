@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from app.core.config import settings
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -23,12 +24,12 @@ def legal_menu(request: Request):
          from fastapi.responses import RedirectResponse
          return RedirectResponse("/login", status_code=302)
 
-    return templates.TemplateResponse("legal_menu.html", {"request": request, "user": user})
+    return templates.TemplateResponse("legal_menu.html", {"request": request, "user": user, "settings": settings})
 
 @router.get("/terms", response_class=HTMLResponse)
 def terms_page(request: Request):
-    return templates.TemplateResponse("legal/terms.html", {"request": request})
+    return templates.TemplateResponse("legal/terms.html", {"request": request, "settings": settings})
 
 @router.get("/privacy", response_class=HTMLResponse)
 def privacy_page(request: Request):
-    return templates.TemplateResponse("legal/privacy.html", {"request": request})
+    return templates.TemplateResponse("legal/privacy.html", {"request": request, "settings": settings})
