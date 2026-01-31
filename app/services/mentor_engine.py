@@ -134,6 +134,20 @@ class MentorEngine:
         return advice
 
     # -------------------------------------------------
+    # WELCOME MESSAGE
+    # -------------------------------------------------
+    def welcome_message(self, db: Session, user: User):
+        """
+        Registers the initial welcome interaction in the mentor's memory.
+        """
+        self.store(
+            db,
+            user,
+            "WELCOME",
+            "Welcome! Your career analysis is ready. I’ll step in only when it matters."
+        )
+
+    # -------------------------------------------------
     # CONTEXT MEMORY (SEM EMBEDDING)
     # -------------------------------------------------
     def remember_context(
@@ -196,6 +210,7 @@ class MentorEngine:
                 if not emb or not content:
                     continue
 
+                # Cosine Similarity simplificado (assumindo vetores normalizados)
                 score = sum(a * b for a, b in zip(emb, query_embedding))
                 scored.append((score, content))
 
