@@ -7,6 +7,30 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+    /* OVERRIDES FOR HORIZONTAL MENU */
+    .grid-layout {
+        grid-template-columns: 240px 1fr 350px !important;
+    }
+    .nav-dock {
+        align-items: flex-start !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    .nav-btn {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        padding-left: 15px !important;
+        gap: 12px;
+        font-size: 1rem !important; /* Adjust font size for text */
+    }
+    .nav-icon {
+        font-size: 1.4rem; /* Keep icon size */
+    }
+    .nav-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+    }
+
     .modal {
         display: none; /* Hidden by default */
         position: fixed;
@@ -49,13 +73,13 @@
 <div class="grid-layout">
 
     <nav class="panel nav-dock">
-        <div class="brand-logo">C/AI</div>
-        <a href="/dashboard" class="nav-btn active">⌘</a>
-        <a href="/accessibility" class="nav-btn">🧠</a>
-        <a href="/security" class="nav-btn">🛡️</a>
-        <a href="/legal" class="nav-btn">⚖️</a>
+        <div class="brand-logo" style="margin-left: 10px;">C/AI</div>
+        <a href="/dashboard" class="nav-btn active"><span class="nav-icon">⌘</span> <span class="nav-text">Dashboard</span></a>
+        <a href="/accessibility" class="nav-btn"><span class="nav-icon">🧠</span> <span class="nav-text">Accessibility</span></a>
+        <a href="/security" class="nav-btn"><span class="nav-icon">🛡️</span> <span class="nav-text">Security</span></a>
+        <a href="/legal" class="nav-btn"><span class="nav-icon">⚖️</span> <span class="nav-text">Legal & About</span></a>
         <div style="flex-grow: 1;"></div>
-        <a href="/logout" class="nav-btn alert-color">✕</a>
+        <a href="/logout" class="nav-btn alert-color"><span class="nav-icon">✕</span> <span class="nav-text">Logout</span></a>
     </nav>
 
     <div class="panel status-bar" style="grid-column: 2/4;">

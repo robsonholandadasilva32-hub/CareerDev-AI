@@ -101,6 +101,11 @@ class ChatbotService:
         """
         Mode can be 'standard', 'interview', or 'challenge'.
         Returns Dict with 'message' and 'meta'.
+
+        COMPLIANCE NOTE:
+        - OpenAI API is used for generation only.
+        - No user data is sent to external training/feedback endpoints.
+        - Privacy settings rely on 'settings.OPENAI_API_KEY' configuration.
         """
 
         profile = None
