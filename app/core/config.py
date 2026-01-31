@@ -21,9 +21,7 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> str:
         if isinstance(v, str):
             if v.startswith("postgres://"):
-                return v.replace("postgres://", "postgresql+asyncpg://", 1)
-            if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
-                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+                return v.replace("postgres://", "postgresql://", 1)
         return v
 
     # Notification settings removed
