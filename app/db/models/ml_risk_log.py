@@ -7,7 +7,14 @@ class MLRiskLog(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    ml_risk = Column(Integer)
-    rule_risk = Column(Integer)
-    model_version = Column(String(10))
+
+    # Pontuações de Risco
+    ml_risk = Column(Integer)       # Score gerado pela IA
+    rule_risk = Column(Integer)     # Score gerado pelas regras estáticas
+    final_risk = Column(Integer)    # Score final consolidado (usado na UI)
+
+    # MLOps & A/B Testing
+    model_version = Column(String(20))     # Ex: "v1.0.2-beta"
+    experiment_group = Column(String(10))  # Ex: "A" (Control) ou "B" (Test)
+
     created_at = Column(DateTime, default=datetime.utcnow)
