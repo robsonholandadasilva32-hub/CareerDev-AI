@@ -146,8 +146,12 @@
                         <div style="height: 150px;">
                             <canvas id="riskCompareChart"></canvas>
                         </div>
+                        
                         <div class="ml-powered">
                             Powered by ML v{{ career_data.career_forecast.model_version }}
+                            <span style="color: var(--text-dim); margin-left: 5px;">
+                                [EXP: {{ career_data.career_forecast.experiment }}]
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -258,15 +262,16 @@ new Chart(document.getElementById("riskCompareChart"), {
   }
 });
 
-/* ---------------- RISK TIMELINE CHART (NEW INTEGRATION) ---------------- */
+/* ---------------- RISK TIMELINE CHART (DATA INTEGRATED) ---------------- */
+// Uses data from the updated CareerEngine return
 new Chart(document.getElementById("riskTimeline"), {
   type: "line",
   data: {
-    labels: {{ career_data.risk_timeline.labels | tojson }}, /* tojson added for safety */
+    labels: {{ career_data.risk_timeline.labels | tojson }},
     datasets: [{
       label: "Projected Risk",
       data: {{ career_data.risk_timeline.values | tojson }},
-      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}",
+      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", // Default color if not passed
       backgroundColor: "rgba(0,0,0,0)",
       tension: 0.4,
       pointRadius: 2
@@ -312,7 +317,7 @@ async function loadSkillTimeline(){
             data:{ labels, datasets },
             options:{
                 responsive: true,
-                maintainAspectRatio: false, /* Added to fit new grid layout */
+                maintainAspectRatio: false,
                 scales:{
                     y:{ min:0, max:100, grid: { color: 'rgba(255,255,255,0.1)' } },
                     x:{ grid: { display: false } }
@@ -334,8 +339,7 @@ function switchTab(tab){
     event.target.classList.add('active');
 }
 
-/* ---------------- MODAL LOGIC (INTEGRATED) ---------------- */
-// Função global para abrir o modal
+/* ---------------- MODAL LOGIC ---------------- */
 async function openRiskModal() {
     const modal = document.getElementById("riskModal");
     const details = document.getElementById("riskDetails");
@@ -347,7 +351,6 @@ async function openRiskModal() {
         const res = await fetch("/api/risk/explain");
         const data = await res.json();
         
-        // Formatação simples do JSON para HTML
         let html = `<strong>SUMMARY:</strong> ${data.summary}<br><br>`;
         if(data.factors) {
             html += "<strong>KEY FACTORS:</strong><ul>";
@@ -367,7 +370,6 @@ function closeRiskModal() {
     document.getElementById("riskModal").classList.remove("show");
 }
 
-// Fechar modal ao clicar fora
 window.onclick = function(event) {
     const modal = document.getElementById("riskModal");
     if (event.target == modal) {
@@ -375,15 +377,12 @@ window.onclick = function(event) {
     }
 }
 
-// Event Listeners para os Badges (Streak e Risk)
 document.addEventListener("DOMContentLoaded", () => {
-    // Adiciona o click handler ao primeiro .streak-badge (o do Streak)
     const streakBadge = document.querySelector(".streak-badge");
     if(streakBadge) {
         streakBadge.onclick = openRiskModal;
     }
     
-    // Opcional: Adiciona também aos badges de Risco para melhor UX
     const highRisk = document.querySelector(".risk-high");
     if(highRisk) highRisk.onclick = openRiskModal;
     
