@@ -31,6 +31,7 @@
         font-size: 0.9rem;
     }
 
+    /* MODAL STYLES */
     .modal {
         display: none; /* Hidden by default */
         position: fixed;
@@ -68,6 +69,17 @@
         cursor: pointer;
     }
     .modal-close:hover { color: var(--alert); }
+
+    /* ML VERSION LABEL STYLE */
+    .ml-powered {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.65rem;
+        color: var(--neon-purple);
+        text-align: right;
+        margin-top: 5px;
+        opacity: 0.8;
+        letter-spacing: 1px;
+    }
 </style>
 
 <div class="grid-layout">
@@ -134,13 +146,29 @@
                         <div style="height: 150px;">
                             <canvas id="riskCompareChart"></canvas>
                         </div>
+                        <div class="ml-powered">
+                            Powered by ML v{{ career_data.career_forecast.model_version }}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                <h4 style="margin-bottom: 15px; opacity: 0.8;">CONFIDENCE TIMELINE</h4>
-                <canvas id="skillTimelineChart"></canvas>
+            <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                
+                <div>
+                    <h4 style="margin-bottom: 15px; opacity: 0.8;">CONFIDENCE TIMELINE</h4>
+                    <div style="height: 200px;">
+                        <canvas id="skillTimelineChart"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-bottom: 15px; opacity: 0.8;">RISK FORECAST HISTORY</h4>
+                    <div style="height: 200px;">
+                        <canvas id="riskTimeline"></canvas>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -230,7 +258,32 @@ new Chart(document.getElementById("riskCompareChart"), {
   }
 });
 
-/* ---------------- TIMELINE ---------------- */
+/* ---------------- RISK TIMELINE CHART (NEW INTEGRATION) ---------------- */
+new Chart(document.getElementById("riskTimeline"), {
+  type: "line",
+  data: {
+    labels: {{ career_data.risk_timeline.labels | tojson }}, /* tojson added for safety */
+    datasets: [{
+      label: "Projected Risk",
+      data: {{ career_data.risk_timeline.values | tojson }},
+      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}",
+      backgroundColor: "rgba(0,0,0,0)",
+      tension: 0.4,
+      pointRadius: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
+        x: { grid: { display: false } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+/* ---------------- SKILL TIMELINE ---------------- */
 async function loadSkillTimeline(){
     try {
         const res = await fetch("/api/analytics/skill-timeline");
@@ -259,6 +312,7 @@ async function loadSkillTimeline(){
             data:{ labels, datasets },
             options:{
                 responsive: true,
+                maintainAspectRatio: false, /* Added to fit new grid layout */
                 scales:{
                     y:{ min:0, max:100, grid: { color: 'rgba(255,255,255,0.1)' } },
                     x:{ grid: { display: false } }
