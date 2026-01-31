@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     # AI
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-5-mini"
+    LLM_MODEL_DISPLAY_NAME: str = "GPT-5-Mini"
     OPENAI_FALLBACK_MODEL: str = "gpt-4o-mini"
 
     # OAuth

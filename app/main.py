@@ -117,6 +117,7 @@ async def lifespan(app: FastAPI):
 
 # 5. Inicialização do App
 app = FastAPI(title="CareerDev AI", lifespan=lifespan)
+app.state.llm_model_display_name = settings.LLM_MODEL_DISPLAY_NAME
 app.state.limiter = limiter
 app.state.posthog_key = settings.POSTHOG_API_KEY
 app.state.posthog_host = settings.POSTHOG_HOST
