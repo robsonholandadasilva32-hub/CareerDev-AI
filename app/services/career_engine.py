@@ -83,7 +83,6 @@ class CareerEngine:
         # -------------------------------
         # CAREER RISK FORECAST (HYBRID)
         # -------------------------------
-        # Atualizado para passar db e user para log de ML
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
         )
@@ -176,6 +175,23 @@ class CareerEngine:
         return min(base + bonus, 1.0)
 
     # =========================================================
+    # RISK CLASSIFICATION HELPER
+    # =========================================================
+    def classify_risk_level(self, risk_score: int) -> str:
+        """
+        Maps a numeric risk score to a categorical level.
+        Thresholds:
+        - < 25: LOW
+        - 25 to 59: MEDIUM
+        - >= 60: HIGH
+        """
+        if risk_score < 25:
+            return "LOW"
+        if risk_score < 60:
+            return "MEDIUM"
+        return "HIGH"
+
+    # =========================================================
     # CAREER RISK FORECAST (HYBRID: RULES + ML + LOGGING)
     # =========================================================
     def forecast_career_risk(
@@ -224,18 +240,15 @@ class CareerEngine:
             
         except Exception as e:
             db.rollback() # Garante integridade da sessão em caso de erro no log
-            # Em produção, idealmente logar o erro 'e' em um sistema de observabilidade
             pass
 
-        # --- Classificação Final ---
-        level = "LOW"
+        # --- Classificação Final via Método Auxiliar ---
+        level = self.classify_risk_level(risk_score)
+        
         summary = "Career trajectory stable."
-
-        if risk_score >= 60:
-            level = "HIGH"
+        if level == "HIGH":
             summary = "High probability of stagnation or rejection within 6 months."
-        elif risk_score >= 30:
-            level = "MEDIUM"
+        elif level == "MEDIUM":
             summary = "Moderate career risk detected within next 6 months."
 
         return {
@@ -273,10 +286,6 @@ class CareerEngine:
     ) -> Dict:
         """
         Simulates expected skill growth over time.
-
-        - Backward compatible (months optional)
-        - Growth capped
-        - Market alignment fail-safe
         """
         base_confidence = 40
         growth = min(90, base_confidence + months * 7)
