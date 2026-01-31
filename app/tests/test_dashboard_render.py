@@ -71,6 +71,8 @@ def test_dashboard_render_user_context(mock_career_engine):
         assert response.status_code == 200
         # Template prefers name over email
         assert "Test User" in response.text
+        # Verify dynamic model name from config
+        assert "GPT-5-Mini" in response.text
     except Exception as e:
         # If we catch the specific Jinja error, we know we reproduced it.
         # Failing the test with the error message is what we want for "reproduction".
