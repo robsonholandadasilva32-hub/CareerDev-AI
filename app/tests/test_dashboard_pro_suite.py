@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
 from app.routes.dashboard import get_current_user_secure
@@ -21,6 +21,10 @@ def mock_get_current_user_secure():
     user = MockUser()
     user.career_profile.level = 1
     user.career_profile.focus = "Dev"
+    user.career_profile.github_activity_metrics = {}
+    user.career_profile.linkedin_alignment_data = {}
+    user.career_profile.skills_graph_data = {}
+    user.career_profile.market_relevance_score = 80
     return user
 
 def mock_get_db():
@@ -36,18 +40,17 @@ def setup_overrides():
 @patch("app.routes.dashboard.career_engine")
 @patch("app.routes.dashboard.validate_onboarding_access", return_value=None)
 def test_dashboard_contains_pro_suite(mock_validate, mock_career_engine):
-    mock_career_engine.analyze_profile.return_value = {"level": 1, "focus": "Dev", "skills": {}}
-    mock_career_engine.generate_plan.return_value = []
-    mock_career_engine.get_career_dashboard_data.return_value = {
-        "zone_a_holistic": {"score": 80, "color": "green", "details": "Good"},
-        "zone_b_matrix": [],
-        "zone_c_ai": {"insights": "Good job"},
-        "doughnut_data": {}
+    mock_career_engine.analyze.return_value = {
+        "zone_a_radar": {},
+        "zone_a_holistic": {"score": 80},
+        "weekly_plan": {"mode": "NORMAL", "focus": "Dev", "tasks": []},
+        "career_forecast": {"risk_level": "LOW"}
     }
+    # Mock async method
+    mock_career_engine.get_weekly_history = AsyncMock(return_value=[])
 
     response = client.get("/dashboard")
     assert response.status_code == 200
-    assert "PRO SUITE" in response.text
-    assert "DOWNLOAD PASSPORT" in response.text
-    assert "COPY BADGE MARKDOWN" in response.text
-    assert "copyBadgeCode()" in response.text
+    assert "AUDIT VIEW" in response.text
+    assert "WEEKLY PLAN" in response.text
+    assert "SKILL RADAR" in response.text

@@ -38,7 +38,8 @@ async def test_dashboard_rendering_error(client, db_session):
         email=email,
         name="Dashboard Test User",
         hashed_password=hash_password("password123"),
-        is_premium=True
+        github_id="test_gh_id",  # Bypass onboarding check
+        linkedin_id="test_li_id" # Bypass onboarding check
     )
     db_session.add(user)
     db_session.commit()
