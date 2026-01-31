@@ -20,7 +20,9 @@ class MockUser:
     is_recurring = True
     created_at = datetime.now()
     linkedin_id = "test_linkedin"
+    linkedin_profile_url = "https://linkedin.com/in/test"
     github_id = "test_github"
+    github_username = "test_github_user"
     is_profile_completed = True
     preferred_language = "pt"
     avatar_url = "http://example.com/avatar.jpg"
