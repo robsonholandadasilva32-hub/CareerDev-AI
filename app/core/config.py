@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator, ValidationInfo
 from typing import Optional
 import os
 
@@ -13,7 +14,17 @@ class Settings(BaseSettings):
     SESSION_SECRET_KEY: str = "change-this-to-a-secure-random-string"
 
     # Database
-    DATABASE_URL: str = "sqlite:///./careerdev.db"
+    DATABASE_URL: str
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     # Notification settings removed
 
