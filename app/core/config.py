@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-5-mini"
     OPENAI_FALLBACK_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL_DISPLAY_NAME: str = "GPT-5-Mini"
 
     # OAuth
     GITHUB_CLIENT_ID: Optional[str] = None

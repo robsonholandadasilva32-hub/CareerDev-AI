@@ -1,16 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import AuditLog
+from app.core.templates import templates
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 def get_current_admin(request: Request):
     user = getattr(request.state, "user", None)

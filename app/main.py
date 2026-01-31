@@ -6,7 +6,6 @@ from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -80,6 +79,7 @@ from app.routes import (
     # email_verification, two_factor, debug removed
 )
 from app.routes import setup_hotfix
+from app.core.templates import templates
 
 # 4. Lifespan (Conexão com Banco)
 @asynccontextmanager
@@ -124,7 +124,6 @@ app.state.sentry_dsn = settings.SENTRY_DSN
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5.5 Exception Handlers
-templates = Jinja2Templates(directory="app/templates")
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):

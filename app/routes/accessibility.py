@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from app.core.templates import templates
 
 from app.db.session import SessionLocal
 from app.db.models.user import User
@@ -12,7 +12,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 def get_db():
     db = SessionLocal()

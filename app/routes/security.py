@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import datetime
@@ -21,11 +20,11 @@ from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import revoke_session, log_audit
 from app.core.config import settings
 from app.core.utils import get_client_ip
+from app.core.templates import templates
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 def get_db():
     db = SessionLocal()

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 import logging
 
@@ -14,11 +13,11 @@ from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.db.models.gamification import UserBadge
+from app.core.templates import templates
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 # -------------------------------------------------
