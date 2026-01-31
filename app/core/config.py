@@ -5,6 +5,7 @@ import os
 class Settings(BaseSettings):
     # App
     APP_NAME: str = "CareerDev AI"
+    RESUME_ANALYZER_TITLE: str = "Resume Analyzer"
     DOMAIN: str = "https://www.careerdev-ai.online"
     ENVIRONMENT: str = "development" # development, production, test
     ALLOWED_HOSTS: list[str] = ["*"]
