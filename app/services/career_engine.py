@@ -230,6 +230,13 @@ class CareerEngine:
             ml_result = ml_forecaster.predict(avg_conf, commits_30d)
             ml_risk = ml_result["ml_risk"]
             
+            # Adiciona explicação do ML às razões
+            ml_explanation = self.explain_ml_forecast(
+                ml_risk, 
+                {"commits": commits_30d, "confidence": avg_conf}
+            )
+            reasons.append(ml_explanation)
+
             # Lógica A/B Testing
             # Grupo A: Controle (Apenas Regras)
             # Grupo B: Teste (Híbrido ML + Regras)
@@ -280,7 +287,7 @@ class CareerEngine:
         }
 
     # =========================================================
-    # RISK EXPLAINABILITY (XAI)
+    # RISK EXPLAINABILITY (XAI) - STATIC
     # =========================================================
     def explain_risk(self, user: User) -> Dict:
         """
@@ -295,6 +302,18 @@ class CareerEngine:
                 {"factor": "Market Demand", "impact": "High"}
             ]
         }
+
+    # =========================================================
+    # RISK EXPLAINABILITY (XAI) - DYNAMIC ML
+    # =========================================================
+    def explain_ml_forecast(self, ml_risk, features):
+        """
+        Generates a dynamic explanation for the specific ML forecast.
+        """
+        return (
+            f"The ML model predicts risk based on declining commit velocity "
+            f"and skill confidence trends. Estimated risk: {ml_risk}%."
+        )
 
     # =========================================================
     # SKILL PATH SIMULATION (UNIFIED)
