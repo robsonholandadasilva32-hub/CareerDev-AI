@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 
@@ -81,7 +82,7 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
-        # CAREER RISK FORECAST (HYBRID)
+        # CAREER RISK FORECAST (HYBRID + A/B TEST)
         # -------------------------------
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
@@ -192,7 +193,7 @@ class CareerEngine:
         return "HIGH"
 
     # =========================================================
-    # CAREER RISK FORECAST (HYBRID: RULES + ML + LOGGING)
+    # CAREER RISK FORECAST (HYBRID: RULES + ML + A/B LOGGING)
     # =========================================================
     def forecast_career_risk(
         self,
@@ -219,30 +220,47 @@ class CareerEngine:
         if metrics.get("velocity_score") == "Low":
             risk_score += 20
             reasons.append("Development velocity decreasing.")
+        
+        # Armazena o risco base (rule-based)
+        rule_risk = risk_score
 
-        # --- Ajuste via ML e Persistência de Log ---
+        # --- Ajuste via ML e A/B Testing ---
         try:
-            # Predição com mais contexto
+            # Predição ML
             ml_result = ml_forecaster.predict(avg_conf, commits_30d)
+            ml_risk = ml_result["ml_risk"]
             
-            # Persistência do Log
+            # Lógica A/B Testing
+            # Grupo A: Controle (Apenas Regras)
+            # Grupo B: Teste (Híbrido ML + Regras)
+            experiment_group = "A" if random.random() < 0.5 else "B"
+
+            if experiment_group == "A":
+                final_risk = rule_risk
+            else:
+                final_risk = int((rule_risk + ml_risk) / 2)
+
+            # Persistência do Log Completo
             new_log = MLRiskLog(
                 user_id=user.id,
-                ml_risk=ml_result["ml_risk"],
-                rule_risk=risk_score,
+                ml_risk=ml_risk,
+                rule_risk=rule_risk,
+                final_risk=final_risk,
+                experiment_group=experiment_group,
                 model_version=ml_result.get("model_version", "v1.0")
             )
             db.add(new_log)
             db.commit()
 
-            # Cálculo Híbrido Final
-            risk_score = int((risk_score + ml_result["ml_risk"]) / 2)
+            # Atualiza o score que será retornado para o usuário
+            risk_score = final_risk
             
         except Exception as e:
-            db.rollback() # Garante integridade da sessão em caso de erro no log
+            db.rollback() # Garante integridade da sessão
+            # Em caso de falha no ML, mantemos o risk_score das regras
             pass
 
-        # --- Classificação Final via Método Auxiliar ---
+        # --- Classificação Final ---
         level = self.classify_risk_level(risk_score)
         
         summary = "Career trajectory stable."
@@ -255,7 +273,10 @@ class CareerEngine:
             "risk_level": level,
             "risk_score": risk_score,
             "summary": summary,
-            "reasons": reasons
+            "reasons": reasons,
+            # Retornamos valores brutos para debug/dashboard
+            "rule_risk": rule_risk,
+            "ml_risk": ml_result.get("ml_risk", 0) if 'ml_result' in locals() else 0
         }
 
     # =========================================================
