@@ -4,6 +4,10 @@ import sentry_sdk
 from app.core.config import settings
 from openai import AsyncOpenAI
 import logging
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from app.db.session import get_db
+import httpx
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,6 +29,45 @@ async def check_auth(request: Request):
             detail="Authentication required"
         )
     return request.state.user
+
+@router.get("/diagnostics")
+async def system_diagnostics(db: Session = Depends(get_db)):
+    """
+    Performs a deep health check of the system components.
+    """
+    diagnostics = {
+        "database": "unknown",
+        "internet": "unknown",
+        "status": "warning"
+    }
+
+    # 1. Check Database
+    try:
+        db.execute(text("SELECT 1"))
+        diagnostics["database"] = "connected"
+    except Exception as e:
+        diagnostics["database"] = f"error: {str(e)}"
+        logger.error(f"Diagnostics DB Error: {e}")
+
+    # 2. Check Internet Connectivity (Google Ping)
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://www.google.com", timeout=2.0)
+            if resp.status_code == 200:
+                diagnostics["internet"] = "connected"
+            else:
+                diagnostics["internet"] = f"unreachable (status: {resp.status_code})"
+    except Exception as e:
+        diagnostics["internet"] = f"error: {str(e)}"
+        logger.error(f"Diagnostics Internet Error: {e}")
+
+    # Determine overall status
+    if diagnostics["database"] == "connected" and diagnostics["internet"] == "connected":
+        diagnostics["status"] = "healthy"
+    else:
+        diagnostics["status"] = "degraded"
+
+    return diagnostics
 
 @router.post("/analyze-posture")
 async def analyze_posture(data: PostureAnalysisRequest, user = Depends(check_auth)):
