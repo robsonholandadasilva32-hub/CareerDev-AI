@@ -33,7 +33,17 @@ def revoke_session(db: Session, session_id: str):
         session.is_active = False
         db.commit()
 
-def log_audit(db: Session, user_id: int | None, action: str, ip_address: str, details: str | dict = None):
+def log_audit(
+    db: Session,
+    user_id: int | None,
+    action: str,
+    ip_address: str,
+    details: str | dict = None,
+    device_type: str = None,
+    browser: str = None,
+    os: str = None,
+    user_agent_raw: str = None
+):
     """Logs a critical action."""
     try:
         if isinstance(details, dict):
@@ -43,7 +53,11 @@ def log_audit(db: Session, user_id: int | None, action: str, ip_address: str, de
             user_id=user_id,
             action=action,
             ip_address=ip_address,
-            details=details
+            details=details,
+            device_type=device_type,
+            browser=browser,
+            os=os,
+            user_agent_raw=user_agent_raw
         )
         db.add(audit)
         db.commit()

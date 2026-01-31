@@ -130,7 +130,11 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
                 "os": os_info,
                 "browser": browser_info
             }
-        }
+        },
+        device_type=device_type,
+        browser=browser_info,
+        os=os_info,
+        user_agent_raw=user_agent
     )
 
     token = create_access_token({
@@ -490,7 +494,11 @@ def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, use
                         "os": os_info,
                         "browser": browser_info
                     }
-                }
+                },
+                device_type=device_type,
+                browser=browser_info,
+                os=os_info,
+                user_agent_raw=user_agent
             )
 
             # Generate Token
