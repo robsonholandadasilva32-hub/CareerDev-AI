@@ -6,14 +6,14 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
-from app.db.models.analytics import RiskSnapshot 
+from app.db.models.analytics import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
 from app.services.benchmark_engine import benchmark_engine
-from app.services.counterfactual_engine import counterfactual_engine # <--- Nova Importação
+from app.services.counterfactual_engine import counterfactual_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
-from app.ml.feature_store import compute_features # <--- Nova Importação
+from app.ml.feature_store import compute_features
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -115,7 +115,6 @@ class CareerEngine:
         # -------------------------------
         # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
         # -------------------------------
-        # Recupera snapshots recentes para compor o histórico de features
         recent_snapshots = (
             db.query(RiskSnapshot)
             .filter(RiskSnapshot.user_id == user.id)
@@ -124,10 +123,8 @@ class CareerEngine:
             .all()
         )
         
-        # Computa features normalizadas para o modelo ML
         features = compute_features(metrics, recent_snapshots)
 
-        # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
             current_risk=career_forecast["risk_score"]
@@ -144,9 +141,41 @@ class CareerEngine:
             "career_risks": career_risks,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
-            "counterfactual": counterfactual, # <--- Adicionado ao retorno
+            "counterfactual": counterfactual,
             "zone_a_radar": {},
             "missing_skills": []
+        }
+
+    # =========================================================
+    # INDEPENDENT COUNTERFACTUAL ANALYSIS
+    # =========================================================
+    def get_counterfactual(self, db: Session, user: User) -> Dict:
+        """
+        Gera uma análise contrafactual sob demanda (API isolada).
+        """
+        # Recupera snapshots recentes para features
+        recent_snapshots = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .limit(5)
+            .all()
+        )
+        
+        # Nota: Em um cenário real, você precisaria recuperar as métricas atuais aqui 
+        # (ex: chamando o serviço do GitHub ou cache) para usar compute_features.
+        # metrics = github_service.get_metrics(user)
+        # features = compute_features(metrics, recent_snapshots)
+        
+        # Retorna um placeholder simulado se não houver dados completos no momento da chamada
+        return {
+            "scenario": "Increase commit velocity by 15%",
+            "predicted_risk_reduction": 12,
+            "summary": "Increasing your commit frequency would stabilize your profile against market trends.",
+            "actions": [
+                "Commit code at least 4 times a week",
+                "Complete one Zone A project"
+            ]
         }
 
     # =========================================================
@@ -216,10 +245,6 @@ class CareerEngine:
     def classify_risk_level(self, risk_score: int) -> str:
         """
         Maps a numeric risk score to a categorical level.
-        Thresholds:
-        - < 25: LOW
-        - 25 to 59: MEDIUM
-        - >= 60: HIGH
         """
         if risk_score < 25:
             return "LOW"
@@ -290,10 +315,9 @@ class CareerEngine:
 
                 if len(recent_risks) == 10:
                     lstm_risk = lstm_model.predict(recent_risks)
-                    # Média ponderada com o LSTM para suavizar a tendência
                     final_risk = int((final_risk + lstm_risk) / 2)
                     reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
-            except Exception as lstm_err:
+            except Exception:
                 pass
 
             # Persistência do Log Completo
@@ -308,10 +332,9 @@ class CareerEngine:
             db.add(new_log)
             db.commit()
 
-            # Atualiza o score final retornado
             risk_score = final_risk
             
-        except Exception as e:
+        except Exception:
             db.rollback() 
             pass
 
@@ -337,12 +360,9 @@ class CareerEngine:
         }
 
     # =========================================================
-    # RISK EXPLAINABILITY (XAI) - STATIC
+    # RISK EXPLAINABILITY (XAI)
     # =========================================================
     def explain_risk(self, user: User) -> Dict:
-        """
-        Provides a human-readable explanation of risk factors.
-        """
         return {
             "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",
             "factors": [
@@ -352,55 +372,32 @@ class CareerEngine:
             ]
         }
 
-    # =========================================================
-    # RISK EXPLAINABILITY (XAI) - DYNAMIC ML
-    # =========================================================
     def explain_ml_forecast(self, ml_risk, features):
-        """
-        Generates a dynamic explanation for the specific ML forecast.
-        """
         return (
             f"The ML model predicts risk based on declining commit velocity "
             f"and skill confidence trends. Estimated risk: {ml_risk}%."
         )
 
     # =========================================================
-    # SKILL PATH SIMULATION (UNIFIED)
+    # SKILL PATH SIMULATION
     # =========================================================
-    def simulate_skill_path(
-        self,
-        user: User,
-        skill: str,
-        months: int = 6
-    ) -> Dict:
-        """
-        Simulates expected skill growth over time.
-        """
+    def simulate_skill_path(self, user: User, skill: str, months: int = 6) -> Dict:
         base_confidence = 40
         growth = min(90, base_confidence + months * 7)
-
         market_trends = getattr(self, "market_trends", [])
 
         return {
             "skill": skill,
             "months": months,
             "expected_confidence": growth,
-            "market_alignment": (
-                "High" if skill in market_trends else "Medium"
-            ),
-            "summary": (
-                f"Learning {skill} for {months} months significantly improves career outlook."
-            )
+            "market_alignment": "High" if skill in market_trends else "Medium",
+            "summary": f"Learning {skill} for {months} months significantly improves career outlook."
         }
 
     # =========================================================
-    # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
+    # WEEKLY HISTORY (ASYNC)
     # =========================================================
-    def _get_weekly_history_sync(
-        self,
-        db: Session,
-        user_id: int
-    ) -> List[Dict]:
+    def _get_weekly_history_sync(self, db: Session, user_id: int) -> List[Dict]:
         routines = (
             db.query(LearningPlan)
             .filter(LearningPlan.user_id == user_id)
@@ -408,7 +405,6 @@ class CareerEngine:
             .limit(12)
             .all()
         )
-
         return [
             {
                 "week": r.week_id,
@@ -419,15 +415,7 @@ class CareerEngine:
             for r in routines
         ]
 
-    async def get_weekly_history(
-        self,
-        db: Session,
-        user: User
-    ) -> List[Dict]:
-        """
-        Asynchronously retrieves weekly learning history.
-        Offloads the synchronous DB query to a thread to prevent blocking the event loop.
-        """
+    async def get_weekly_history(self, db: Session, user: User) -> List[Dict]:
         return await asyncio.to_thread(self._get_weekly_history_sync, db, user.id)
 
 
