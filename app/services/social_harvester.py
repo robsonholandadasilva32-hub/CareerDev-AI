@@ -148,6 +148,85 @@ class SocialHarvester:
         except Exception as e:
             logger.exception(f"🔥 Critical Harvester Crash (GitHub): {e}")
 
+    async def scan_user_dependencies(self, user_id: int, token: str) -> Dict[str, List[str]]:
+        """
+        Scans user's repositories for dependency files (package.json, requirements.txt, etc.)
+        and maps frameworks/languages to the repositories where they were found.
+
+        Returns:
+            Dict[str, List[str]]: A map of Skill -> List[Repo Names]
+            e.g., {"react": ["portfolio", "admin-panel"], "python": ["backend"]}
+        """
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "CareerDev-AI-Harvester"
+        }
+
+        skill_evidence_map: Dict[str, List[str]] = {}
+
+        async with httpx.AsyncClient() as client:
+            # 1. Fetch Repos (Top 30 recently updated to cover more ground)
+            repos_url = f"https://api.github.com/user/repos?sort=updated&per_page=30&type=owner"
+            repos_resp = await client.get(repos_url, headers=headers)
+
+            if repos_resp.status_code != 200:
+                logger.error(f"GitHub API Error during dependency scan: {repos_resp.status_code}")
+                return {}
+
+            repos = repos_resp.json()
+
+            # 2. Parallel Scan
+            sem = asyncio.Semaphore(10) # Higher concurrency for file checks
+
+            async def check_repo(repo):
+                async with sem:
+                    repo_name = repo.get("name")
+                    files_to_check = {
+                        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas", "torch", "scikit-learn", "requests"],
+                        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript", "angular", "tailwindcss"],
+                        "go.mod": ["gin", "gorm", "fiber", "echo"],
+                        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket", "diesel"],
+                        "pom.xml": ["spring", "hibernate", "jakarta", "junit"],
+                        "build.gradle": ["spring", "hibernate", "kotlin"],
+                        "Gemfile": ["rails", "sinatra", "rspec", "jekyll"]
+                    }
+
+                    # Scan contents (List root files first to avoid 404 spam)
+                    # Note: contents_url usually ends with /{+path}
+                    contents_url = repo.get("contents_url", "").split("{")[0]
+                    c_resp = await client.get(contents_url, headers=headers)
+
+                    if c_resp.status_code == 200:
+                        root_files = {f["name"]: f for f in c_resp.json()}
+
+                        for filename, keywords in files_to_check.items():
+                            if filename in root_files:
+                                # Fetch Content
+                                file_url = root_files[filename].get("download_url")
+                                if file_url:
+                                    f_resp = await client.get(file_url)
+                                    if f_resp.status_code == 200:
+                                        content = f_resp.text.lower()
+                                        for kw in keywords:
+                                            if kw in content:
+                                                # Use title case for consistency
+                                                skill_name = kw.title()
+                                                if skill_name == "Next": skill_name = "Next.js"
+                                                if skill_name == "Vue": skill_name = "Vue.js"
+
+                                                # Atomic update (since we are in async gather, dict set is not thread safe if not careful,
+                                                # but we are in single threaded event loop so it is fine actually)
+                                                if skill_name not in skill_evidence_map:
+                                                    skill_evidence_map[skill_name] = []
+                                                if repo_name not in skill_evidence_map[skill_name]:
+                                                    skill_evidence_map[skill_name].append(repo_name)
+
+            tasks = [check_repo(repo) for repo in repos]
+            await asyncio.gather(*tasks)
+
+        return skill_evidence_map
+
     async def sync_profile(self, user_id: int, github_token: str, db: Optional[Session] = None) -> bool:
         """
         Orchestrates the data fusion:
