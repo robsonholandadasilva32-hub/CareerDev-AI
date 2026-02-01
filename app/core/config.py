@@ -73,6 +73,7 @@ class Settings(BaseSettings):
 
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
+    LINKEDIN_REDIRECT_URI: Optional[str] = None
 
     # Analytics (PostHog)
     POSTHOG_API_KEY: Optional[str] = None
