@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import openai
+from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.models.career import CareerProfile, LearningPlan
@@ -132,11 +133,62 @@ def process_resume_upload(db: Session, user_id: int, resume_text: str):
     analysis["added_plans"] = added_plans
     return analysis
 
-async def process_resume_upload_async(db: Session, user_id: int, resume_text: str):
+async def process_resume_upload_async(db: Session, user_id: int, resume_text: str, github_evidence: Optional[Dict[str, List[str]]] = None):
     user_profile = await asyncio.to_thread(db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first)
     target = user_profile.target_role if user_profile else "Developer"
 
     analysis = await asyncio.to_thread(analyze_resume_text, resume_text, target)
+
+    # --- Cross-Validation Logic ---
+    verification_results = []
+    github_evidence = github_evidence or {}
+
+    # Create a case-insensitive lookup for GitHub evidence
+    # Key: Lowercase Skill, Value: (Original Skill Name, List of Repos)
+    gh_lookup = {k.lower(): (k, v) for k, v in github_evidence.items()}
+
+    resume_skills = analysis.get("found_skills", [])
+    # Track which GH skills were matched to avoid duplicates in Inferred
+    matched_gh_skills = set()
+
+    for skill in resume_skills:
+        skill_lower = skill.lower()
+        if skill_lower in gh_lookup:
+            # VERIFIED
+            original_gh_name, repos = gh_lookup[skill_lower]
+            repo_str = ", ".join(repos[:3]) # Limit to 3
+            if len(repos) > 3: repo_str += f" +{len(repos)-3} others"
+
+            verification_results.append({
+                "skill": skill,
+                "status": "VERIFIED",
+                "evidence": f"Found in: {repo_str}"
+            })
+            matched_gh_skills.add(skill_lower)
+        else:
+            # DECLARED
+            verification_results.append({
+                "skill": skill,
+                "status": "DECLARED",
+                "evidence": "Not found in public repositories"
+            })
+
+    # INFERRED (Bonus - skills in GitHub but not in Resume)
+    for skill_lower, (original_name, repos) in gh_lookup.items():
+        if skill_lower not in matched_gh_skills:
+             repo_str = ", ".join(repos[:3])
+             verification_results.append({
+                "skill": original_name,
+                "status": "INFERRED",
+                "evidence": f"Found in: {repo_str}"
+            })
+
+    # Sort results: Verified first, then Declared, then Inferred
+    status_order = {"VERIFIED": 0, "DECLARED": 1, "INFERRED": 2}
+    verification_results.sort(key=lambda x: status_order.get(x["status"], 99))
+
+    analysis["verification_results"] = verification_results
+    # ------------------------------
 
     # Auto-link: Add missing skills to Learning Plan
     added_plans = []

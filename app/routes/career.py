@@ -18,6 +18,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+@router.get("/analyze-resume", response_class=HTMLResponse)
+async def analyze_resume_page(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return RedirectResponse("/login")
+
+    user = request.state.user
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse("career/resume_analyzer.html", {
+        "request": request,
+        "user": user
+    })
+
 @router.post("/analyze-resume", response_class=JSONResponse)
 async def analyze_resume(
     request: Request,
@@ -34,8 +50,17 @@ async def analyze_resume(
     if redirect:
         return redirect
 
+    # Cross-Validation Scanning
+    github_evidence = {}
+    if user.github_token:
+        try:
+            from app.services.social_harvester import social_harvester
+            github_evidence = await social_harvester.scan_user_dependencies(user.id, user.github_token)
+        except Exception as e:
+            logger.error(f"GitHub dependency scan failed: {e}")
+
     try:
-        result = await process_resume_upload_async(db, user_id, resume_text)
+        result = await process_resume_upload_async(db, user_id, resume_text, github_evidence=github_evidence)
         return JSONResponse(result)
     except Exception as e:
         logger.error(f"Error analyzing resume: {e}")
