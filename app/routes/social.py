@@ -306,7 +306,10 @@ async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
 
-    redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+    if settings.LINKEDIN_REDIRECT_URI:
+        redirect_uri = settings.LINKEDIN_REDIRECT_URI
+    else:
+        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
     logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
 
@@ -540,7 +543,10 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
 
     try:
         # 1. Manual HTTPS Enforcement
-        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+        if settings.LINKEDIN_REDIRECT_URI:
+            redirect_uri = settings.LINKEDIN_REDIRECT_URI
+        else:
+            redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
         logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
 
