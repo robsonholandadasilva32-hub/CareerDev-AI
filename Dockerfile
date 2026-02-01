@@ -21,3 +21,5 @@ COPY . .
 
 # Expose port
 EXPOSE 8000
+
+CMD ["sh", "start.sh"]
