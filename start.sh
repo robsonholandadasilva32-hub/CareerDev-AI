@@ -3,8 +3,5 @@
 # Run migrations
 alembic upgrade head
 
-# Set port with fallback
-PORT=${PORT:-8080}
-
 # Start Uvicorn
-uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 4
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 4
