@@ -26,7 +26,8 @@ def test_fallback_postgres_url():
 
         # Instantiate Settings
         # This should succeed due to the fallback logic
-        settings = Settings()
+        # Pass _env_file=None to ignore any local .env file
+        settings = Settings(_env_file=None)
 
         assert settings.DATABASE_URL == "postgresql://user:password@localhost:5432/dbname"
 
@@ -40,6 +41,6 @@ def test_database_url_priority():
     }
 
     with patch.dict(os.environ, env_vars):
-        settings = Settings()
+        settings = Settings(_env_file=None)
         # Should use the explicit DATABASE_URL
         assert settings.DATABASE_URL == "sqlite:///./priority.db"
