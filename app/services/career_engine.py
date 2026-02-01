@@ -8,7 +8,8 @@ from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
 from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
-from app.services.alert_engine import alert_engine # <--- Nova Importação
+from app.services.alert_engine import alert_engine
+from app.services.benchmark_engine import benchmark_engine # <--- Nova Importação
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 
@@ -105,6 +106,12 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # BENCHMARK ENGINE
+        # -------------------------------
+        # Calcula a performance relativa do usuário vs. mercado
+        benchmark = benchmark_engine.compute(db, user)
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -114,6 +121,7 @@ class CareerEngine:
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
             "career_forecast": career_forecast,
+            "benchmark": benchmark, # <--- Adicionado ao retorno
             "zone_a_radar": {},
             "missing_skills": []
         }
