@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
-from pydantic import field_validator, ValidationInfo
-from typing import Optional
+from pydantic import field_validator, ValidationInfo, model_validator
+from typing import Optional, Any
 import os
 
 class Settings(BaseSettings):
@@ -15,6 +15,15 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
+    POSTGRES_URL: Optional[str] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def check_database_url(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("DATABASE_URL") and data.get("POSTGRES_URL"):
+                data["DATABASE_URL"] = data.get("POSTGRES_URL")
+        return data
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
