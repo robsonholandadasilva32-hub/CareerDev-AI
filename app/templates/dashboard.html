@@ -155,6 +155,15 @@
                             </span>
                         </div>
                     </div>
+
+                    {% if career_data.benchmark %}
+                    <div class="panel" style="margin-top: 20px; border: 1px solid var(--neon-green);">
+                        <div class="panel-head" style="color: var(--neon-green);">BENCHMARK</div>
+                        <div style="padding:12px; font-size:0.8rem; font-family: var(--font-mono); color: #fff;">
+                            {{ career_data.benchmark.message }}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -263,8 +272,7 @@ new Chart(document.getElementById("riskCompareChart"), {
   }
 });
 
-/* ---------------- RISK TIMELINE CHART (DATA INTEGRATED) ---------------- */
-// Uses data from the updated CareerEngine return
+/* ---------------- RISK TIMELINE CHART ---------------- */
 new Chart(document.getElementById("riskTimeline"), {
   type: "line",
   data: {
@@ -272,7 +280,7 @@ new Chart(document.getElementById("riskTimeline"), {
     datasets: [{
       label: "Projected Risk",
       data: {{ career_data.risk_timeline.values | tojson }},
-      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", // Default color if not passed
+      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", 
       backgroundColor: "rgba(0,0,0,0)",
       tension: 0.4,
       pointRadius: 2
