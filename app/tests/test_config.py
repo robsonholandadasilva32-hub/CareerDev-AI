@@ -44,3 +44,56 @@ def test_database_url_priority():
         settings = Settings(_env_file=None)
         # Should use the explicit DATABASE_URL
         assert settings.DATABASE_URL == "sqlite:///./priority.db"
+
+def test_fallback_pg_variables():
+    """
+    Verifies that if DATABASE_URL and POSTGRES_URL are missing,
+    but standard PG* variables are present, DATABASE_URL is constructed correctly.
+    """
+    env_vars = {
+        "PGHOST": "db.railway.internal",
+        "PGPORT": "5432",
+        "PGUSER": "postgres",
+        "PGPASSWORD": "secretpassword",
+        "PGDATABASE": "railway",
+    }
+
+    with patch.dict(os.environ, env_vars, clear=True):
+        # Instantiate Settings
+        settings = Settings(_env_file=None)
+
+        expected_url = "postgresql://postgres:secretpassword@db.railway.internal:5432/railway"
+        assert settings.DATABASE_URL == expected_url
+
+def test_fallback_pg_variables_special_chars():
+    """
+    Verifies that special characters in the password are correctly URL-encoded.
+    """
+    env_vars = {
+        "PGHOST": "db.railway.internal",
+        "PGPORT": "5432",
+        "PGUSER": "postgres",
+        "PGPASSWORD": "pwd@#&%",
+        "PGDATABASE": "railway",
+    }
+
+    with patch.dict(os.environ, env_vars, clear=True):
+        settings = Settings(_env_file=None)
+        # pwd@#&% -> pwd%40%23%26%25
+        expected_pwd = "pwd%40%23%26%25"
+        expected_url = f"postgresql://postgres:{expected_pwd}@db.railway.internal:5432/railway"
+        assert settings.DATABASE_URL == expected_url
+
+def test_fallback_fail_if_missing_required():
+    """
+    Verifies that if DATABASE_URL is missing and insufficient PG vars are present,
+    it raises a ValidationError (Field required).
+    """
+    env_vars = {
+        "PGHOST": "db.railway.internal",
+        # Missing others
+    }
+
+    with patch.dict(os.environ, env_vars, clear=True):
+        with pytest.raises(ValueError): # Pydantic raises ValidationError which wraps ValueError
+             Settings(_env_file=None)
