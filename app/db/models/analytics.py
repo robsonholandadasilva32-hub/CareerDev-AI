@@ -3,8 +3,8 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from datetime import datetime
 
-# Ajustado para 'app.db.base' para consistência com MLRiskLog
-from app.db.base import Base
+# Ajustado para 'app.db.base_class' para evitar dependência circular
+from app.db.base_class import Base
 
 class RiskSnapshot(Base):
     __tablename__ = "risk_snapshots"

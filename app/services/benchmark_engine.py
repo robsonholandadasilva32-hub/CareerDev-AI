@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.db.models.risk_snapshot import RiskSnapshot
+from app.db.models.analytics import RiskSnapshot
 from app.db.models.career import CareerProfile
 
 class BenchmarkEngine:
