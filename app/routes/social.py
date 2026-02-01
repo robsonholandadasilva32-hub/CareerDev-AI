@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
+from authlib.integrations.base_client.errors import OAuthError
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
 from app.db.session import get_db, SessionLocal
@@ -229,11 +230,15 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
         logger.info(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
 
         # 2. SECURITY REFACTOR: Use fetch_access_token
-        token = await oauth.github.fetch_access_token(
-            redirect_uri=redirect_uri,
-            code=str(request.query_params.get('code')),
-            grant_type='authorization_code'
-        )
+        try:
+            token = await oauth.github.fetch_access_token(
+                redirect_uri=redirect_uri,
+                code=str(request.query_params.get('code')),
+                grant_type='authorization_code'
+            )
+        except OAuthError as e:
+            logger.warning(f"⚠️ GITHUB OAUTH ERROR: {e.error} | {e.description}")
+            return RedirectResponse("/login?error=github_code_expired")
 
         logger.info(f"🔑 GITHUB TOKEN RECEIVED: {token.get('access_token')[:5]}... | Scope: {token.get('scope')}")
 
