@@ -80,6 +80,19 @@
         opacity: 0.8;
         letter-spacing: 1px;
     }
+    
+    /* LINK STYLE FOR COUNTERFACTUAL TRIGGER */
+    .action-link {
+        color: var(--neon-blue);
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        margin-top: 5px;
+        display: block;
+        text-align: right;
+    }
+    .action-link:hover { color: #fff; }
 </style>
 
 <div class="grid-layout">
@@ -181,6 +194,7 @@
                     <div style="height: 200px;">
                         <canvas id="riskTimeline"></canvas>
                     </div>
+                    <span class="action-link" onclick="openCounterfactualModal()">What lowers my risk?</span>
                 </div>
 
             </div>
@@ -220,6 +234,34 @@
         
         <div style="margin-top: 20px; text-align: right;">
             <button onclick="closeRiskModal()" class="nav-btn" style="width: auto; height: auto; padding: 5px 15px; font-size: 0.8rem; border: 1px solid var(--neon-blue); color: var(--neon-blue);">ACKNOWLEDGE</button>
+        </div>
+    </div>
+</div>
+
+<div id="counterfactualModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeCounterfactualModal()">×</span>
+        <h3 style="color: var(--neon-green); margin-top: 0;">🌱 RISK REDUCTION PATH</h3>
+        <p style="opacity: 0.7; font-size: 0.8rem; margin-bottom: 15px;">COUNTERFACTUAL ANALYSIS SIMULATION</p>
+        
+        {% if career_data.counterfactual %}
+            <p style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px;">
+                {{ career_data.counterfactual.summary }}
+            </p>
+            <ul style="list-style: none; padding: 0;">
+                {% for action in career_data.counterfactual.actions %}
+                <li style="margin-bottom: 10px; color: #fff; display: flex; gap: 10px;">
+                    <span style="color: var(--neon-green);">✔</span>
+                    {{ action }}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No actionable scenarios generated at this time.</p>
+        {% endif %}
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeCounterfactualModal()" class="nav-btn" style="width: auto; height: auto; padding: 5px 15px; font-size: 0.8rem; border: 1px solid var(--neon-green); color: var(--neon-green);">CLOSE</button>
         </div>
     </div>
 </div>
@@ -348,7 +390,7 @@ function switchTab(tab){
     event.target.classList.add('active');
 }
 
-/* ---------------- MODAL LOGIC ---------------- */
+/* ---------------- MODAL LOGIC (RISK) ---------------- */
 async function openRiskModal() {
     const modal = document.getElementById("riskModal");
     const details = document.getElementById("riskDetails");
@@ -379,11 +421,22 @@ function closeRiskModal() {
     document.getElementById("riskModal").classList.remove("show");
 }
 
+/* ---------------- MODAL LOGIC (COUNTERFACTUAL) ---------------- */
+function openCounterfactualModal() {
+    document.getElementById("counterfactualModal").classList.add("show");
+}
+
+function closeCounterfactualModal() {
+    document.getElementById("counterfactualModal").classList.remove("show");
+}
+
+// Global Click Handler for Modals
 window.onclick = function(event) {
-    const modal = document.getElementById("riskModal");
-    if (event.target == modal) {
-        closeRiskModal();
-    }
+    const riskModal = document.getElementById("riskModal");
+    const cfModal = document.getElementById("counterfactualModal");
+    
+    if (event.target == riskModal) closeRiskModal();
+    if (event.target == cfModal) closeCounterfactualModal();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
