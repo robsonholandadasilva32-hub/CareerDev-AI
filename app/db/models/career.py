@@ -9,20 +9,26 @@ class CareerProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
 
-    # Professional Identity
+    # --- Professional Identity ---
     bio = Column(Text, nullable=True)
     location = Column(String, nullable=True)
     target_role = Column(String, default="Senior Developer") # e.g., "Rust Engineer"
-    experience_level = Column(String, default="Mid-Level")   # Junior, Mid, Senior
+    
+    # Existing field (Legacy/Generic)
+    experience_level = Column(String, default="Mid-Level")   
+    
+    # New Specific Fields (Added)
+    seniority = Column(String(20))      # Junior | Mid | Senior | Staff
+    primary_stack = Column(String(50))  # Python, JS, Rust, etc.
 
-    # Skills Analysis (JSON: {"Rust": 80, "Python": 90})
+    # --- Skills Analysis (JSON: {"Rust": 80, "Python": 90}) ---
     skills_snapshot = Column(JSON, default={})
 
-    # External Data
+    # --- External Data ---
     github_stats = Column(JSON, default={}) # Legacy? Keeping for safety if used elsewhere
     linkedin_stats = Column(JSON, default={}) # Legacy?
 
-    # THE HUD DATA STORE
+    # --- THE HUD DATA STORE ---
     # Stores: { "labels": ["Python", "Rust"], "datasets": [{ "data": [80, 20] }] }
     skills_graph_data = Column(JSON, default={})
 
@@ -32,7 +38,7 @@ class CareerProfile(Base):
     # Stores: { "role": "Backend Dev", "industry": "Fintech", "missing_keywords": ["AsyncIO"] }
     linkedin_alignment_data = Column(JSON, default={})
 
-    # New AI Analysis Storage (Zone C)
+    # --- New AI Analysis Storage (Zone C) ---
     ai_insights_summary = Column(Text, default="")
 
     # Active Challenge State (Stores {skill: "Docker", question: "...", timestamp: ...})
