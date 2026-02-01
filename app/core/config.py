@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     def check_database_url(cls, data: Any) -> Any:
         if isinstance(data, dict):
             if not data.get("DATABASE_URL") and data.get("POSTGRES_URL"):
+                print("DEBUG: Using POSTGRES_URL fallback for DATABASE_URL")
                 data["DATABASE_URL"] = data.get("POSTGRES_URL")
         return data
 
