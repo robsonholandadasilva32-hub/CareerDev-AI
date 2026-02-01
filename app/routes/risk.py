@@ -1,39 +1,456 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+{% extends "dashboard_layout.html" %}
 
-# Dependências de autenticação e banco de dados
-from app.api.deps import get_db  # Ajuste conforme sua estrutura de injeção de dependência
-from app.routes.dashboard import get_current_user_secure
-from app.services.career_engine import career_engine
+{% block dashboard_content %}
 
-router = APIRouter()
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="/static/css/cyberpunk_dashboard.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-# =========================================================
-# RISK EXPLAINABILITY (XAI)
-# =========================================================
-@router.get("/api/risk/explain")
-async def explain_risk(
-    user=Depends(get_current_user_secure)
-):
-    """
-    Retorna a explicação textual (human-readable) dos fatores de risco.
-    Alimenta o modal 'Why am I at risk?'.
-    """
-    return career_engine.explain_risk(user)
+<style>
+    /* OVERRIDES FOR HORIZONTAL MENU */
+    .grid-layout {
+        grid-template-columns: 240px 1fr 350px !important;
+    }
+    .nav-dock {
+        align-items: flex-start !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    .nav-btn {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        padding-left: 15px !important;
+        gap: 12px;
+        font-size: 1rem !important; /* Adjust font size for text */
+    }
+    .nav-icon {
+        font-size: 1.4rem; /* Keep icon size */
+    }
+    .nav-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+    }
 
-# =========================================================
-# COUNTERFACTUAL ANALYSIS (WHAT-IF)
-# =========================================================
-@router.get("/api/risk/counterfactual")
-async def counterfactual(
-    db: Session = Depends(get_db), 
-    user=Depends(get_current_user_secure)
-):
-    """
-    Gera cenários alternativos: 'O que aconteceria com meu risco se...'
-    Retorna sugestões acionáveis para reduzir o score de risco.
-    """
-    # Nota: Certifique-se de que o método 'get_counterfactual' 
-    # foi implementado ou exposto no CareerEngine.
-    # Caso contrário, você pode reutilizar a lógica interna do método 'analyze'.
-    return career_engine.get_counterfactual(db, user)
+    /* MODAL STYLES */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(5px);
+        justify-content: center;
+        align-items: center;
+    }
+    .modal.show {
+        display: flex;
+    }
+    .modal-content {
+        background-color: #0f111a;
+        border: 1px solid var(--neon-blue);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        padding: 30px;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        color: #fff;
+        font-family: 'JetBrains Mono', monospace;
+        position: relative;
+    }
+    .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .modal-close:hover { color: var(--alert); }
+
+    /* ML VERSION LABEL STYLE */
+    .ml-powered {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.65rem;
+        color: var(--neon-purple);
+        text-align: right;
+        margin-top: 5px;
+        opacity: 0.8;
+        letter-spacing: 1px;
+    }
+    
+    /* LINK STYLE FOR COUNTERFACTUAL TRIGGER */
+    .action-link {
+        color: var(--neon-blue);
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        margin-top: 5px;
+        display: block;
+        text-align: right;
+    }
+    .action-link:hover { color: #fff; }
+</style>
+
+<div class="grid-layout">
+
+    <nav class="panel nav-dock">
+        <div class="brand-logo" style="margin-left: 10px;">C/AI</div>
+        <a href="/dashboard" class="nav-btn active"><span class="nav-icon">⌘</span> <span class="nav-text">Dashboard</span></a>
+        <a href="/career/analyze-resume" class="nav-btn"><span class="nav-icon">⚡</span> <span class="nav-text">Resume Analyzer</span></a>
+        <a href="/accessibility" class="nav-btn"><span class="nav-icon">🧠</span> <span class="nav-text">Accessibility</span></a>
+        <a href="/security" class="nav-btn"><span class="nav-icon">🛡️</span> <span class="nav-text">Security</span></a>
+        <a href="/legal" class="nav-btn"><span class="nav-icon">⚖️</span> <span class="nav-text">Legal & About</span></a>
+        <div style="flex-grow: 1;"></div>
+        <a href="/logout" class="nav-btn alert-color"><span class="nav-icon">✕</span> <span class="nav-text">Logout</span></a>
+    </nav>
+
+    <div class="panel status-bar" style="grid-column: 2/4;">
+        <span class="feed-label">REAL_TIME_FEED ::</span>
+        <marquee class="feed-text">
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... ML_RISK_ENGINE: ACTIVE...
+        </marquee>
+    </div>
+
+    <main class="panel" style="grid-column: 2/3;">
+        <div class="panel-head tab-header">
+            <div>
+                <button class="tab-btn active" onclick="switchTab('audit')">AUDIT VIEW</button>
+                <button class="tab-btn" onclick="switchTab('plan')">WEEKLY PLAN</button>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px;">
+                
+                <div class="streak-badge" aria-label="Click to analyze risk factors" style="cursor: pointer;">
+                    🔥 STREAK: {{ user_streak }} WEEKS
+                </div>
+
+                {% if career_data.career_forecast.risk_level == 'HIGH' %}
+                    <div class="streak-badge risk-high" onclick="openRiskModal()">⚠ HIGH RISK</div>
+                {% elif career_data.career_forecast.risk_level == 'MEDIUM' %}
+                    <div class="streak-badge risk-medium" onclick="openRiskModal()">🟡 MEDIUM RISK</div>
+                {% else %}
+                    <div class="streak-badge" style="border-color: #10b981; color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">🟢 STABLE</div>
+                {% endif %}
+
+                {% if career_data.weekly_plan.mode == 'ACCELERATOR' %}
+                    <div class="streak-badge accelerator">🚀 ACCELERATOR</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="view-audit" style="padding:20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <h4 style="margin-bottom: 10px; opacity: 0.8;">SKILL RADAR</h4>
+                    <canvas id="radarChart"></canvas>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div style="font-size:0.8rem; letter-spacing: 1px;">MARKET ALIGNMENT</div>
+                    <div style="font-size:3rem; font-weight:800; color: #00f0ff; text-shadow: 0 0 10px #00f0ff;">
+                        {{ market_score }}/100
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <h4 style="margin-bottom: 10px; opacity: 0.8; font-size: 0.9rem;">RISK MODEL DIVERGENCE (RULE vs ML)</h4>
+                        <div style="height: 150px;">
+                            <canvas id="riskCompareChart"></canvas>
+                        </div>
+                        
+                        <div class="ml-powered">
+                            Powered by ML v{{ career_data.career_forecast.model_version }}
+                            <span style="color: var(--text-dim); margin-left: 5px;">
+                                [EXP: {{ career_data.career_forecast.experiment }}]
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if career_data.benchmark %}
+                    <div class="panel" style="margin-top: 20px; border: 1px solid var(--neon-green);">
+                        <div class="panel-head" style="color: var(--neon-green);">BENCHMARK</div>
+                        <div style="padding:12px; font-size:0.8rem; font-family: var(--font-mono); color: #fff;">
+                            {{ career_data.benchmark.message }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                
+                <div>
+                    <h4 style="margin-bottom: 15px; opacity: 0.8;">CONFIDENCE TIMELINE</h4>
+                    <div style="height: 200px;">
+                        <canvas id="skillTimelineChart"></canvas>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin-bottom: 15px; opacity: 0.8;">RISK FORECAST HISTORY</h4>
+                    <div style="height: 200px;">
+                        <canvas id="riskTimeline"></canvas>
+                    </div>
+                    <span class="action-link" onclick="openCounterfactualModal()">What lowers my risk?</span>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-plan" style="display:none;padding:20px;">
+            <div class="kanban-header">
+                CURRENT FOCUS:
+                <span style="color: #fcee0a;">{{ career_data.weekly_plan.focus | upper }}</span>
+            </div>
+
+            <div class="kanban-list">
+                {% for task in career_data.weekly_plan.tasks %}
+                <div class="kanban-card">
+                    <strong style="color: #00f0ff;">{{ task.day }}</strong>
+                    <div style="margin-top: 5px;">{{ task.task }}</div>
+                    {% if task.action == 'VERIFY_REPO' %}
+                        <div style="font-size: 0.7rem; margin-top: 5px; opacity: 0.7;">[Waiting for commit...]</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<div id="riskModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeRiskModal()">×</span>
+        <h3 style="color: var(--alert); margin-top: 0;">⚠️ RISK ANALYSIS</h3>
+        <p style="opacity: 0.7; font-size: 0.8rem; margin-bottom: 15px;">AI EXPLAINABILITY REPORT</p>
+        
+        <div id="riskDetails" style="line-height: 1.6;">
+            Analyzing...
+        </div>
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeRiskModal()" class="nav-btn" style="width: auto; height: auto; padding: 5px 15px; font-size: 0.8rem; border: 1px solid var(--neon-blue); color: var(--neon-blue);">ACKNOWLEDGE</button>
+        </div>
+    </div>
+</div>
+
+<div id="counterfactualModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeCounterfactualModal()">×</span>
+        <h3 style="color: var(--neon-green); margin-top: 0;">🌱 RISK REDUCTION PATH</h3>
+        <p style="opacity: 0.7; font-size: 0.8rem; margin-bottom: 15px;">COUNTERFACTUAL ANALYSIS SIMULATION</p>
+        
+        {% if career_data.counterfactual %}
+            <p style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 15px;">
+                {{ career_data.counterfactual.summary }}
+            </p>
+            <ul style="list-style: none; padding: 0;">
+                {% for action in career_data.counterfactual.actions %}
+                <li style="margin-bottom: 10px; color: #fff; display: flex; gap: 10px;">
+                    <span style="color: var(--neon-green);">✔</span>
+                    {{ action }}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No actionable scenarios generated at this time.</p>
+        {% endif %}
+        
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeCounterfactualModal()" class="nav-btn" style="width: auto; height: auto; padding: 5px 15px; font-size: 0.8rem; border: 1px solid var(--neon-green); color: var(--neon-green);">CLOSE</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ---------------- CHART SETUP ---------------- */
+new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {{ career_data.zone_a_radar | tojson }},
+    options: {
+        scales: {
+            r: {
+                min: 0, max: 100,
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                pointLabels: { color: '#fff' }
+            }
+        },
+        plugins: { legend: { display: false } }
+    }
+});
+
+const riskLevel = "{{ career_data.career_forecast.risk_level }}";
+const riskColor = riskLevel === "HIGH" ? "#ef4444" : riskLevel === "MEDIUM" ? "#eab308" : "#10b981";
+
+new Chart(document.getElementById("riskCompareChart"), {
+  type: "bar",
+  data: {
+    labels: ["Rule-Based", "ML-Based"],
+    datasets: [{
+      label: 'Risk Score',
+      data: [
+        {{ career_data.career_forecast.rule_risk | default(0) }},
+        {{ career_data.career_forecast.ml_risk | default(0) }}
+      ],
+      backgroundColor: [riskColor, riskColor], 
+      borderWidth: 0,
+      barThickness: 30
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        x: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#fff' } },
+        y: { grid: { display: false }, ticks: { color: '#fff', font: { family: 'JetBrains Mono' } } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+/* ---------------- RISK TIMELINE CHART ---------------- */
+new Chart(document.getElementById("riskTimeline"), {
+  type: "line",
+  data: {
+    labels: {{ career_data.risk_timeline.labels | tojson }},
+    datasets: [{
+      label: "Projected Risk",
+      data: {{ career_data.risk_timeline.values | tojson }},
+      borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", 
+      backgroundColor: "rgba(0,0,0,0)",
+      tension: 0.4,
+      pointRadius: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.1)' } },
+        x: { grid: { display: false } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+/* ---------------- SKILL TIMELINE ---------------- */
+async function loadSkillTimeline(){
+    try {
+        const res = await fetch("/api/analytics/skill-timeline");
+        const data = await res.json();
+        const labels = [];
+        const datasets = [];
+        const colors = ['#00f0ff', '#fcee0a', '#ff003c'];
+
+        Object.keys(data).forEach((skill, index) => {
+            if(!labels.length){
+                data[skill].forEach(p => labels.push(p.date.split("T")[0]));
+            }
+            datasets.push({
+                label: skill,
+                data: data[skill].map(p => p.confidence),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length],
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 0
+            });
+        });
+
+        new Chart(document.getElementById("skillTimelineChart"), {
+            type:"line",
+            data:{ labels, datasets },
+            options:{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales:{
+                    y:{ min:0, max:100, grid: { color: 'rgba(255,255,255,0.1)' } },
+                    x:{ grid: { display: false } }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to load timeline", e);
+    }
+}
+document.addEventListener("DOMContentLoaded", loadSkillTimeline);
+
+/* ---------------- UI LOGIC ---------------- */
+function switchTab(tab){
+    document.getElementById('view-audit').style.display = 'none';
+    document.getElementById('view-plan').style.display = 'none';
+    document.getElementById('view-' + tab).style.display = 'block';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+/* ---------------- MODAL LOGIC (RISK) ---------------- */
+async function openRiskModal() {
+    const modal = document.getElementById("riskModal");
+    const details = document.getElementById("riskDetails");
+    
+    modal.classList.add("show");
+    details.innerHTML = "Accessing Neural Network Interpretation...";
+
+    try {
+        const res = await fetch("/api/risk/explain");
+        const data = await res.json();
+        
+        let html = `<strong>SUMMARY:</strong> ${data.summary}<br><br>`;
+        if(data.factors) {
+            html += "<strong>KEY FACTORS:</strong><ul>";
+            data.factors.forEach(f => {
+                html += `<li>${f.factor}: <span style="color:${f.impact === 'High' ? '#ef4444' : '#eab308'}">${f.impact}</span></li>`;
+            });
+            html += "</ul>";
+        }
+        details.innerHTML = html;
+
+    } catch (e) {
+        details.innerHTML = "Error fetching explanation. Neural link offline.";
+    }
+}
+
+function closeRiskModal() {
+    document.getElementById("riskModal").classList.remove("show");
+}
+
+/* ---------------- MODAL LOGIC (COUNTERFACTUAL) ---------------- */
+function openCounterfactualModal() {
+    document.getElementById("counterfactualModal").classList.add("show");
+}
+
+function closeCounterfactualModal() {
+    document.getElementById("counterfactualModal").classList.remove("show");
+}
+
+// Global Click Handler for Modals
+window.onclick = function(event) {
+    const riskModal = document.getElementById("riskModal");
+    const cfModal = document.getElementById("counterfactualModal");
+    
+    if (event.target == riskModal) closeRiskModal();
+    if (event.target == cfModal) closeCounterfactualModal();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const streakBadge = document.querySelector(".streak-badge");
+    if(streakBadge) {
+        streakBadge.onclick = openRiskModal;
+    }
+    
+    const highRisk = document.querySelector(".risk-high");
+    if(highRisk) highRisk.onclick = openRiskModal;
+    
+    const medRisk = document.querySelector(".risk-medium");
+    if(medRisk) medRisk.onclick = openRiskModal;
+});
+</script>
+
+{% endblock %}
