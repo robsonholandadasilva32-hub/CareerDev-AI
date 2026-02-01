@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
-from app.db.models.analytics import RiskSnapshot
+from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
-from app.services.benchmark_engine import benchmark_engine
+from app.services.benchmark_engine import benchmark_engine # <--- Nova Importação
 from app.services.counterfactual_engine import counterfactual_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
@@ -110,11 +110,13 @@ class CareerEngine:
         # -------------------------------
         # BENCHMARK ENGINE
         # -------------------------------
+        # Calcula a performance relativa do usuário vs. mercado
         benchmark = benchmark_engine.compute(db, user)
 
         # -------------------------------
         # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
         # -------------------------------
+        # Recupera snapshots recentes para compor o histórico de features
         recent_snapshots = (
             db.query(RiskSnapshot)
             .filter(RiskSnapshot.user_id == user.id)
@@ -123,8 +125,10 @@ class CareerEngine:
             .all()
         )
         
+        # Computa features normalizadas para o modelo ML
         features = compute_features(metrics, recent_snapshots)
 
+        # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
             current_risk=career_forecast["risk_score"]
@@ -140,7 +144,7 @@ class CareerEngine:
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
             "career_forecast": career_forecast,
-            "benchmark": benchmark,
+            "benchmark": benchmark, # <--- Adicionado ao retorno
             "counterfactual": counterfactual,
             "zone_a_radar": {},
             "missing_skills": []
@@ -245,6 +249,10 @@ class CareerEngine:
     def classify_risk_level(self, risk_score: int) -> str:
         """
         Maps a numeric risk score to a categorical level.
+        Thresholds:
+        - < 25: LOW
+        - 25 to 59: MEDIUM
+        - >= 60: HIGH
         """
         if risk_score < 25:
             return "LOW"
@@ -315,9 +323,10 @@ class CareerEngine:
 
                 if len(recent_risks) == 10:
                     lstm_risk = lstm_model.predict(recent_risks)
+                    # Média ponderada com o LSTM para suavizar a tendência
                     final_risk = int((final_risk + lstm_risk) / 2)
                     reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
-            except Exception:
+            except Exception as lstm_err:
                 pass
 
             # Persistência do Log Completo
@@ -332,9 +341,10 @@ class CareerEngine:
             db.add(new_log)
             db.commit()
 
+            # Atualiza o score final retornado
             risk_score = final_risk
             
-        except Exception:
+        except Exception as e:
             db.rollback() 
             pass
 
@@ -342,6 +352,7 @@ class CareerEngine:
         level = self.classify_risk_level(risk_score)
         
         # --- Detecção de Mudança de Estado (Alert Engine) ---
+        # Dispara alertas se o risco mudar significativamente (ex: LOW -> HIGH)
         alert_engine.detect_state_change(db, user, level)
 
         summary = "Career trajectory stable."
@@ -360,9 +371,12 @@ class CareerEngine:
         }
 
     # =========================================================
-    # RISK EXPLAINABILITY (XAI)
+    # RISK EXPLAINABILITY (XAI) - STATIC
     # =========================================================
     def explain_risk(self, user: User) -> Dict:
+        """
+        Provides a human-readable explanation of risk factors.
+        """
         return {
             "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",
             "factors": [
@@ -372,32 +386,55 @@ class CareerEngine:
             ]
         }
 
+    # =========================================================
+    # RISK EXPLAINABILITY (XAI) - DYNAMIC ML
+    # =========================================================
     def explain_ml_forecast(self, ml_risk, features):
+        """
+        Generates a dynamic explanation for the specific ML forecast.
+        """
         return (
             f"The ML model predicts risk based on declining commit velocity "
             f"and skill confidence trends. Estimated risk: {ml_risk}%."
         )
 
     # =========================================================
-    # SKILL PATH SIMULATION
+    # SKILL PATH SIMULATION (UNIFIED)
     # =========================================================
-    def simulate_skill_path(self, user: User, skill: str, months: int = 6) -> Dict:
+    def simulate_skill_path(
+        self,
+        user: User,
+        skill: str,
+        months: int = 6
+    ) -> Dict:
+        """
+        Simulates expected skill growth over time.
+        """
         base_confidence = 40
         growth = min(90, base_confidence + months * 7)
+
         market_trends = getattr(self, "market_trends", [])
 
         return {
             "skill": skill,
             "months": months,
             "expected_confidence": growth,
-            "market_alignment": "High" if skill in market_trends else "Medium",
-            "summary": f"Learning {skill} for {months} months significantly improves career outlook."
+            "market_alignment": (
+                "High" if skill in market_trends else "Medium"
+            ),
+            "summary": (
+                f"Learning {skill} for {months} months significantly improves career outlook."
+            )
         }
 
     # =========================================================
-    # WEEKLY HISTORY (ASYNC)
+    # WEEKLY HISTORY (ASYNC / DB-DRIVEN)
     # =========================================================
-    def _get_weekly_history_sync(self, db: Session, user_id: int) -> List[Dict]:
+    def _get_weekly_history_sync(
+        self,
+        db: Session,
+        user_id: int
+    ) -> List[Dict]:
         routines = (
             db.query(LearningPlan)
             .filter(LearningPlan.user_id == user_id)
@@ -405,6 +442,7 @@ class CareerEngine:
             .limit(12)
             .all()
         )
+
         return [
             {
                 "week": r.week_id,
@@ -415,7 +453,15 @@ class CareerEngine:
             for r in routines
         ]
 
-    async def get_weekly_history(self, db: Session, user: User) -> List[Dict]:
+    async def get_weekly_history(
+        self,
+        db: Session,
+        user: User
+    ) -> List[Dict]:
+        """
+        Asynchronously retrieves weekly learning history.
+        Offloads the synchronous DB query to a thread to prevent blocking the event loop.
+        """
         return await asyncio.to_thread(self._get_weekly_history_sync, db, user.id)
 
 
