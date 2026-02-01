@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
-# Assume RiskSnapshot exists in your models based on the query context
 from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
+from app.services.alert_engine import alert_engine # <--- Nova Importação
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 
@@ -263,7 +263,6 @@ class CareerEngine:
                     final_risk = int((final_risk + lstm_risk) / 2)
                     reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
             except Exception as lstm_err:
-                # Falha no LSTM não deve quebrar o fluxo principal
                 pass
 
             # Persistência do Log Completo
@@ -282,13 +281,16 @@ class CareerEngine:
             risk_score = final_risk
             
         except Exception as e:
-            db.rollback() # Garante integridade da sessão
-            # Fallback para regras se ML principal falhar
+            db.rollback() 
             pass
 
         # --- Classificação Final ---
         level = self.classify_risk_level(risk_score)
         
+        # --- Detecção de Mudança de Estado (Alert Engine) ---
+        # Dispara alertas se o risco mudar significativamente (ex: LOW -> HIGH)
+        alert_engine.detect_state_change(db, user, level)
+
         summary = "Career trajectory stable."
         if level == "HIGH":
             summary = "High probability of stagnation or rejection within 6 months."
@@ -300,7 +302,6 @@ class CareerEngine:
             "risk_score": risk_score,
             "summary": summary,
             "reasons": reasons,
-            # Dados brutos para debug/dashboard
             "rule_risk": rule_risk,
             "ml_risk": ml_result.get("ml_risk", 0) if 'ml_result' in locals() else 0
         }
