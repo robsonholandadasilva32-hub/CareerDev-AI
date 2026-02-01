@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import field_validator, ValidationInfo, model_validator
 from typing import Optional, Any
 import os
+import urllib.parse
 
 class Settings(BaseSettings):
     # App
@@ -17,13 +18,37 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     POSTGRES_URL: Optional[str] = None
 
+    # Railway / Standard Postgres Env Vars
+    PGHOST: Optional[str] = None
+    PGPORT: Optional[str] = None
+    PGUSER: Optional[str] = None
+    PGPASSWORD: Optional[str] = None
+    PGDATABASE: Optional[str] = None
+
     @model_validator(mode='before')
     @classmethod
     def check_database_url(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            if not data.get("DATABASE_URL") and data.get("POSTGRES_URL"):
-                print("DEBUG: Using POSTGRES_URL fallback for DATABASE_URL")
-                data["DATABASE_URL"] = data.get("POSTGRES_URL")
+            if not data.get("DATABASE_URL"):
+                if data.get("POSTGRES_URL"):
+                    print("DEBUG: Using POSTGRES_URL fallback for DATABASE_URL")
+                    data["DATABASE_URL"] = data.get("POSTGRES_URL")
+                elif all(data.get(k) for k in ["PGHOST", "PGUSER", "PGDATABASE"]):
+                    print("DEBUG: Constructing DATABASE_URL from PG* environment variables")
+                    user = data.get("PGUSER")
+                    password = data.get("PGPASSWORD")
+                    host = data.get("PGHOST")
+                    port = data.get("PGPORT", "5432")
+                    dbname = data.get("PGDATABASE")
+
+                    # Handle password encoding to prevent issues with special characters
+                    if password:
+                        password = urllib.parse.quote_plus(password)
+                        auth = f"{user}:{password}"
+                    else:
+                        auth = user
+
+                    data["DATABASE_URL"] = f"postgresql://{auth}@{host}:{port}/{dbname}"
         return data
 
     @field_validator("DATABASE_URL", mode="before")
