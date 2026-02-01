@@ -9,9 +9,11 @@ from app.db.models.ml_risk_log import MLRiskLog
 from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
-from app.services.benchmark_engine import benchmark_engine # <--- Nova Importação
+from app.services.benchmark_engine import benchmark_engine
+from app.services.counterfactual_engine import counterfactual_engine # <--- Nova Importação
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
+from app.ml.feature_store import compute_features # <--- Nova Importação
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -108,8 +110,28 @@ class CareerEngine:
         # -------------------------------
         # BENCHMARK ENGINE
         # -------------------------------
-        # Calcula a performance relativa do usuário vs. mercado
         benchmark = benchmark_engine.compute(db, user)
+
+        # -------------------------------
+        # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
+        # -------------------------------
+        # Recupera snapshots recentes para compor o histórico de features
+        recent_snapshots = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .limit(5)
+            .all()
+        )
+        
+        # Computa features normalizadas para o modelo ML
+        features = compute_features(metrics, recent_snapshots)
+
+        # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
+        counterfactual = counterfactual_engine.generate(
+            features=features,
+            current_risk=career_forecast["risk_score"]
+        )
 
         # -------------------------------
         # FINAL RESPONSE
@@ -121,7 +143,8 @@ class CareerEngine:
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
             "career_forecast": career_forecast,
-            "benchmark": benchmark, # <--- Adicionado ao retorno
+            "benchmark": benchmark,
+            "counterfactual": counterfactual, # <--- Adicionado ao retorno
             "zone_a_radar": {},
             "missing_skills": []
         }
@@ -296,7 +319,6 @@ class CareerEngine:
         level = self.classify_risk_level(risk_score)
         
         # --- Detecção de Mudança de Estado (Alert Engine) ---
-        # Dispara alertas se o risco mudar significativamente (ex: LOW -> HIGH)
         alert_engine.detect_state_change(db, user, level)
 
         summary = "Career trajectory stable."
