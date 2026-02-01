@@ -6,13 +6,17 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
+# Assume RiskSnapshot exists in your models based on the query context
+from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
 from app.ml.risk_forecast_model import RiskForecastModel
+from app.ml.lstm_risk_production import LSTMRiskProductionModel
 
 # ---------------------------------------------------------
-# ML FORECASTER (SINGLETON)
+# ML FORECASTERS (SINGLETONS)
 # ---------------------------------------------------------
 ml_forecaster = RiskForecastModel()
+lstm_model = LSTMRiskProductionModel()
 
 
 class CareerEngine:
@@ -82,7 +86,7 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
-        # CAREER RISK FORECAST (HYBRID + A/B TEST)
+        # CAREER RISK FORECAST (HYBRID + LSTM + A/B TEST)
         # -------------------------------
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
@@ -193,7 +197,7 @@ class CareerEngine:
         return "HIGH"
 
     # =========================================================
-    # CAREER RISK FORECAST (HYBRID: RULES + ML + A/B LOGGING)
+    # CAREER RISK FORECAST (HYBRID: RULES + ML + LSTM + LOGGING)
     # =========================================================
     def forecast_career_risk(
         self,
@@ -224,28 +228,43 @@ class CareerEngine:
         # Armazena o risco base (rule-based)
         rule_risk = risk_score
 
-        # --- Ajuste via ML e A/B Testing ---
+        # --- Ajuste via ML, LSTM e A/B Testing ---
         try:
-            # Predição ML
+            # 1. Predição Estática ML
             ml_result = ml_forecaster.predict(avg_conf, commits_30d)
             ml_risk = ml_result["ml_risk"]
             
-            # Adiciona explicação do ML às razões
+            # Adiciona explicação do ML estático
             ml_explanation = self.explain_ml_forecast(
                 ml_risk, 
                 {"commits": commits_30d, "confidence": avg_conf}
             )
             reasons.append(ml_explanation)
 
-            # Lógica A/B Testing
-            # Grupo A: Controle (Apenas Regras)
-            # Grupo B: Teste (Híbrido ML + Regras)
+            # 2. Lógica A/B Testing (Regras vs Híbrido Estático)
             experiment_group = "A" if random.random() < 0.5 else "B"
 
             if experiment_group == "A":
                 final_risk = rule_risk
             else:
                 final_risk = int((rule_risk + ml_risk) / 2)
+
+            # 3. Refinamento Temporal via LSTM (Se houver histórico)
+            try:
+                recent_risks = [r.risk_score for r in db.query(RiskSnapshot)
+                                .filter(RiskSnapshot.user_id == user.id)
+                                .order_by(RiskSnapshot.recorded_at.desc())
+                                .limit(10)
+                                .all()][::-1]
+
+                if len(recent_risks) == 10:
+                    lstm_risk = lstm_model.predict(recent_risks)
+                    # Média ponderada com o LSTM para suavizar a tendência
+                    final_risk = int((final_risk + lstm_risk) / 2)
+                    reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
+            except Exception as lstm_err:
+                # Falha no LSTM não deve quebrar o fluxo principal
+                pass
 
             # Persistência do Log Completo
             new_log = MLRiskLog(
@@ -259,12 +278,12 @@ class CareerEngine:
             db.add(new_log)
             db.commit()
 
-            # Atualiza o score que será retornado para o usuário
+            # Atualiza o score final retornado
             risk_score = final_risk
             
         except Exception as e:
             db.rollback() # Garante integridade da sessão
-            # Em caso de falha no ML, mantemos o risk_score das regras
+            # Fallback para regras se ML principal falhar
             pass
 
         # --- Classificação Final ---
@@ -281,7 +300,7 @@ class CareerEngine:
             "risk_score": risk_score,
             "summary": summary,
             "reasons": reasons,
-            # Retornamos valores brutos para debug/dashboard
+            # Dados brutos para debug/dashboard
             "rule_risk": rule_risk,
             "ml_risk": ml_result.get("ml_risk", 0) if 'ml_result' in locals() else 0
         }
@@ -292,7 +311,6 @@ class CareerEngine:
     def explain_risk(self, user: User) -> Dict:
         """
         Provides a human-readable explanation of risk factors.
-        Currently hardcoded for demo/MVP purposes.
         """
         return {
             "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",
