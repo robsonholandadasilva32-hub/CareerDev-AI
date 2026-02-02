@@ -16,16 +16,26 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    # Ensure last_weekly_check has timezone=True.
+    # We attempt to ALTER first (expecting column from g1234567890ah).
+    # If that fails (e.g. column missing), we ADD it.
     conn = op.get_bind()
-    # Attempt to add the column with timezone=True
     try:
+        # Use a savepoint to ensure we can recover if alter fails (Postgres requirement)
         with conn.begin_nested():
-            op.add_column('users', sa.Column('last_weekly_check', sa.DateTime(timezone=True), nullable=True))
+            op.alter_column('users', 'last_weekly_check',
+                            type_=sa.DateTime(timezone=True),
+                            existing_type=sa.DateTime(timezone=False),
+                            nullable=True)
     except (ProgrammingError, InternalError) as e:
-        print(f"Skipping add_column (likely exists): {e}")
+        print(f"Alter failed (column likely missing), attempting to ADD: {e}")
+        # If alter failed, we assume it's because the column is missing.
+        # We try to add it. If THIS fails, we let it crash (no try/except).
+        op.add_column('users', sa.Column('last_weekly_check', sa.DateTime(timezone=True), nullable=True))
 
 def downgrade():
-    try:
-        op.drop_column('users', 'last_weekly_check')
-    except (ProgrammingError, InternalError):
-        pass
+    # Revert to DateTime without timezone (matching state from g1234567890ah).
+    op.alter_column('users', 'last_weekly_check',
+                    type_=sa.DateTime(timezone=False),
+                    existing_type=sa.DateTime(timezone=True),
+                    nullable=True)
