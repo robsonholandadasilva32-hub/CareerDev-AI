@@ -25,6 +25,7 @@ def safe_add_column(table_name, column):
         # to ensure the migration is idempotent and unblocks deployment.
         pass
 
+# Force redeploy
 def upgrade():
     # Address fields
     safe_add_column('users', sa.Column('address_street', sa.String(), nullable=True))
