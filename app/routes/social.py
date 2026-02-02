@@ -164,20 +164,16 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 
 def get_consistent_redirect_uri(request: Request, endpoint: str) -> str:
     """
-    Generates a consistent Redirect URI.
-    Forces HTTPS if configured domain is HTTPS or environment is production.
+    Generates a consistent Redirect URI strictly matching the registered DOMAIN.
+    This bypasses any proxy/host header issues by constructing the URL manually.
     """
-    redirect_uri = str(request.url_for(endpoint))
+    # Get the path for the endpoint (e.g., /auth/linkedin/callback)
+    path = request.app.url_path_for(endpoint)
 
-    # CRITICAL FIX: Unify HTTPS enforcement logic.
-    # Force HTTPS if we are in production OR if the main domain is HTTPS (Railway, etc.)
-    # This prevents Protocol Mismatch errors when behind a proxy.
-    force_https = (settings.ENVIRONMENT == 'production') or (settings.DOMAIN.startswith("https://"))
+    # Ensure we use the configured DOMAIN exactly as registered
+    domain = settings.DOMAIN.rstrip('/')
 
-    if force_https and "http://" in redirect_uri:
-        redirect_uri = redirect_uri.replace("http://", "https://")
-
-    return redirect_uri
+    return f"{domain}{path}"
 
 @router.get("/onboarding/connect-github", response_class=HTMLResponse)
 async def connect_github(request: Request, user: User = Depends(get_current_user_onboarding)):
