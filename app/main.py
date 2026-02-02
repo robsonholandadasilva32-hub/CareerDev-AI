@@ -168,6 +168,7 @@ app.add_middleware(
 if settings.ENVIRONMENT == "production":
     app.add_middleware(HTTPSRedirectMiddleware)
 # 1. Trust the Proxy (Railway) to reveal the real protocol
+# This ensures request.url.scheme is https when behind a load balancer
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 @app.middleware("http")

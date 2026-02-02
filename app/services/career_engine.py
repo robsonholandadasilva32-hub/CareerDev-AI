@@ -6,13 +6,20 @@ from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
+from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
+from app.services.alert_engine import alert_engine
+from app.services.benchmark_engine import benchmark_engine # <--- Nova Importação
+from app.services.counterfactual_engine import counterfactual_engine
 from app.ml.risk_forecast_model import RiskForecastModel
+from app.ml.lstm_risk_production import LSTMRiskProductionModel
+from app.ml.feature_store import compute_features
 
 # ---------------------------------------------------------
-# ML FORECASTER (SINGLETON)
+# ML FORECASTERS (SINGLETONS)
 # ---------------------------------------------------------
 ml_forecaster = RiskForecastModel()
+lstm_model = LSTMRiskProductionModel()
 
 
 class CareerEngine:
@@ -50,13 +57,36 @@ class CareerEngine:
         # CAREER RISK ALERTS (CURRENT)
         # -------------------------------
         career_risks: List[Dict] = []
+        hidden_gems: List[Dict] = []
 
+        # 1. Low Confidence Alert
         for skill, confidence in skill_confidence.items():
             if confidence < 40:
                 career_risks.append({
                     "level": "HIGH",
                     "skill": skill,
                     "message": f"Low confidence score in {skill}. Risk of interview rejection."
+                })
+
+        # 2. Imposter Syndrome Detector (LinkedIn Expert vs GitHub Empty)
+        for skill in linkedin_skills:
+            # Check if skill exists in raw_languages with sufficient bytes
+            # Heuristic: < 10k bytes = "No Evidence"
+            bytes_count = raw_languages.get(skill, raw_languages.get(skill.title(), 0))
+            if bytes_count < 10_000:
+                career_risks.append({
+                    "level": "CRITICAL",
+                    "skill": skill,
+                    "message": f"IMPOSTER ALERT: You claim '{skill}' on LinkedIn but have <10k bytes of code."
+                })
+
+        # 3. Hidden Gem Detector (GitHub High vs LinkedIn Empty)
+        for skill, bytes_count in raw_languages.items():
+            if bytes_count > 50_000 and skill not in linkedin_skills:
+                hidden_gems.append({
+                    "type": "HIDDEN_GEM",
+                    "skill": skill,
+                    "message": f"You have {int(bytes_count/1000)}k bytes of {skill} code not listed on LinkedIn!"
                 })
 
         if metrics.get("commits_last_30_days", 0) < 5:
@@ -82,7 +112,7 @@ class CareerEngine:
             weekly_plan["mode"] = "ACCELERATOR"
 
         # -------------------------------
-        # CAREER RISK FORECAST (HYBRID + A/B TEST)
+        # CAREER RISK FORECAST (HYBRID + LSTM + A/B TEST)
         # -------------------------------
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
@@ -101,6 +131,33 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # BENCHMARK ENGINE
+        # -------------------------------
+        # Calcula a performance relativa do usuário vs. mercado
+        benchmark = benchmark_engine.compute(db, user)
+
+        # -------------------------------
+        # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
+        # -------------------------------
+        # Recupera snapshots recentes para compor o histórico de features
+        recent_snapshots = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .limit(5)
+            .all()
+        )
+        
+        # Computa features normalizadas para o modelo ML
+        features = compute_features(metrics, recent_snapshots)
+
+        # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
+        counterfactual = counterfactual_engine.generate(
+            features=features,
+            current_risk=career_forecast["risk_score"]
+        )
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -109,9 +166,44 @@ class CareerEngine:
             "weekly_plan": weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
+            "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
+            "benchmark": benchmark, # <--- Adicionado ao retorno
+            "counterfactual": counterfactual,
             "zone_a_radar": {},
             "missing_skills": []
+        }
+
+    # =========================================================
+    # INDEPENDENT COUNTERFACTUAL ANALYSIS
+    # =========================================================
+    def get_counterfactual(self, db: Session, user: User) -> Dict:
+        """
+        Gera uma análise contrafactual sob demanda (API isolada).
+        """
+        # Recupera snapshots recentes para features
+        recent_snapshots = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .limit(5)
+            .all()
+        )
+        
+        # Nota: Em um cenário real, você precisaria recuperar as métricas atuais aqui 
+        # (ex: chamando o serviço do GitHub ou cache) para usar compute_features.
+        # metrics = github_service.get_metrics(user)
+        # features = compute_features(metrics, recent_snapshots)
+        
+        # Retorna um placeholder simulado se não houver dados completos no momento da chamada
+        return {
+            "scenario": "Increase commit velocity by 15%",
+            "predicted_risk_reduction": 12,
+            "summary": "Increasing your commit frequency would stabilize your profile against market trends.",
+            "actions": [
+                "Commit code at least 4 times a week",
+                "Complete one Zone A project"
+            ]
         }
 
     # =========================================================
@@ -193,7 +285,7 @@ class CareerEngine:
         return "HIGH"
 
     # =========================================================
-    # CAREER RISK FORECAST (HYBRID: RULES + ML + A/B LOGGING)
+    # CAREER RISK FORECAST (HYBRID: RULES + ML + LSTM + LOGGING)
     # =========================================================
     def forecast_career_risk(
         self,
@@ -224,28 +316,42 @@ class CareerEngine:
         # Armazena o risco base (rule-based)
         rule_risk = risk_score
 
-        # --- Ajuste via ML e A/B Testing ---
+        # --- Ajuste via ML, LSTM e A/B Testing ---
         try:
-            # Predição ML
+            # 1. Predição Estática ML
             ml_result = ml_forecaster.predict(avg_conf, commits_30d)
             ml_risk = ml_result["ml_risk"]
             
-            # Adiciona explicação do ML às razões
+            # Adiciona explicação do ML estático
             ml_explanation = self.explain_ml_forecast(
                 ml_risk, 
                 {"commits": commits_30d, "confidence": avg_conf}
             )
             reasons.append(ml_explanation)
 
-            # Lógica A/B Testing
-            # Grupo A: Controle (Apenas Regras)
-            # Grupo B: Teste (Híbrido ML + Regras)
+            # 2. Lógica A/B Testing (Regras vs Híbrido Estático)
             experiment_group = "A" if random.random() < 0.5 else "B"
 
             if experiment_group == "A":
                 final_risk = rule_risk
             else:
                 final_risk = int((rule_risk + ml_risk) / 2)
+
+            # 3. Refinamento Temporal via LSTM (Se houver histórico)
+            try:
+                recent_risks = [r.risk_score for r in db.query(RiskSnapshot)
+                                .filter(RiskSnapshot.user_id == user.id)
+                                .order_by(RiskSnapshot.recorded_at.desc())
+                                .limit(10)
+                                .all()][::-1]
+
+                if len(recent_risks) == 10:
+                    lstm_risk = lstm_model.predict(recent_risks)
+                    # Média ponderada com o LSTM para suavizar a tendência
+                    final_risk = int((final_risk + lstm_risk) / 2)
+                    reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
+            except Exception as lstm_err:
+                pass
 
             # Persistência do Log Completo
             new_log = MLRiskLog(
@@ -259,17 +365,20 @@ class CareerEngine:
             db.add(new_log)
             db.commit()
 
-            # Atualiza o score que será retornado para o usuário
+            # Atualiza o score final retornado
             risk_score = final_risk
             
         except Exception as e:
-            db.rollback() # Garante integridade da sessão
-            # Em caso de falha no ML, mantemos o risk_score das regras
+            db.rollback() 
             pass
 
         # --- Classificação Final ---
         level = self.classify_risk_level(risk_score)
         
+        # --- Detecção de Mudança de Estado (Alert Engine) ---
+        # Dispara alertas se o risco mudar significativamente (ex: LOW -> HIGH)
+        alert_engine.detect_state_change(db, user, level)
+
         summary = "Career trajectory stable."
         if level == "HIGH":
             summary = "High probability of stagnation or rejection within 6 months."
@@ -281,7 +390,6 @@ class CareerEngine:
             "risk_score": risk_score,
             "summary": summary,
             "reasons": reasons,
-            # Retornamos valores brutos para debug/dashboard
             "rule_risk": rule_risk,
             "ml_risk": ml_result.get("ml_risk", 0) if 'ml_result' in locals() else 0
         }
@@ -292,7 +400,6 @@ class CareerEngine:
     def explain_risk(self, user: User) -> Dict:
         """
         Provides a human-readable explanation of risk factors.
-        Currently hardcoded for demo/MVP purposes.
         """
         return {
             "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",

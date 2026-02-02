@@ -15,4 +15,4 @@ from app.db.models.skill_snapshot import SkillSnapshot
 from app.db.models.mentor import MentorMemory
 
 # --- ADICIONE ESTA LINHA ---
-from app.db.models.risk_snapshot import RiskSnapshot
+from app.db.models.analytics import RiskSnapshot

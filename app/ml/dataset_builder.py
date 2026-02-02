@@ -1,7 +1,7 @@
 import pandas as pd
 from app.db.session import SessionLocal
 from app.db.models.skill_snapshot import SkillSnapshot
-from app.db.models.risk_snapshot import RiskSnapshot
+from app.db.models.analytics import RiskSnapshot
 
 def build_dataset():
     db = SessionLocal()

@@ -8,6 +8,7 @@ python-multipart==0.0.9
 # Database
 sqlalchemy==2.0.30
 psycopg2-binary==2.9.9
+alembic
 
 # Security & Auth
 python-jose[cryptography]==3.3.0
@@ -38,3 +39,5 @@ reportlab==4.4.9
 pandas>=2.2.0
 scikit-learn>=1.4.0
 joblib>=1.3.2
+tensorflow>=2.16.1
+mlflow

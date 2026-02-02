@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
+from authlib.integrations.base_client.errors import OAuthError
 from sqlalchemy.orm import Session, joinedload
 from app.core.config import settings
 from app.db.session import get_db, SessionLocal
@@ -163,17 +164,16 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 
 def get_consistent_redirect_uri(request: Request, endpoint: str) -> str:
     """
-    Generates a consistent Redirect URI.
-    Forces HTTPS only in production.
+    Generates a consistent Redirect URI strictly matching the registered DOMAIN.
+    This bypasses any proxy/host header issues by constructing the URL manually.
     """
-    redirect_uri = str(request.url_for(endpoint))
+    # Get the path for the endpoint (e.g., /auth/linkedin/callback)
+    path = request.app.url_path_for(endpoint)
 
-    # CRITICAL FIX: Unify HTTPS enforcement logic.
-    if settings.ENVIRONMENT == 'production':
-        if "http://" in redirect_uri:
-            redirect_uri = redirect_uri.replace("http://", "https://")
+    # Ensure we use the configured DOMAIN exactly as registered
+    domain = settings.DOMAIN.rstrip('/')
 
-    return redirect_uri
+    return f"{domain}{path}"
 
 @router.get("/onboarding/connect-github", response_class=HTMLResponse)
 async def connect_github(request: Request, user: User = Depends(get_current_user_onboarding)):
@@ -226,11 +226,15 @@ async def auth_github_callback(request: Request, background_tasks: BackgroundTas
         logger.info(f"🔄 GITHUB TOKEN EXCHANGE: URI={redirect_uri}")
 
         # 2. SECURITY REFACTOR: Use fetch_access_token
-        token = await oauth.github.fetch_access_token(
-            redirect_uri=redirect_uri,
-            code=str(request.query_params.get('code')),
-            grant_type='authorization_code'
-        )
+        try:
+            token = await oauth.github.fetch_access_token(
+                redirect_uri=redirect_uri,
+                code=str(request.query_params.get('code')),
+                grant_type='authorization_code'
+            )
+        except OAuthError as e:
+            logger.warning(f"⚠️ GITHUB OAUTH ERROR: {e.error} | {e.description}")
+            return RedirectResponse("/login?error=github_code_expired")
 
         logger.info(f"🔑 GITHUB TOKEN RECEIVED: {token.get('access_token')[:5]}... | Scope: {token.get('scope')}")
 
@@ -306,7 +310,10 @@ async def login_linkedin(request: Request):
     if not settings.LINKEDIN_CLIENT_ID:
         return RedirectResponse("/login?error=linkedin_not_configured")
 
-    redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+    if settings.LINKEDIN_REDIRECT_URI:
+        redirect_uri = settings.LINKEDIN_REDIRECT_URI
+    else:
+        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
     logger.info(f"🔎 LINKEDIN LOGIN START: Generated Redirect URI: {redirect_uri}")
 
@@ -540,7 +547,10 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
 
     try:
         # 1. Manual HTTPS Enforcement
-        redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
+        if settings.LINKEDIN_REDIRECT_URI:
+            redirect_uri = settings.LINKEDIN_REDIRECT_URI
+        else:
+            redirect_uri = get_consistent_redirect_uri(request, 'auth_linkedin_callback')
 
         logger.info(f"🔄 LINKEDIN TOKEN EXCHANGE: URI={redirect_uri}")
 
