@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy.orm import Session
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
+from app.db.models.weekly_routine import WeeklyRoutine
 from app.services.social_harvester import social_harvester
 from app.db.session import SessionLocal
 import logging
@@ -38,33 +39,37 @@ class GrowthEngine:
         profile = user.career_profile
         metrics = profile.github_activity_metrics or {}
         raw_langs = metrics.get("raw_languages", {})
+        commits_30d = metrics.get("commits_last_30_days", 0)
 
-        # 1. Determine Focus
+        # 1. Determine Focus (Gap Analysis)
+        total_bytes = sum(raw_langs.values())
+        python_bytes = raw_langs.get("Python", 0)
+        python_share = (python_bytes / total_bytes) if total_bytes > 0 else 0
+
         focus_skill = "Python" # Default
         reasoning = "Standard proficiency check."
 
-        # Logic: Find highest volume skill vs Market
-        # Sort user skills by volume
-        sorted_user_skills = sorted(raw_langs.items(), key=lambda x: x[1], reverse=True)
-        top_skill = sorted_user_skills[0][0] if sorted_user_skills else "General"
-
-        # Scenario: If User = "Python Expert" AND Market = "High Demand for Rust"
-        if "Python" in raw_langs and "Rust" not in raw_langs:
+        # Rule 1: Gap Analysis (Python Dominance -> Force Rust)
+        if python_share > 0.8 and "Rust" not in raw_langs:
              focus_skill = "Rust"
-             reasoning = "Detected high Python proficiency but zero systems programming experience (Rust is High Demand)."
+             reasoning = "Gap Analysis: High Python dominance (>80%) detected. Market trends indicate Rust as high-value expansion."
         elif "Go" not in raw_langs and "Kubernetes" not in raw_langs:
              focus_skill = "Go"
              reasoning = "Market demands Cloud Native skills. Go is the best entry point."
         else:
-             focus_skill = "System Design"
-             reasoning = "You have strong coding skills. Time to level up to Architecture."
+             # Sort logic
+             sorted_user_skills = sorted(raw_langs.items(), key=lambda x: x[1], reverse=True)
+             top_skill = sorted_user_skills[0][0] if sorted_user_skills else "General"
+             if top_skill == focus_skill:
+                  # If default matches top, suggest Deep Dive or Architecture
+                  focus_skill = "System Design" if python_share > 0.5 else top_skill
+                  reasoning = "Deepening expertise in primary stack."
 
-        # 2. Check Velocity (Constraint)
-        velocity = metrics.get("velocity_score", "Low")
+        # 2. Check Velocity (Micro-Learning Constraint)
         plan_type = "Deep Dive"
-        if velocity == "Low":
+        if commits_30d < 5:
             plan_type = "Micro-Learning"
-            reasoning += " (Adjusted for low availability: 15 min tasks)."
+            reasoning += " (Low activity detected. Adjusted to Micro-Learning: 15 min/day)."
 
         # 3. Check Hardcore Mode (Gamification Rule)
         # Rule: If streak >= 4 weeks, UNLOCK "HARDCORE MODE"
@@ -72,92 +77,55 @@ class GrowthEngine:
         if is_hardcore:
              focus_skill = "System Design"
              reasoning = "🔥 HARDCORE MODE ACTIVE: Streak >= 4. Tutorials disabled. Ruthless Challenges only."
-             plan_type = "Challenge"
+             plan_type = "HARDCORE"
 
         # 4. Generate Routine
         week_id = datetime.datetime.now().strftime("%Y-W%U")
 
-        routine = [
-            {
-                "id": 1,
-                "day": "Mon",
-                "type": "Learn",
-                "task": f"Read: {focus_skill} Core Concepts",
-                "status": "pending"
-            },
-            {
-                "id": 2,
-                "day": "Wed",
-                "type": "Code",
-                "task": f"CLI Tool: Parse JSON in {focus_skill}",
-                "verify_key": focus_skill.lower(), # Key to check in GitHub
-                "status": "pending"
-            },
-            {
-                "id": 3,
-                "day": "Fri",
-                "type": "Code",
-                "task": f"Refactor: Optimize {focus_skill} Code",
-                "verify_key": focus_skill.lower(),
-                "status": "pending"
-            }
-        ]
-
         if plan_type == "Micro-Learning":
-            # Simplify tasks
             routine = [
-                 {
-                    "id": 1,
-                    "day": "Mon",
-                    "type": "Learn",
-                    "task": f"15 min: {focus_skill} Syntax",
-                    "status": "pending"
-                },
-                {
-                    "id": 2,
-                    "day": "Thu",
-                    "type": "Code",
-                    "task": f"Snippet: Hello World in {focus_skill}",
-                    "verify_key": focus_skill.lower(),
-                    "status": "pending"
-                }
+                {"id": 1, "day": "Mon", "type": "Learn", "task": f"15 min: {focus_skill} Syntax", "status": "pending"},
+                {"id": 2, "day": "Wed", "type": "Code", "task": f"Snippet: Hello World in {focus_skill}", "verify_key": focus_skill.lower(), "status": "pending"},
+                {"id": 3, "day": "Fri", "type": "Review", "task": "Quick Quiz", "status": "pending"}
             ]
-        elif plan_type == "Challenge":
-            # Hardcore Tasks
-            routine = [
-                {
-                    "id": 1,
-                    "day": "Mon",
-                    "type": "Design",
-                    "task": "System Design: Distributed Rate Limiter",
-                    "status": "pending"
-                },
-                {
-                    "id": 2,
-                    "day": "Wed",
-                    "type": "Code",
-                    "task": "Implement Token Bucket Algo in Rust",
-                    "verify_key": "rust",
-                    "status": "pending"
-                },
-                 {
-                    "id": 3,
-                    "day": "Fri",
-                    "type": "Code",
-                    "task": "Load Test your Rate Limiter",
-                    "verify_key": "rust",
-                    "status": "pending"
-                }
+        elif plan_type == "HARDCORE":
+             routine = [
+                {"id": 1, "day": "Mon", "type": "Design", "task": "System Design: Distributed Rate Limiter", "status": "pending"},
+                {"id": 2, "day": "Wed", "type": "Code", "task": "Implement Token Bucket Algo", "verify_key": focus_skill.lower(), "status": "pending"},
+                {"id": 3, "day": "Fri", "type": "Code", "task": "Load Test & Benchmark", "verify_key": focus_skill.lower(), "status": "pending"}
+             ]
+        else:
+             routine = [
+                {"id": 1, "day": "Mon", "type": "Learn", "task": f"Deep Dive: {focus_skill} Core Concepts", "status": "pending"},
+                {"id": 2, "day": "Wed", "type": "Code", "task": f"CLI Tool: Parse JSON in {focus_skill}", "verify_key": focus_skill.lower(), "status": "pending"},
+                {"id": 3, "day": "Fri", "type": "Code", "task": f"Refactor: Optimize {focus_skill} Code", "verify_key": focus_skill.lower(), "status": "pending"}
             ]
 
         plan = {
             "week_id": week_id,
             "focus_language": focus_skill,
             "reasoning": reasoning,
-            "routine": routine
+            "routine": routine,
+            "mode": plan_type
         }
 
-        # Save to DB
+        # Save to DB (WeeklyRoutine)
+        wr = db.query(WeeklyRoutine).filter(WeeklyRoutine.user_id == user.id, WeeklyRoutine.week_id == week_id).first()
+        if not wr:
+            wr = WeeklyRoutine(
+                user_id=user.id,
+                week_id=week_id,
+                mode=plan_type,
+                focus=focus_skill,
+                tasks=routine
+            )
+            db.add(wr)
+        else:
+            wr.mode = plan_type
+            wr.focus = focus_skill
+            wr.tasks = routine # Update tasks
+
+        # Save to Profile
         profile.active_weekly_plan = plan
         db.commit()
 
@@ -206,26 +174,32 @@ class GrowthEngine:
 
                  now = datetime.datetime.utcnow()
 
-                 last_check_str = plan.get("last_verified_at")
-                 last_check = None
-                 if last_check_str:
-                     try:
-                         last_check = datetime.datetime.fromisoformat(last_check_str)
-                     except:
-                         pass
-
+                 # Streak Logic using last_weekly_check
+                 last_check = user.last_weekly_check
                  is_new_week = True
+
                  if last_check:
                       if last_check.isocalendar()[1] == now.isocalendar()[1] and last_check.year == now.year:
                            is_new_week = False
 
                  if is_new_week:
-                  user.streak_count = (user.streak_count or 0) + 1
-                  # user.last_weekly_check does not exist in User model.
-                  # We should store it in the plan or profile logic,
-                  # but for now we just update streak and rely on plan logic if needed.
-                  # Ideally we store last_verified in plan.
-                  plan["last_verified_at"] = now.isoformat()
+                      user.streak_count = (user.streak_count or 0) + 1
+                      user.last_weekly_check = now
+                      plan["last_verified_at"] = now.isoformat()
+
+                 # UPDATE WeeklyRoutine
+                 wr = db.query(WeeklyRoutine).filter(WeeklyRoutine.user_id == user_id, WeeklyRoutine.week_id == plan.get("week_id")).first()
+                 if wr:
+                     # Update the specific task in JSON
+                     current_tasks = list(wr.tasks)
+                     for t in current_tasks:
+                         if t["id"] == task_id:
+                             t["status"] = "completed"
+                     wr.tasks = current_tasks # Trigger update
+
+                     if all(t.get("status") == "completed" for t in current_tasks):
+                         wr.completed = True
+                         wr.completed_at = now
 
                  profile.active_weekly_plan = dict(plan)
                  db.commit()

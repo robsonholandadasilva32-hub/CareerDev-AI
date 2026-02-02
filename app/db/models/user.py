@@ -35,6 +35,7 @@ class User(Base):
     # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)
     accelerator_mode = Column(Boolean, default=False)
+    last_weekly_check = Column(DateTime, nullable=True)
     
     # --- Relacionamentos ---
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
