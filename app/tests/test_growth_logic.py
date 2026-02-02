@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+import app.db.base  # Ensure all models are loaded
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
 from app.db.models.gamification import UserBadge
