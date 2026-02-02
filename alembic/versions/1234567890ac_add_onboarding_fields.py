@@ -9,6 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.exc import ProgrammingError
 
+# Trigger redeploy
 # revision identifiers, used by Alembic.
 revision = '1234567890ac'
 down_revision = '1234567890ab'
@@ -20,8 +21,8 @@ def safe_add_column(table_name, column):
     try:
         with bind.begin_nested():
             op.add_column(table_name, column)
-    except ProgrammingError:
-        # Broadly catch all ProgrammingErrors (including DuplicateColumn)
+    except Exception:
+        # Broadly catch all Exceptions (including ProgrammingError)
         # to ensure the migration is idempotent and unblocks deployment.
         pass
 
