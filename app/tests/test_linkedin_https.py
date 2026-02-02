@@ -25,7 +25,9 @@ def client():
 async def test_linkedin_login_respects_http_in_dev(client):
     # Ensure environment is not production
     original_env = settings.ENVIRONMENT
+    original_domain = settings.DOMAIN
     settings.ENVIRONMENT = 'development'
+    settings.DOMAIN = 'http://localhost:8000' # Explicitly set to HTTP
 
     try:
         # Patch authorize_redirect
@@ -42,17 +44,20 @@ async def test_linkedin_login_respects_http_in_dev(client):
             redirect_uri = kwargs.get('redirect_uri') or args[1]
 
             assert redirect_uri is not None
-            # Expect http because environment is dev and client is http://test
+            # Expect http because settings.DOMAIN is http
             assert redirect_uri.startswith("http://")
             assert "auth/linkedin/callback" in redirect_uri
     finally:
         settings.ENVIRONMENT = original_env
+        settings.DOMAIN = original_domain
 
 @pytest.mark.asyncio
 async def test_linkedin_login_forces_https_in_prod(client):
     # Force production environment
     original_env = settings.ENVIRONMENT
+    original_domain = settings.DOMAIN
     settings.ENVIRONMENT = 'production'
+    settings.DOMAIN = 'https://www.careerdev-ai.online'
 
     try:
         with patch('app.routes.social.oauth.linkedin.authorize_redirect', new_callable=AsyncMock) as mock_authorize:
@@ -68,8 +73,9 @@ async def test_linkedin_login_forces_https_in_prod(client):
             redirect_uri = kwargs.get('redirect_uri') or args[1]
 
             assert redirect_uri is not None
-            # Expect https because environment is production
+            # Expect https because settings.DOMAIN is https
             assert redirect_uri.startswith("https://")
             assert "auth/linkedin/callback" in redirect_uri
     finally:
         settings.ENVIRONMENT = original_env
+        settings.DOMAIN = original_domain

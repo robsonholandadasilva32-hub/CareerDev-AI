@@ -165,17 +165,12 @@ def login_user_and_redirect(request: Request, user, db: Session, redirect_url: s
 def get_consistent_redirect_uri(request: Request, endpoint: str) -> str:
     """
     Generates a consistent Redirect URI.
-    Forces HTTPS if configured domain is HTTPS or environment is production.
+    Uses settings.DOMAIN to ensure the redirect URI matches the registered OAuth callback.
     """
-    redirect_uri = str(request.url_for(endpoint))
-
-    # CRITICAL FIX: Unify HTTPS enforcement logic.
-    # Force HTTPS if we are in production OR if the main domain is HTTPS (Railway, etc.)
-    # This prevents Protocol Mismatch errors when behind a proxy.
-    force_https = (settings.ENVIRONMENT == 'production') or (settings.DOMAIN.startswith("https://"))
-
-    if force_https and "http://" in redirect_uri:
-        redirect_uri = redirect_uri.replace("http://", "https://")
+    # Explicitly use settings.DOMAIN instead of request.url_for to avoid host mismatches
+    base_url = settings.DOMAIN.rstrip('/')
+    path = request.app.url_path_for(endpoint)
+    redirect_uri = f"{base_url}{path}"
 
     return redirect_uri
 

@@ -2,54 +2,37 @@ import os
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi import Request
-
-# Import the module to test
-# We rely on pre-set env vars to avoid import errors
 from app.routes import social
 
-def test_redirect_uri_dev_http_domain():
+def test_redirect_uri_always_uses_domain_setting():
     """
-    If environment is development AND domain is http,
-    we should respect the http scheme (no force https).
+    The redirect URI should ALWAYS be constructed from settings.DOMAIN,
+    ignoring the incoming request host or scheme.
     """
     with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "development"
-        mock_settings.DOMAIN = "http://localhost:8000"
+        # Case 1: Production HTTPS
+        mock_settings.DOMAIN = "https://www.careerdev-ai.online"
 
         mock_request = MagicMock(spec=Request)
-        # url_for returns a string (URL)
-        mock_request.url_for.return_value = "http://localhost:8000/auth/callback"
+        mock_request.app.url_path_for.return_value = "/auth/callback"
 
+        uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
+        assert uri == "https://www.careerdev-ai.online/auth/callback"
+
+        # Case 2: Development HTTP
+        mock_settings.DOMAIN = "http://localhost:8000"
         uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
         assert uri == "http://localhost:8000/auth/callback"
 
-def test_redirect_uri_dev_https_domain():
+def test_redirect_uri_strips_trailing_slash():
     """
-    If environment is development BUT domain is configured as https (e.g. staging on Railway),
-    we MUST force https.
-    """
-    with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "development"
-        mock_settings.DOMAIN = "https://staging.app.com"
-
-        mock_request = MagicMock(spec=Request)
-        # Internal app sees http due to proxy
-        mock_request.url_for.return_value = "http://staging.app.com/auth/callback"
-
-        uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
-        assert uri == "https://staging.app.com/auth/callback"
-
-def test_redirect_uri_prod():
-    """
-    If environment is production, we MUST force https regardless of domain config
-    (though domain should be https in prod).
+    Ensure we don't get double slashes if DOMAIN has a trailing slash.
     """
     with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "production"
-        mock_settings.DOMAIN = "http://misconfigured.com"
+        mock_settings.DOMAIN = "https://www.careerdev-ai.online/"
 
         mock_request = MagicMock(spec=Request)
-        mock_request.url_for.return_value = "http://misconfigured.com/auth/callback"
+        mock_request.app.url_path_for.return_value = "/auth/callback"
 
         uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
-        assert uri == "https://misconfigured.com/auth/callback"
+        assert uri == "https://www.careerdev-ai.online/auth/callback"
