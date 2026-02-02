@@ -57,13 +57,36 @@ class CareerEngine:
         # CAREER RISK ALERTS (CURRENT)
         # -------------------------------
         career_risks: List[Dict] = []
+        hidden_gems: List[Dict] = []
 
+        # 1. Low Confidence Alert
         for skill, confidence in skill_confidence.items():
             if confidence < 40:
                 career_risks.append({
                     "level": "HIGH",
                     "skill": skill,
                     "message": f"Low confidence score in {skill}. Risk of interview rejection."
+                })
+
+        # 2. Imposter Syndrome Detector (LinkedIn Expert vs GitHub Empty)
+        for skill in linkedin_skills:
+            # Check if skill exists in raw_languages with sufficient bytes
+            # Heuristic: < 10k bytes = "No Evidence"
+            bytes_count = raw_languages.get(skill, raw_languages.get(skill.title(), 0))
+            if bytes_count < 10_000:
+                career_risks.append({
+                    "level": "CRITICAL",
+                    "skill": skill,
+                    "message": f"IMPOSTER ALERT: You claim '{skill}' on LinkedIn but have <10k bytes of code."
+                })
+
+        # 3. Hidden Gem Detector (GitHub High vs LinkedIn Empty)
+        for skill, bytes_count in raw_languages.items():
+            if bytes_count > 50_000 and skill not in linkedin_skills:
+                hidden_gems.append({
+                    "type": "HIDDEN_GEM",
+                    "skill": skill,
+                    "message": f"You have {int(bytes_count/1000)}k bytes of {skill} code not listed on LinkedIn!"
                 })
 
         if metrics.get("commits_last_30_days", 0) < 5:
@@ -143,6 +166,7 @@ class CareerEngine:
             "weekly_plan": weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
+            "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark, # <--- Adicionado ao retorno
             "counterfactual": counterfactual,
