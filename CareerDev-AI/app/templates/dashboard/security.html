@@ -1,0 +1,87 @@
+{% extends "dashboard_layout.html" %}
+
+{% block dashboard_content %}
+<div class="card security-dashboard" style="padding: 0; overflow: hidden; border: 1px solid #374151;">
+    <!-- Header -->
+    <div style="padding: 1.5rem; border-bottom: 1px solid #374151; background: rgba(255, 255, 255, 0.02); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="font-size: 0.875rem; font-weight: 600; color: #e0e6ed; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Audit Log / Active Sessions</h3>
+            <p style="font-size: 0.75rem; color: #94a3b8; margin: 0.25rem 0 0 0;">Monitor and manage your active sessions.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+             <form action="/security/revoke_all" method="POST" onsubmit="return confirm('Are you sure you want to log out of all other devices?');">
+                <button type="submit" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                    Revoke All Other Sessions
+                </button>
+            </form>
+            <!-- Shield Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; text-align: left; border-collapse: collapse; font-family: 'Inter', system-ui, sans-serif;">
+            <thead>
+                <tr style="border-bottom: 1px solid #374151; font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0, 0, 0, 0.2);">
+                    <th style="padding: 1rem 1.5rem;">Device / OS</th>
+                    <th style="padding: 1rem 1.5rem;">Location & IP</th>
+                    <th style="padding: 1rem 1.5rem;">Date</th>
+                    <th style="padding: 1rem 1.5rem; text-align: right;">Status</th>
+                </tr>
+            </thead>
+            <tbody style="font-size: 0.875rem;">
+                {% for session in sessions %}
+                <tr style="border-bottom: 1px solid #374151; transition: background-color 0.2s; color: #cbd5e1;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.05)'" onmouseout="this.style.backgroundColor='transparent'">
+                    <td style="padding: 1rem 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="padding: 0.5rem; background-color: #1f2937; border-radius: 0.375rem; color: #9ca3af;">
+                                <!-- Icon Logic -->
+                                {% if 'Mobile' in session.device or 'iPhone' in session.device or 'Android' in session.device %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-weight: 500; color: #e0e6ed;">{{ session.device }}</span>
+                                <span style="font-size: 0.75rem; color: #94a3b8;">{{ session.os }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 1rem 1.5rem;">
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Placeholder Location -->
+                            <!-- <span style="color: #e0e6ed; font-size: 0.875rem;">Unknown Location</span> -->
+                            <span style="font-family: monospace; font-size: 0.8rem; color: #94a3b8;">{{ session.ip_address }}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 1rem 1.5rem; color: #94a3b8;">
+                        {{ session.last_active.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                    <td style="padding: 1rem 1.5rem; text-align: right;">
+                        {% if session.status == 'Current' %}
+                            <span style="display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2);">
+                                <span style="width: 0.375rem; height: 0.375rem; background-color: #34d399; border-radius: 50%; margin-right: 0.375rem; box-shadow: 0 0 5px #34d399;"></span>
+                                Current
+                            </span>
+                        {% elif session.status == 'Expired' %}
+                            <span style="display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: rgba(75, 85, 99, 0.1); color: #9ca3af; border: 1px solid rgba(75, 85, 99, 0.2);">
+                                Expired
+                            </span>
+                        {% else %}
+                             <span style="display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);">
+                                Active
+                            </span>
+                             <form action="/security/revoke/{{ session.id }}" method="POST" style="display: inline; margin-left: 10px;">
+                                <button type="submit" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 0.75rem; text-decoration: underline; padding: 0;">Revoke</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

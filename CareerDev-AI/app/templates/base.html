@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}CareerDev AI{% endblock %}</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Accelerate your career with AI-driven insights and tools.">
+
+  <!-- PWA MANIFEST -->
+  <link rel="manifest" href="/static/favicon/manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon/favicon.svg">
+  <link rel="shortcut icon" href="/static/favicon/favicon.ico">
+
+  <!-- THEME COLOR (ANDROID / CHROME / EDGE) -->
+  <meta name="theme-color" content="#0a0f1c">
+
+  <!-- IOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- CSS -->
+  <style>
+    :root {
+        --bg-color: #0a0f1c;
+        --text-color: #e0e6ed;
+        --primary-color: #00f3ff; /* Neon Cyan */
+        --secondary-color: #00ff88; /* Neon Green */
+        --accent-color: #2d3748;
+        --error-color: #ff0055;
+        --font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: var(--font-family);
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    a { color: var(--primary-color); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+        background: rgba(10, 15, 28, 0.95);
+        border-bottom: 1px solid var(--accent-color);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    header h1 { margin: 0; font-size: 1.5rem; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+
+    .logo-anim { width: 30px; height: 30px; }
+
+    main {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    footer {
+        text-align: center;
+        padding: 2rem;
+        color: #64748b;
+        font-size: 0.9rem;
+        border-top: 1px solid var(--accent-color);
+    }
+
+    /* Futuristic Card Style */
+    .card {
+        background: #111827;
+        border: 1px solid var(--accent-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+
+    .btn {
+        background: linear-gradient(135deg, var(--primary-color), #00d2ff);
+        color: #000;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        display: inline-block;
+    }
+
+    .btn:hover { opacity: 0.9; text-decoration: none; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
+    .btn-outline:hover { background: rgba(0, 243, 255, 0.1); }
+    .btn-secondary { background: #6c757d; color: white; cursor: pointer; }
+    .btn-secondary:hover { background: #5a6268; text-decoration: none; }
+
+    /* Libras Avatar Placeholder (Floating Icon) */
+    /* Handled via inline styles in partial, but can refine here if needed */
+
+  </style>
+
+  <script src="/static/js/accessibility.js"></script>
+  <link rel="stylesheet" href="/static/css/logo.css">
+  <link rel="stylesheet" href="/static/css/accessibility.css">
+
+  {% if request.app.state.posthog_key %}
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('{{ request.app.state.posthog_key }}', {api_host: '{{ request.app.state.posthog_host }}'})
+  </script>
+  {% endif %}
+
+  {% if request.app.state.sentry_dsn %}
+  <script src="https://browser.sentry-cdn.com/7.114.0/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
+  <script>
+    Sentry.init({
+      dsn: "{{ request.app.state.sentry_dsn }}",
+      integrations: [
+        Sentry.browserTracingIntegration(),
+        Sentry.replayIntegration(),
+      ],
+      tracesSampleRate: 1.0,
+      replaysSessionSampleRate: 1.0,
+      replaysOnErrorSampleRate: 1.0,
+    });
+  </script>
+  {% endif %}
+</head>
+
+<body>
+  {% set user = user or request.state.user %}
+
+  <!-- HEADER -->
+  <header>
+    <h1>
+        <a href="{% if user %}{% if user.is_profile_completed %}/dashboard{% else %}/onboarding/connect-github{% endif %}{% else %}/login{% endif %}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+            <!-- Animated Logo Placeholder -->
+            <div class="logo-container">
+                <svg class="logo-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" stroke="#00f3ff" stroke-width="5" fill="none" class="circuit-circle" />
+                    <path d="M30 50 H70 M50 30 V70" stroke="#00ff88" stroke-width="5" class="circuit-plus" />
+                </svg>
+            </div>
+            CareerDev AI
+        </a>
+    </h1>
+
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <nav>
+            {% if user %}
+                <div style="display: inline-flex; align-items: center; gap: 15px;">
+                     {% if user.github_id and user.linkedin_id %}
+                     <!-- UNIFIED IDENTITY BADGE -->
+                     <div class="unified-identity-badge" title="Connected via LinkedIn & GitHub" style="display: flex; align-items: center; gap: 8px; background: rgba(0, 255, 136, 0.1); border: 1px solid var(--secondary-color); padding: 5px 12px; border-radius: 20px;">
+                        <!-- LinkedIn Icon -->
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color: #0077b5;">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                        <!-- Chain Icon -->
+                        <span style="color: var(--text-color); font-size: 0.8rem;">🔗</span>
+                        <!-- GitHub Icon -->
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color: #ffffff;">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span style="font-size: 0.8rem; color: var(--secondary-color); font-weight: bold;">Verified</span>
+                     </div>
+                     {% endif %}
+
+                     <span style="color: var(--primary-color);">Hello, {{ user.name }}</span>
+                     {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--primary-color); object-fit: cover;">
+                     {% endif %}
+
+                    {% if user.is_profile_completed %}
+                        {% if request.url.path not in ['/', '/login', '/register', '/dashboard'] %}
+                        <a href="/dashboard">Dashboard</a>
+                        {% endif %}
+                    {% endif %}
+                    <a href="/logout" class="btn-outline" style="padding: 0.5rem 1rem;">Logout</a>
+                </div>
+            {% endif %}
+        </nav>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO DAS PÁGINAS -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- CHATBOT GLOBAL -->
+  {% include "partials/chatbot.html" %}
+
+  <!-- COOKIE NOTICE -->
+  {% include "partials/cookie_notice.html" %}
+
+  <!-- FOOTER -->
+  {% block footer %}
+  <footer>
+    <p>Version: 1.2.0 (Stable) | Developed with ❤️ and ☕. © 2026 CareerDev AI. All rights reserved.</p>
+    <div style="margin: 10px 0; font-size: 0.9em;">
+        <a href="/legal/privacy" style="color: #64748b; margin: 0 10px;">Privacy Policy</a>
+        |
+        <a href="/legal/terms" style="color: #64748b; margin: 0 10px;">Terms of Use</a>
+    </div>
+    <p style="font-size: 0.8em; margin-top: 10px;">
+        "We can only see a short distance ahead, but we can see plenty there that needs to be done." — Alan Turing
+    </p>
+  </footer>
+  {% endblock %}
+
+</body>
+</html>

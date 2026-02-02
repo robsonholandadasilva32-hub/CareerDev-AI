@@ -1,0 +1,318 @@
+<div id="chatbot-widget" class="chatbot-widget" aria-label="Chatbot Assistant">
+    <div class="chatbot-header">
+        <div class="header-brand">
+            <!-- Creative Neural/Circuit Icon -->
+            <div class="neural-icon">
+                <div class="node center"></div>
+                <div class="pulse-ring"></div>
+            </div>
+            <span class="header-title">CareerDev AI</span>
+        </div>
+        <div class="header-controls">
+            <!-- Interview Mode Toggle -->
+            <button id="interview-toggle" aria-label="Interview Mode" title="Simulate Interview" style="font-size: 0.9rem;">
+                🎙️
+            </button>
+            <!-- Voice Toggle -->
+            <button id="voice-toggle" aria-label="Enable voice" title="Enable voice">
+                🔇
+            </button>
+            <button id="btn-close-chat" aria-label="Close chat" title="Close chat" class="close-btn">✖</button>
+        </div>
+    </div>
+
+    <div id="chatbot-messages" class="chatbot-messages" aria-live="polite" role="log">
+        <div id="chatbot-welcome-msg" class="message bot" data-server-greeting="{{ greeting_message if greeting_message else '' }}">
+            Hello! I am your career assistant. Ask about Rust, Go, or how to connect your GitHub.
+        </div>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="chatbot-status" class="chatbot-status" aria-live="assertive" style="display:none;">
+        <span class="pulse">●</span> <span id="status-text">Exploring...</span>
+    </div>
+
+    <div class="chatbot-input">
+        <input type="text" id="chat-input" placeholder="Ask something..." aria-label="Type your message">
+        <button id="btn-mic" aria-label="Speak message" title="Speak message" style="background: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); margin-right: 5px;">🎙️</button>
+        <button id="btn-send" aria-label="Send message">➤</button>
+    </div>
+</div>
+
+<!-- Chatbot Toggle Button -->
+<button id="chatbot-toggle" class="chatbot-toggle-btn" aria-label="Open career assistant">
+    <div class="neural-icon small">
+        <div class="node center"></div>
+        <div class="pulse-ring"></div>
+    </div>
+</button>
+
+<script src="/static/js/chatbot.js" defer></script>
+
+<style>
+    .chatbot-widget {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        width: 320px;
+        height: 450px;
+        background: rgba(17, 24, 39, 0.95);
+        border: 1px solid var(--primary-color);
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        z-index: 9999;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        display: none; /* Hidden by default */
+        backdrop-filter: blur(8px);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .chatbot-header {
+        padding: 12px 15px;
+        background: rgba(10, 15, 28, 0.9);
+        border-bottom: 1px solid var(--accent-color);
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--primary-color);
+    }
+
+    .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header-title {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: linear-gradient(90deg, var(--primary-color), #fff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* CREATIVE NEURAL ICON */
+    .neural-icon {
+        width: 24px;
+        height: 24px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .neural-icon .node {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--primary-color);
+        z-index: 2;
+    }
+
+    .neural-icon .pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        opacity: 0;
+        animation: ring-pulse 2s infinite;
+    }
+
+    .neural-icon.small {
+        width: 30px;
+        height: 30px;
+    }
+    .neural-icon.small .node { width: 10px; height: 10px; background: #000; }
+    .neural-icon.small .pulse-ring { border-color: #000; }
+
+    @keyframes ring-pulse {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .header-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .header-controls button {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: color 0.2s;
+        padding: 0;
+    }
+
+    .header-controls button:hover {
+        color: var(--text-main);
+    }
+
+    .close-btn:hover {
+        color: var(--error-color) !important;
+    }
+
+    .chatbot-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-color) transparent;
+    }
+
+    .message {
+        padding: 10px 14px;
+        border-radius: 12px;
+        max-width: 85%;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .message.bot {
+        background: rgba(0, 243, 255, 0.08);
+        color: #e0f2fe;
+        align-self: flex-start;
+        border-bottom-left-radius: 2px;
+        border: 1px solid rgba(0, 243, 255, 0.15);
+    }
+
+    .message.user {
+        background: rgba(0, 255, 136, 0.08);
+        color: #d1fae5;
+        align-self: flex-end;
+        border-bottom-right-radius: 2px;
+        border: 1px solid rgba(0, 255, 136, 0.15);
+    }
+
+    .chatbot-status {
+        padding: 8px 15px;
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        background: rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-style: italic;
+    }
+
+    .chatbot-input {
+        padding: 15px;
+        border-top: 1px solid var(--accent-color);
+        display: flex;
+        gap: 10px;
+        background: rgba(10, 15, 28, 0.8);
+        border-radius: 0 0 12px 12px;
+    }
+
+    .chatbot-input input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--accent-color);
+        color: white;
+        padding: 10px;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+
+    .chatbot-input input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .chatbot-input button {
+        background: var(--primary-color);
+        border: none;
+        border-radius: 6px;
+        padding: 0 15px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #000;
+        transition: opacity 0.2s;
+    }
+
+    .chatbot-input button:hover {
+        opacity: 0.9;
+    }
+
+    .chatbot-toggle-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), #00d2ff);
+        border: none;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 15px rgba(0, 243, 255, 0.4);
+        transition: transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chatbot-toggle-btn:hover {
+        transform: scale(1.05);
+    }
+
+    .pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: var(--primary-color);
+        border-radius: 50%;
+        animation: pulse-anim 1.5s infinite;
+    }
+
+    @keyframes pulse-anim {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    .chatbot-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(255, 0, 85, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        pointer-events: none;
+    }
+    .chatbot-toast.show {
+        opacity: 1;
+    }
+
+    /* STT Active State */
+    .listening {
+        animation: pulse-red 1.5s infinite;
+        background-color: #ff3b30 !important;
+        border-color: #ff3b30 !important;
+        color: white !important;
+    }
+
+    @keyframes pulse-red {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+    }
+</style>
+

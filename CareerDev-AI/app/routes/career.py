@@ -1,0 +1,182 @@
+import asyncio
+from fastapi import APIRouter, Depends, Request, Form, Body
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from pydantic import BaseModel
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.db.session import get_db
+from app.core.auth_guard import get_current_user_from_request
+from app.services.resume import process_resume_upload_async
+from app.services.onboarding import validate_onboarding_access
+from app.db.models.user import User
+from app.ai.chatbot import chatbot_service
+from app.services.growth_engine import growth_engine
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
+
+@router.get("/analyze-resume", response_class=HTMLResponse)
+async def analyze_resume_page(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return RedirectResponse("/login")
+
+    user = request.state.user
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
+    return templates.TemplateResponse("career/resume_analyzer.html", {
+        "request": request,
+        "user": user
+    })
+
+@router.post("/analyze-resume", response_class=JSONResponse)
+async def analyze_resume(
+    request: Request,
+    resume_text: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # GUARD: Ensure Onboarding is Complete
+    user = request.state.user
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
+    # Cross-Validation Scanning
+    github_evidence = {}
+    if user.github_token:
+        try:
+            from app.services.social_harvester import social_harvester
+            github_evidence = await social_harvester.scan_user_dependencies(user.id, user.github_token)
+        except Exception as e:
+            logger.error(f"GitHub dependency scan failed: {e}")
+
+    try:
+        result = await process_resume_upload_async(db, user_id, resume_text, github_evidence=github_evidence)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Error analyzing resume: {e}")
+        return JSONResponse({"error": "Failed to analyze"}, status_code=500)
+
+@router.get("/analytics", response_class=HTMLResponse)
+def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
+    # 1. Auth & Onboarding Guard
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return RedirectResponse("/login")
+
+    user = request.state.user
+
+    # GUARD: Ensure Onboarding is Complete
+    redirect = validate_onboarding_access(user)
+    if redirect:
+        return redirect
+
+    # 3. Data Preparation (Mock Data for MVP)
+    analytics_data = {
+        "dates": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        "skills_growth": [10, 25, 40, 55, 70, 85],
+        "market_demand": [80, 85, 80, 90, 95, 95],
+        "radar_labels": ["Python", "System Design", "Cloud", "Soft Skills", "Algorithms"],
+        "radar_data_user": [70, 60, 40, 80, 65],
+        "radar_data_market": [90, 80, 90, 70, 80]
+    }
+
+    return templates.TemplateResponse("career/analytics.html", {
+        "request": request,
+        "user": user,
+        "data": analytics_data,
+    })
+
+@router.post("/api/generate-linkedin-post", response_class=JSONResponse)
+async def generate_linkedin_post(request: Request, db: Session = Depends(get_db)):
+    # 1. Auth Guard
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    # 2. Get Top Skill
+    profile = user.career_profile
+    top_skill = "Software Engineering"
+
+    if profile and profile.skills_snapshot:
+        # Simple logic: pick first key, or could use volume sorting if available
+        try:
+             # Sort by value if dict values are numeric, else pick random
+            skills = profile.skills_snapshot
+            if skills:
+                 top_skill = list(skills.keys())[0]
+        except Exception:
+            pass
+
+    # 3. Generate Post
+    try:
+        post_text = await chatbot_service.generate_linkedin_post(top_skill, "en")
+        return {"post_text": post_text}
+    except Exception as e:
+        logger.error(f"Error generating LinkedIn post: {e}")
+        return JSONResponse({"error": "AI Service Error"}, status_code=500)
+
+class ProjectSpecRequest(BaseModel):
+    skill: str
+
+@router.post("/api/generate-project-spec", response_class=JSONResponse)
+async def generate_project_spec(request: Request, body: ProjectSpecRequest, db: Session = Depends(get_db)):
+    # 1. Auth Guard
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    # 2. Generate Spec
+    try:
+        spec_md = await chatbot_service.generate_project_spec(body.skill, "en")
+        return {"spec": spec_md}
+    except Exception as e:
+        logger.error(f"Error generating project spec: {e}")
+        return JSONResponse({"error": "AI Service Error"}, status_code=500)
+
+
+# GROWTH ENGINE ROUTES
+
+@router.post("/api/growth/generate", response_class=JSONResponse)
+def generate_weekly_plan_route(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    try:
+        plan = growth_engine.generate_weekly_plan(db, user)
+        return plan
+    except Exception as e:
+        logger.error(f"Error generating plan: {e}")
+        return JSONResponse({"error": "Failed to generate plan"}, status_code=500)
+
+class VerifyTaskRequest(BaseModel):
+    task_id: int
+
+@router.post("/api/growth/verify", response_class=JSONResponse)
+async def verify_task_route(request: Request, body: VerifyTaskRequest, db: Session = Depends(get_db)):
+    user_id = get_current_user_from_request(request)
+    if not user_id:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
+    user = request.state.user
+
+    try:
+        result = await growth_engine.verify_task(db, user, body.task_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error verifying task: {e}")
+        return JSONResponse({"error": "Verification Failed"}, status_code=500)

@@ -1,0 +1,51 @@
+import asyncio
+from sqlalchemy.orm import Session
+from app.db.models.user import User
+
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.query(User).filter(User.email == email).first()
+
+def get_user_by_github_id(db: Session, github_id: str) -> User | None:
+    if not github_id:
+        return None
+    return db.query(User).filter(User.github_id == github_id).first()
+
+def get_user_by_linkedin_id(db: Session, linkedin_id: str) -> User | None:
+    if not linkedin_id:
+        return None
+    return db.query(User).filter(User.linkedin_id == linkedin_id).first()
+
+def create_user(
+    db: Session,
+    name: str,
+    email: str,
+    hashed_password: str,
+    **kwargs
+) -> User:
+    user = User(
+        full_name=name,
+        email=email,
+        hashed_password=hashed_password,
+        **kwargs
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+async def create_user_async(
+    db: Session,
+    name: str,
+    email: str,
+    hashed_password: str,
+    **kwargs
+) -> User:
+    return await asyncio.to_thread(
+        create_user,
+        db=db,
+        name=name,
+        email=email,
+        hashed_password=hashed_password,
+        **kwargs
+    )

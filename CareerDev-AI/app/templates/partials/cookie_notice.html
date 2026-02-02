@@ -1,0 +1,196 @@
+<style>
+    @keyframes slide-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .tech-cookie-banner {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 9999;
+        max-width: 24rem;
+        animation: slide-in-up 0.5s ease-out forwards;
+        display: none; /* Hidden by default, shown by JS */
+    }
+
+    .tech-card {
+        background: rgba(17, 24, 39, 0.95); /* bg-gray-900/95 */
+        backdrop-filter: blur(12px); /* backdrop-blur-md */
+        border: 1px solid #374151; /* border-gray-700 */
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+        border-radius: 0.75rem; /* rounded-xl */
+        padding: 1.25rem; /* p-5 */
+        color: #d1d5db; /* text-gray-300 */
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Glow effect */
+    .tech-glow {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin-right: -2rem;
+        margin-top: -2rem;
+        width: 6rem;
+        height: 6rem;
+        background: rgba(59, 130, 246, 0.2); /* bg-blue-500/20 */
+        filter: blur(40px); /* blur-2xl */
+        border-radius: 50%;
+        transition: background-color 0.7s;
+        pointer-events: none;
+    }
+    .tech-card:hover .tech-glow {
+        background: rgba(59, 130, 246, 0.3);
+    }
+
+    .tech-header {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .tech-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        font-weight: 500;
+    }
+
+    .tech-close {
+        color: #6b7280;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.2s;
+        padding: 0;
+    }
+    .tech-close:hover {
+        color: white;
+    }
+
+    .tech-body {
+        position: relative;
+        z-index: 10;
+        font-size: 0.875rem; /* text-sm */
+        color: #9ca3af; /* text-gray-400 */
+        line-height: 1.625;
+        margin-bottom: 1rem;
+    }
+
+    .tech-actions {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .btn-accept {
+        flex: 1;
+        background: white;
+        color: #111827; /* text-gray-900 */
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+    .btn-accept:hover {
+        background: #f3f4f6; /* bg-gray-100 */
+    }
+    .btn-accept:active {
+        transform: scale(0.95);
+    }
+
+    .btn-prefs {
+        background: none;
+        border: none;
+        color: #9ca3af;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        transition: color 0.2s;
+    }
+    .btn-prefs:hover {
+        color: white;
+    }
+</style>
+
+<div id="tech-cookie-banner" class="tech-cookie-banner">
+    <div class="tech-card">
+        <!-- Glow -->
+        <div class="tech-glow"></div>
+
+        <!-- Header -->
+        <div class="tech-header">
+            <div class="tech-title">
+                <!-- Cookie Icon (Emoji) -->
+                <span style="font-size: 1.25rem;">🍪</span>
+                <span>No spyware, just runtime optimization</span>
+            </div>
+            <button class="tech-close" onclick="closeCookieBanner()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <p class="tech-body">
+            To ensure your session compiles without errors and your experience is bug-free, we store small fragments of data.
+        </p>
+
+        <!-- Actions -->
+        <div class="tech-actions">
+            <button class="btn-accept" onclick="acceptCookies()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Acknowledged
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Logic: Check localStorage (persistent) using the new key 'cookie_consent'
+        const hasConsented = localStorage.getItem('cookie_consent');
+        const banner = document.getElementById('tech-cookie-banner');
+
+        // Immediate check to prevent flash and ensure it's not in DOM if consented
+        if (hasConsented) {
+            banner.remove();
+            return;
+        }
+
+        // Show if not consented
+        // Small delay for smooth entrance
+        setTimeout(() => {
+            banner.style.display = 'block';
+        }, 500);
+
+        window.acceptCookies = function() {
+            localStorage.setItem('cookie_consent', 'true');
+            banner.remove(); // Remove element from DOM as requested
+        }
+
+        window.closeCookieBanner = function() {
+            banner.style.display = 'none';
+        }
+    })();
+</script>

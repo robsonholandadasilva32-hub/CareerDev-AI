@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .dashboard-layout {
+        display: flex;
+        gap: 30px;
+        min-height: calc(100vh - 200px); /* Adjust based on header/footer */
+    }
+
+    .dashboard-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: #111827;
+        border: 1px solid var(--accent-color);
+        border-radius: 12px;
+        padding: 20px;
+        height: fit-content;
+    }
+
+    .sidebar-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sidebar-item {
+        margin-bottom: 10px;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 15px;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--accent-color);
+        text-decoration: none;
+    }
+
+    .sidebar-link.active {
+        background: rgba(0, 243, 255, 0.1);
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .sidebar-icon {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+    }
+
+    .dashboard-content-area {
+        flex-grow: 1;
+        width: 100%; /* Ensure it takes available space */
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-layout {
+            flex-direction: column;
+        }
+        .dashboard-sidebar {
+            width: 100%;
+        }
+    }
+
+    /* UTILITY DOCK STYLES */
+    .utility-dock {
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--accent-color);
+        padding-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .utility-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        padding: 10px;
+    }
+    .util-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin-bottom: 8px;
+    }
+    .pulse-dot {
+        width: 6px; height: 6px; background: var(--neon-green, #00ff88);
+        border-radius: 50%;
+        box-shadow: 0 0 5px var(--neon-green, #00ff88);
+        animation: pulse 2s infinite;
+    }
+    .mini-control {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        margin-bottom: 5px;
+        color: #d1d5db;
+    }
+    /* MINI SWITCH */
+    .switch-mini { position: relative; display: inline-block; width: 30px; height: 16px; }
+    .switch-mini input { opacity: 0; width: 0; height: 0; }
+    .slider-mini { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 16px; }
+    .slider-mini:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider-mini { background-color: var(--primary-color, #00f3ff); }
+    input:checked + .slider-mini:before { transform: translateX(14px); }
+
+    .micro-text { font-size: 0.7rem; color: #6b7280; margin: 0; }
+    .util-link { font-size: 0.7rem; color: var(--primary-color); text-transform: uppercase; display: block; margin-top: 5px; text-decoration: none;}
+</style>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <nav>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="/dashboard" class="sidebar-link {% if request.url.path == '/dashboard' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="/security" class="sidebar-link {% if request.url.path == '/security' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        Security
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="/accessibility" class="sidebar-link {% if request.url.path == '/accessibility' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Accessibility
+                    </a>
+                </li>
+                {% if request.state.user and request.state.user.is_admin %}
+                <li class="sidebar-item">
+                    <a href="/admin/dashboard" class="sidebar-link {% if request.url.path == '/admin/dashboard' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        Admin
+                    </a>
+                </li>
+                {% endif %}
+                {% if request.state.user and request.state.user.is_admin and request.state.user.email == 'robsonholandasilva@yahoo.com.br' %}
+                <li class="sidebar-item">
+                    <a href="/admin/analytics" class="sidebar-link {% if request.url.path == '/admin/analytics' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        Data Analytics
+                    </a>
+                </li>
+                {% endif %}
+                 <li class="sidebar-item">
+                    <a href="/legal" class="sidebar-link {% if request.url.path == '/legal' %}active{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Legal & About
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar Footer Info -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--accent-color); font-size: 0.8rem; color: #6b7280; text-align: center;">
+            <p>CareerDev AI v1.2.0</p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="dashboard-content-area">
+        {% block dashboard_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<style>
+    .terminal-footer {
+        background-color: #050a14;
+        color: #00ff88;
+        padding: 10px 20px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        border-top: 1px solid #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        height: 40px;
+    }
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-item.right {
+        margin-left: auto;
+        color: #6b7280;
+    }
+    .indicator {
+        width: 8px;
+        height: 8px;
+        background-color: #374151;
+        border-radius: 50%;
+    }
+    .indicator.online {
+        background-color: #00ff88;
+        box-shadow: 0 0 5px #00ff88;
+        animation: blink 2s infinite;
+    }
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+
+<footer class="terminal-footer">
+    <div class="status-item">
+        <span class="indicator online"></span> SYSTEMS: NOMINAL
+    </div>
+    <div class="status-item">
+        <span>SYNC:</span> <span id="footer-gh-sync" style="color: #e2e8f0;">Checking...</span>
+    </div>
+    <div class="status-item">
+        <span>MODEL:</span> <span style="color: #bd00ff;">{{ request.app.state.llm_model_display_name }}</span>
+    </div>
+    <div class="status-item">
+        <span>SESSION:</span> <span style="color: #6b7280;">{{ "User-" ~ user.id if user else "GUEST" }}</span>
+    </div>
+</footer>
+
+<script src="/static/js/health.js"></script>
+<script>
+    // Footer Logic
+    document.addEventListener("DOMContentLoaded", () => {
+        // Set Last Scan Time (Mock or from Backend if available in template)
+        // If 'profile' is available in context (it is in dashboard), we can use it.
+        // But layout is generic. We'll use a safe fallback.
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // If we are on dashboard, we might update this via the dashboard script.
+        // For now, set a default.
+        const syncEl = document.getElementById('footer-gh-sync');
+        if(syncEl) syncEl.innerText = "GitHub: " + timeString;
+    });
+</script>
+{% endblock %}
