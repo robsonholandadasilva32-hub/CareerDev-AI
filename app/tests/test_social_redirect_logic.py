@@ -1,4 +1,3 @@
-import os
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi import Request
@@ -7,49 +6,45 @@ from fastapi import Request
 # We rely on pre-set env vars to avoid import errors
 from app.routes import social
 
-def test_redirect_uri_dev_http_domain():
+def test_redirect_uri_uses_configured_domain():
     """
-    If environment is development AND domain is http,
-    we should respect the http scheme (no force https).
-    """
-    with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "development"
-        mock_settings.DOMAIN = "http://localhost:8000"
-
-        mock_request = MagicMock(spec=Request)
-        # url_for returns a string (URL)
-        mock_request.url_for.return_value = "http://localhost:8000/auth/callback"
-
-        uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
-        assert uri == "http://localhost:8000/auth/callback"
-
-def test_redirect_uri_dev_https_domain():
-    """
-    If environment is development BUT domain is configured as https (e.g. staging on Railway),
-    we MUST force https.
+    The redirect URI must strictly follow settings.DOMAIN, regardless of the request context.
     """
     with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "development"
-        mock_settings.DOMAIN = "https://staging.app.com"
+        mock_settings.DOMAIN = "https://www.careerdev-ai.online"
 
         mock_request = MagicMock(spec=Request)
-        # Internal app sees http due to proxy
-        mock_request.url_for.return_value = "http://staging.app.com/auth/callback"
+        # Mock app.url_path_for
+        mock_request.app.url_path_for.return_value = "/auth/linkedin/callback"
 
-        uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
-        assert uri == "https://staging.app.com/auth/callback"
+        uri = social.get_consistent_redirect_uri(mock_request, "auth_linkedin_callback")
+        assert uri == "https://www.careerdev-ai.online/auth/linkedin/callback"
 
-def test_redirect_uri_prod():
+def test_redirect_uri_handles_trailing_slash():
     """
-    If environment is production, we MUST force https regardless of domain config
-    (though domain should be https in prod).
+    Ensure no double slashes if DOMAIN ends with /
     """
     with patch("app.routes.social.settings") as mock_settings:
-        mock_settings.ENVIRONMENT = "production"
-        mock_settings.DOMAIN = "http://misconfigured.com"
+        mock_settings.DOMAIN = "https://example.com/"
 
         mock_request = MagicMock(spec=Request)
-        mock_request.url_for.return_value = "http://misconfigured.com/auth/callback"
+        mock_request.app.url_path_for.return_value = "/callback"
 
-        uri = social.get_consistent_redirect_uri(mock_request, "dummy_endpoint")
-        assert uri == "https://misconfigured.com/auth/callback"
+        uri = social.get_consistent_redirect_uri(mock_request, "dummy")
+        assert uri == "https://example.com/callback"
+
+def test_redirect_uri_ignores_request_scheme():
+    """
+    Even if the request comes in as HTTP (e.g. internal proxy),
+    the redirect URI should use the configured DOMAIN scheme (HTTPS).
+    """
+    with patch("app.routes.social.settings") as mock_settings:
+        mock_settings.DOMAIN = "https://secure.com"
+
+        mock_request = MagicMock(spec=Request)
+        # Request context is HTTP
+        mock_request.url.scheme = "http"
+        mock_request.app.url_path_for.return_value = "/login/callback"
+
+        uri = social.get_consistent_redirect_uri(mock_request, "dummy")
+        assert uri == "https://secure.com/login/callback"
