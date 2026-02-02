@@ -35,6 +35,7 @@ class User(Base):
     # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)
     accelerator_mode = Column(Boolean, default=False)
+    # Timezone-aware check
     last_weekly_check = Column(DateTime(timezone=True), nullable=True)
     
     # --- Relacionamentos ---
