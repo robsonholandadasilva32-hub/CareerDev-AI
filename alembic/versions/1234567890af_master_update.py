@@ -8,7 +8,7 @@ Create Date: 2024-10-28 10:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import ProgrammingError, InternalError
 
 # revision identifiers, used by Alembic.
 revision = '1234567890af'
@@ -23,7 +23,7 @@ def upgrade():
     try:
         with bind.begin_nested():
             op.add_column('users', sa.Column('last_weekly_check', sa.DateTime(), nullable=True))
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         pass
 
     # 2. Create weekly_routines table
@@ -46,7 +46,7 @@ def upgrade():
             )
             # Add index for faster lookups by user and week
             op.create_index(op.f('ix_weekly_routines_user_id'), 'weekly_routines', ['user_id'], unique=False)
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         pass
 
 def downgrade():

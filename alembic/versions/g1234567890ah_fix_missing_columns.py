@@ -7,7 +7,7 @@ Create Date: 2026-02-02 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import ProgrammingError, InternalError
 
 # revision identifiers, used by Alembic.
 revision = 'g1234567890ah'
@@ -23,7 +23,7 @@ def safe_add_column(table_name, column):
     try:
         with bind.begin_nested():
             op.add_column(table_name, column)
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         # Column likely already exists
         pass
 
@@ -38,7 +38,7 @@ def safe_create_table(table_name, *columns, **kwargs):
             # If the table creation succeeds, we should also try to create the index if it was part of the original logic
             if table_name == 'weekly_routines':
                  op.create_index(op.f('ix_weekly_routines_user_id'), 'weekly_routines', ['user_id'], unique=False)
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         # Table likely already exists
         pass
 
@@ -106,7 +106,7 @@ def upgrade():
         bind = op.get_context().bind
         with bind.begin_nested():
             op.create_index(op.f('ix_weekly_routines_user_id'), 'weekly_routines', ['user_id'], unique=False)
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         pass
 
 
@@ -121,7 +121,7 @@ def downgrade():
         with bind.begin_nested():
             op.drop_index(op.f('ix_weekly_routines_user_id'), table_name='weekly_routines')
             op.drop_table('weekly_routines')
-    except ProgrammingError:
+    except (ProgrammingError, InternalError):
         pass
 
     # Drop columns
@@ -139,5 +139,5 @@ def downgrade():
         try:
             with bind.begin_nested():
                 op.drop_column('users', col)
-        except ProgrammingError:
+        except (ProgrammingError, InternalError):
             pass
