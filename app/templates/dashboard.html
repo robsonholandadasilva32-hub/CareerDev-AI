@@ -639,4 +639,41 @@ async function verifyTask(taskId) {
     const btn = event.target;
     const originalText = btn.innerText;
     
-    btn.innerText = "
+    btn.innerText = "SCANNING REPO...";
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+
+    try {
+        const res = await fetch("/career/api/growth/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ task_id: taskId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            btn.innerText = "✔ VERIFIED";
+            btn.style.color = "#000";
+            btn.style.backgroundColor = "var(--neon-green)";
+            btn.style.borderColor = "var(--neon-green)";
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            btn.innerText = "❌ NOT FOUND";
+            btn.style.borderColor = "var(--alert)";
+            btn.style.color = "var(--alert)";
+            // Reset button after 3s
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.style.borderColor = "var(--neon-purple)";
+                btn.style.color = "var(--neon-purple)";
+            }, 3000);
+        }
+    } catch (e) {
+        btn.innerText = "CONNECTION ERROR";
+    }
+}
+</script>
+
+{% endblock %}
