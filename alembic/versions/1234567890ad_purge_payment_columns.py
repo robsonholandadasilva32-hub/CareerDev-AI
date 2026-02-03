@@ -17,7 +17,6 @@ depends_on = None
 def upgrade() -> None:
     # Update existing users to be premium before dropping columns if logic depended on it,
     # but strictly we just want to ensure everyone is premium.
-    op.execute("UPDATE users SET is_premium = 1")
 
     # Batch operations are needed for SQLite to drop columns
     with op.batch_alter_table('users', schema=None) as batch_op:
