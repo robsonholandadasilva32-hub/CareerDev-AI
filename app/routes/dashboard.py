@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.db.models.gamification import UserBadge
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -130,3 +131,20 @@ async def verify_repo(
         db.commit()
 
     return {"verified": verified}
+    
+    # -------------------------------------------------
+# ROTA PARA WEEKLY CHECK-IN (Adicione isso!)
+# -------------------------------------------------
+@router.post("/api/dashboard/weekly-check")
+async def perform_weekly_check(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user_secure)
+):
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Atualiza a data para AGORA
+    user.last_weekly_check = datetime.utcnow()
+    db.commit()
+    
+    return {"status": "success", "timestamp": user.last_weekly_check.isoformat()}

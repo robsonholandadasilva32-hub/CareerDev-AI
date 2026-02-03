@@ -104,6 +104,19 @@
         <a href="/accessibility" class="nav-btn"><span class="nav-icon">🧠</span> <span class="nav-text">Accessibility</span></a>
         <a href="/security" class="nav-btn"><span class="nav-icon">🛡️</span> <span class="nav-text">Security</span></a>
         <a href="/legal" class="nav-btn"><span class="nav-icon">⚖️</span> <span class="nav-text">Legal & About</span></a>
+        
+        <div style="margin-top: 20px; width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <button onclick="performWeeklyCheck(this)" class="nav-btn" style="border: 1px solid var(--neon-blue); color: var(--neon-blue); justify-content: flex-start !important;">
+                <span class="nav-icon">🔄</span> <span class="nav-text">WEEKLY SYNC</span>
+            </button>
+            <div style="font-size: 0.65rem; color: #888; margin-top: 8px; margin-left: 15px; font-family: 'JetBrains Mono', monospace;">
+                LAST CHECK: 
+                <span id="last-check-date" style="color: #fff;">
+                    {{ user.last_weekly_check.strftime('%d/%m') if user.last_weekly_check else 'NEVER' }}
+                </span>
+            </div>
+        </div>
+
         <div style="flex-grow: 1;"></div>
         <a href="/logout" class="nav-btn alert-color"><span class="nav-icon">✕</span> <span class="nav-text">Logout</span></a>
     </nav>
@@ -111,7 +124,8 @@
     <div class="panel status-bar" style="grid-column: 2/4;">
         <span class="feed-label">REAL_TIME_FEED ::</span>
         <marquee class="feed-text">
-            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... ML_RISK_ENGINE: ACTIVE...
+            SYSTEM ONLINE... USER: {{ user.email }}... CONNECTED TO GITHUB API... ML_RISK_ENGINE: ACTIVE... 
+            {% if user.last_weekly_check %} LAST SYNC: {{ user.last_weekly_check.strftime('%Y-%m-%d %H:%M') }} {% endif %}
         </marquee>
     </div>
 
@@ -151,9 +165,7 @@
 
         <div id="view-audit" style="padding:20px;">
 
-            <!-- AI INSIGHTS SECTION -->
             <div style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <!-- Imposter Alerts -->
                 {% for alert in career_data.career_risks if alert.level == 'CRITICAL' %}
                 <div class="panel" style="border: 1px solid var(--alert); padding: 15px; background: rgba(239, 68, 68, 0.1);">
                     <h4 style="color: var(--alert); margin-top: 0;">⚠ IMPOSTER SYNDROME DETECTED</h4>
@@ -161,7 +173,6 @@
                 </div>
                 {% endfor %}
 
-                <!-- Hidden Gems -->
                 {% for gem in career_data.hidden_gems %}
                 <div class="panel" style="border: 1px solid var(--neon-green); padding: 15px; background: rgba(16, 185, 129, 0.1);">
                     <h4 style="color: var(--neon-green); margin-top: 0;">💎 HIDDEN GEM DISCOVERED</h4>
@@ -229,7 +240,7 @@
 
         <div id="view-plan" style="display:none;padding:20px;">
             <div class="kanban-header">
-                CURRENT FOCUS:
+                CURRENT FOCUS: 
                 <span style="color: #fcee0a;">{{ career_data.weekly_plan.focus | upper }}</span>
             </div>
 
@@ -245,7 +256,7 @@
                     {% if task.status == 'completed' %}
                         <div style="margin-top: 10px; color: var(--neon-green); font-size: 0.8rem;">✔ COMPLETED</div>
                     {% elif task.verify_key %}
-                        <button class="nav-btn"
+                        <button class="nav-btn" 
                                 style="margin-top: 10px; border: 1px solid var(--neon-purple); color: var(--neon-purple); justify-content: center;"
                                 onclick="verifyTask({{ task.id }})">
                             VERIFY CODE
@@ -310,8 +321,8 @@ new Chart(document.getElementById('radarChart'), {
     data: {{ career_data.zone_a_radar | tojson }},
     options: {
         scales: {
-            r: {
-                min: 0, max: 100,
+            r: { 
+                min: 0, max: 100, 
                 grid: { color: 'rgba(255, 255, 255, 0.1)' },
                 angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                 pointLabels: { color: '#fff' }
@@ -425,6 +436,43 @@ function switchTab(tab){
     document.getElementById('view-' + tab).style.display = 'block';
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
+}
+
+/* ---------------- WEEKLY CHECK-IN LOGIC ---------------- */
+async function performWeeklyCheck(btn) {
+    const originalContent = btn.innerHTML;
+    const dateDisplay = document.getElementById("last-check-date");
+    
+    btn.disabled = true;
+    btn.innerHTML = `<span class="nav-icon">⏳</span> SYNCING...`;
+    
+    try {
+        // Envia requisição para a rota que vamos criar em breve
+        const res = await fetch("/api/dashboard/weekly-check", { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        
+        if (res.ok) {
+            btn.innerHTML = `<span class="nav-icon">✔</span> DONE`;
+            btn.style.borderColor = "var(--neon-green)";
+            btn.style.color = "var(--neon-green)";
+            dateDisplay.innerText = "JUST NOW";
+            dateDisplay.style.color = "var(--neon-green)";
+            
+            // Recarrega a página após 1s para ver os novos dados
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            throw new Error("Failed");
+        }
+    } catch (e) {
+        console.error(e);
+        btn.innerHTML = "❌ ERROR";
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }, 2000);
+    }
 }
 
 /* ---------------- MODAL LOGIC (RISK) ---------------- */

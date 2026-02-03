@@ -35,8 +35,9 @@ class User(Base):
     # --- Gamification & Dashboard ---
     streak_count = Column(Integer, default=0)
     accelerator_mode = Column(Boolean, default=False)
-    # Timezone-aware check
-    last_weekly_check = Column(DateTime(timezone=True), nullable=True)
+    
+    # AJUSTADO: Removido timezone=True para bater com o DB (TIMESTAMP WITHOUT TIME ZONE)
+    last_weekly_check = Column(DateTime, nullable=True)
     
     # --- Relacionamentos ---
     career_profile = relationship("CareerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
