@@ -1,0 +1,4 @@
+Project Name: CareerDev AI
+Creation Timestamp: 03/02/2026 16:06 (-0300 GMT)
+Initial Commit Hash: b7736321ee1479f1122624ef8e1550292796f044
+Author: Robson Holanda da Silva
