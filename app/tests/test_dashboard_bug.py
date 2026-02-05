@@ -1,28 +1,57 @@
 import pytest
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
 from app.main import app
-from app.db.session import SessionLocal, engine
 from app.db.models.user import User
 from app.core.jwt import create_access_token
 from app.core.security import hash_password
 from app.db.base import Base
+from app.db.session import get_db
+
+# Setup Test DB with StaticPool for in-memory SQLite to work across threads
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Ensure tables exist
 Base.metadata.create_all(bind=engine)
 
 @pytest.fixture
-def client():
-    app.dependency_overrides = {} # Reset overrides from other tests
-    transport = ASGITransport(app=app)
-    return AsyncClient(transport=transport, base_url="http://test")
-
-@pytest.fixture
 def db_session():
-    session = SessionLocal()
+    # Use the TestingSessionLocal
+    session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
+
+@pytest.fixture
+def client(db_session):
+    app.dependency_overrides = {}
+
+    # Override get_db to use our test session
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Patch Middleware SessionLocal to use our test session factory
+    with patch("app.middleware.auth.SessionLocal", side_effect=TestingSessionLocal):
+        transport = ASGITransport(app=app)
+        yield AsyncClient(transport=transport, base_url="http://test")
+
+    app.dependency_overrides.clear()
 
 @pytest.mark.asyncio
 async def test_dashboard_rendering_error(client, db_session):
