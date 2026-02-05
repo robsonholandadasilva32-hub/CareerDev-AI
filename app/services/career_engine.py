@@ -9,7 +9,7 @@ from app.db.models.ml_risk_log import MLRiskLog
 from app.db.models.analytics import RiskSnapshot 
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
-from app.services.benchmark_engine import benchmark_engine # <--- Nova Importação
+from app.services.benchmark_engine import benchmark_engine
 from app.services.counterfactual_engine import counterfactual_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
@@ -44,14 +44,8 @@ class CareerEngine:
         # -------------------------------
         # SKILL CONFIDENCE SCORE
         # -------------------------------
-        skill_confidence: Dict[str, int] = {}
+        skill_confidence = self._calculate_skill_confidence(raw_languages, linkedin_input)
         linkedin_skills = list(linkedin_input.get("skills", {}).keys())
-
-        for skill, bytes_count in raw_languages.items():
-            score = self.calculate_verified_score(
-                skill, bytes_count, linkedin_skills
-            )
-            skill_confidence[skill] = int(score * 100)
 
         # -------------------------------
         # CAREER RISK ALERTS (CURRENT)
@@ -168,7 +162,7 @@ class CareerEngine:
             "career_risks": career_risks,
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
-            "benchmark": benchmark, # <--- Adicionado ao retorno
+            "benchmark": benchmark,
             "counterfactual": counterfactual,
             "zone_a_radar": {},
             "missing_skills": []
@@ -180,8 +174,29 @@ class CareerEngine:
     def get_counterfactual(self, db: Session, user: User) -> Dict:
         """
         Gera uma análise contrafactual sob demanda (API isolada).
+        Populates necessary data from user profile to run the model.
         """
-        # Recupera snapshots recentes para features
+        # 1. Recupera dados do perfil (Fallbacks se vazio)
+        profile = user.career_profile
+        metrics = profile.github_activity_metrics if profile else {}
+        if not isinstance(metrics, dict):
+            metrics = {}
+
+        raw_languages = metrics.get("raw_languages", {})
+        linkedin_input = profile.linkedin_alignment_data if profile else {}
+        if not isinstance(linkedin_input, dict):
+            linkedin_input = {}
+
+        # 2. Calcula Skill Confidence
+        skill_confidence = self._calculate_skill_confidence(raw_languages, linkedin_input)
+
+        # 3. Calcula Risco Atual (Forecast)
+        career_forecast = self.forecast_career_risk(
+            db, user, skill_confidence, metrics
+        )
+        current_risk = career_forecast["risk_score"]
+
+        # 4. Recupera Snapshots
         recent_snapshots = (
             db.query(RiskSnapshot)
             .filter(RiskSnapshot.user_id == user.id)
@@ -189,22 +204,34 @@ class CareerEngine:
             .limit(5)
             .all()
         )
+
+        # 5. Computa Features e Gera Counterfactual
+        features = compute_features(metrics, recent_snapshots)
+        counterfactual = counterfactual_engine.generate(
+            features=features,
+            current_risk=current_risk
+        )
         
-        # Nota: Em um cenário real, você precisaria recuperar as métricas atuais aqui 
-        # (ex: chamando o serviço do GitHub ou cache) para usar compute_features.
-        # metrics = github_service.get_metrics(user)
-        # features = compute_features(metrics, recent_snapshots)
+        return counterfactual
+
+    # =========================================================
+    # HELPER: CALCULATE SKILL CONFIDENCE
+    # =========================================================
+    def _calculate_skill_confidence(
+        self,
+        raw_languages: Dict[str, int],
+        linkedin_input: Dict
+    ) -> Dict[str, int]:
+        skill_confidence: Dict[str, int] = {}
+        linkedin_skills = list(linkedin_input.get("skills", {}).keys())
+
+        for skill, bytes_count in raw_languages.items():
+            score = self.calculate_verified_score(
+                skill, bytes_count, linkedin_skills
+            )
+            skill_confidence[skill] = int(score * 100)
         
-        # Retorna um placeholder simulado se não houver dados completos no momento da chamada
-        return {
-            "scenario": "Increase commit velocity by 15%",
-            "predicted_risk_reduction": 12,
-            "summary": "Increasing your commit frequency would stabilize your profile against market trends.",
-            "actions": [
-                "Commit code at least 4 times a week",
-                "Complete one Zone A project"
-            ]
-        }
+        return skill_confidence
 
     # =========================================================
     # WEEKLY ROUTINE GENERATOR
