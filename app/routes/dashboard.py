@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
 import logging
+import asyncio
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
@@ -69,7 +70,8 @@ async def dashboard(
     metrics = profile.github_activity_metrics or {} if profile else {}
     skill_audit = profile.skills_graph_data or {} if profile else {}
 
-    career_data = career_engine.analyze(
+    career_data = await asyncio.to_thread(
+        career_engine.analyze,
         db=db,
         raw_languages=raw_languages,
         linkedin_input=linkedin_input,
