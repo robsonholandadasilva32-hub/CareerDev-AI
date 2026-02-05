@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.core.auth_guard import get_current_user_from_request
+from app.core.dependencies import get_user_with_profile
 from app.services.resume import process_resume_upload_async
 from app.services.onboarding import validate_onboarding_access
 from app.db.models.user import User
@@ -19,12 +19,10 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/analyze-resume", response_class=HTMLResponse)
-async def analyze_resume_page(request: Request, db: Session = Depends(get_db)):
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+async def analyze_resume_page(request: Request, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
+    if not user:
         return RedirectResponse("/login")
 
-    user = request.state.user
     redirect = validate_onboarding_access(user)
     if redirect:
         return redirect
@@ -38,14 +36,13 @@ async def analyze_resume_page(request: Request, db: Session = Depends(get_db)):
 async def analyze_resume(
     request: Request,
     resume_text: str = Form(...),
+    user: User = Depends(get_user_with_profile),
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+    if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # GUARD: Ensure Onboarding is Complete
-    user = request.state.user
     redirect = validate_onboarding_access(user)
     if redirect:
         return redirect
@@ -60,20 +57,17 @@ async def analyze_resume(
             logger.error(f"GitHub dependency scan failed: {e}")
 
     try:
-        result = await process_resume_upload_async(db, user_id, resume_text, github_evidence=github_evidence)
+        result = await process_resume_upload_async(db, user.id, resume_text, github_evidence=github_evidence)
         return JSONResponse(result)
     except Exception as e:
         logger.error(f"Error analyzing resume: {e}")
         return JSONResponse({"error": "Failed to analyze"}, status_code=500)
 
 @router.get("/analytics", response_class=HTMLResponse)
-def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
+def analytics_dashboard(request: Request, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
     # 1. Auth & Onboarding Guard
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+    if not user:
         return RedirectResponse("/login")
-
-    user = request.state.user
 
     # GUARD: Ensure Onboarding is Complete
     redirect = validate_onboarding_access(user)
@@ -97,13 +91,10 @@ def analytics_dashboard(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.post("/api/generate-linkedin-post", response_class=JSONResponse)
-async def generate_linkedin_post(request: Request, db: Session = Depends(get_db)):
+async def generate_linkedin_post(request: Request, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
     # 1. Auth Guard
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+    if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    user = request.state.user
 
     # 2. Get Top Skill
     profile = user.career_profile
@@ -131,10 +122,9 @@ class ProjectSpecRequest(BaseModel):
     skill: str
 
 @router.post("/api/generate-project-spec", response_class=JSONResponse)
-async def generate_project_spec(request: Request, body: ProjectSpecRequest, db: Session = Depends(get_db)):
+async def generate_project_spec(request: Request, body: ProjectSpecRequest, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
     # 1. Auth Guard
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+    if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # 2. Generate Spec
@@ -149,12 +139,9 @@ async def generate_project_spec(request: Request, body: ProjectSpecRequest, db: 
 # GROWTH ENGINE ROUTES
 
 @router.post("/api/growth/generate", response_class=JSONResponse)
-def generate_weekly_plan_route(request: Request, db: Session = Depends(get_db)):
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+def generate_weekly_plan_route(request: Request, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
+    if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    user = request.state.user
 
     try:
         plan = growth_engine.generate_weekly_plan(db, user)
@@ -167,12 +154,9 @@ class VerifyTaskRequest(BaseModel):
     task_id: int
 
 @router.post("/api/growth/verify", response_class=JSONResponse)
-async def verify_task_route(request: Request, body: VerifyTaskRequest, db: Session = Depends(get_db)):
-    user_id = get_current_user_from_request(request)
-    if not user_id:
+async def verify_task_route(request: Request, body: VerifyTaskRequest, user: User = Depends(get_user_with_profile), db: Session = Depends(get_db)):
+    if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
-
-    user = request.state.user
 
     try:
         result = await growth_engine.verify_task(db, user, body.task_id)

@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from app.db.session import get_db
 from app.db.models.user import User
-from app.routes.dashboard import get_current_user_secure
+from app.core.dependencies import get_user_with_profile
 from app.services.pdf_generator import generate_career_passport
 
 router = APIRouter()
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/api/export/passport")
 def export_passport(
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_secure)
+    user: User = Depends(get_user_with_profile)
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from datetime import datetime
 from fastapi.testclient import TestClient
 from app.main import app
-from app.routes.dashboard import get_current_user_secure
+from app.core.dependencies import get_user_with_profile
 from app.db.session import get_db
 
 client = TestClient(app)
@@ -35,7 +35,7 @@ class MockUser:
     career_profile.skills_graph_data = {}
     career_profile.market_relevance_score = 50
 
-def mock_get_current_user_secure():
+def mock_get_user_with_profile():
     return MockUser()
 
 def mock_get_db():
@@ -43,7 +43,7 @@ def mock_get_db():
 
 @pytest.fixture(autouse=True)
 def setup_overrides():
-    app.dependency_overrides[get_current_user_secure] = mock_get_current_user_secure
+    app.dependency_overrides[get_user_with_profile] = mock_get_user_with_profile
     app.dependency_overrides[get_db] = mock_get_db
     yield
     app.dependency_overrides = {}
