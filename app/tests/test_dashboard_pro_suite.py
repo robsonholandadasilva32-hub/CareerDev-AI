@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
-from app.routes.dashboard import get_current_user_secure
+from app.core.dependencies import get_user_with_profile
 from app.db.session import get_db
 
 client = TestClient(app)
@@ -17,7 +17,7 @@ class MockUser:
     # Mock career_profile as an object, not just MagicMock because template accesses attributes
     career_profile = MagicMock()
 
-def mock_get_current_user_secure():
+def mock_get_user_with_profile():
     user = MockUser()
     user.career_profile.level = 1
     user.career_profile.focus = "Dev"
@@ -32,7 +32,7 @@ def mock_get_db():
 
 @pytest.fixture(autouse=True)
 def setup_overrides():
-    app.dependency_overrides[get_current_user_secure] = mock_get_current_user_secure
+    app.dependency_overrides[get_user_with_profile] = mock_get_user_with_profile
     app.dependency_overrides[get_db] = mock_get_db
     yield
     app.dependency_overrides = {}
@@ -53,4 +53,4 @@ def test_dashboard_contains_pro_suite(mock_validate, mock_career_engine):
     assert response.status_code == 200
     assert "AUDIT VIEW" in response.text
     assert "WEEKLY PLAN" in response.text
-    assert "SKILL RADAR" in response.text
+    assert "SKILL_RADAR" in response.text

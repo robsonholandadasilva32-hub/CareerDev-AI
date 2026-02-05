@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 import logging
 import asyncio
 
@@ -14,7 +14,7 @@ from app.services.security_service import get_active_sessions, revoke_session, l
 from app.db.session import get_db
 from app.db.models.user import User
 from app.db.models.security import UserSession
-from app.db.models.gamification import UserBadge
+from app.core.dependencies import get_user_with_profile
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -24,37 +24,13 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # -------------------------------------------------
-# DEPENDÊNCIA DE SEGURANÇA
-# -------------------------------------------------
-def get_current_user_secure(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    if not getattr(request.state, "user", None):
-        return None
-
-    user_id = request.state.user.id
-
-    user = (
-        db.query(User)
-        .options(
-            joinedload(User.badges).joinedload(UserBadge.badge),
-            joinedload(User.career_profile)
-        )
-        .filter(User.id == user_id)
-        .first()
-    )
-    return user
-
-
-# -------------------------------------------------
 # DASHBOARD
 # -------------------------------------------------
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
     request: Request,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_secure)
+    user: User = Depends(get_user_with_profile)
 ):
     if not user:
         return RedirectResponse("/login", status_code=302)
@@ -116,7 +92,7 @@ async def dashboard(
 async def verify_repo(
     payload: dict,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_secure)
+    user: User = Depends(get_user_with_profile)
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -140,7 +116,7 @@ async def verify_repo(
 @router.post("/api/dashboard/weekly-check")
 async def perform_weekly_check(
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user_secure)
+    user: User = Depends(get_user_with_profile)
 ):
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")

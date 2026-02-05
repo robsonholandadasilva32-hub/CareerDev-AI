@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 # Dependências de autenticação e banco de dados
-from app.api.deps import get_db  # Ajuste conforme sua estrutura de injeção de dependência
-from app.routes.dashboard import get_current_user_secure
+from app.db.session import get_db  # Adjusted to correct import
+from app.core.dependencies import get_user_with_profile
 from app.services.career_engine import career_engine
 
 router = APIRouter()
@@ -13,7 +13,7 @@ router = APIRouter()
 # =========================================================
 @router.get("/api/risk/explain")
 async def explain_risk(
-    user=Depends(get_current_user_secure)
+    user=Depends(get_user_with_profile)
 ):
     """
     Retorna a explicação textual (human-readable) dos fatores de risco.
@@ -27,7 +27,7 @@ async def explain_risk(
 @router.get("/api/risk/counterfactual")
 async def counterfactual(
     db: Session = Depends(get_db), 
-    user=Depends(get_current_user_secure)
+    user=Depends(get_user_with_profile)
 ):
     """
     Gera cenários alternativos: 'O que aconteceria com meu risco se...'

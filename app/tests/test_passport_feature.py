@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
-from app.routes.dashboard import get_current_user_secure
+from app.core.dependencies import get_user_with_profile
 from app.db.session import get_db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -28,9 +28,16 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
+# Remove global override
+# app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def setup_db_override():
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides = {}
 
 def test_passport_pdf_generation():
     # Create User
@@ -50,7 +57,7 @@ def test_passport_pdf_generation():
     db.refresh(user)
 
     # Override Auth
-    app.dependency_overrides[get_current_user_secure] = lambda: user
+    app.dependency_overrides[get_user_with_profile] = lambda: user
 
     response = client.get("/api/export/passport")
     assert response.status_code == 200
@@ -59,7 +66,7 @@ def test_passport_pdf_generation():
 
     db.close()
     # Clean override
-    del app.dependency_overrides[get_current_user_secure]
+    del app.dependency_overrides[get_user_with_profile]
 
 def test_public_badge():
     # Create User
