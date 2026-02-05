@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.session import get_db
 import httpx
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -42,8 +43,11 @@ async def system_diagnostics(db: Session = Depends(get_db)):
     }
 
     # 1. Check Database
-    try:
+    def check_database():
         db.execute(text("SELECT 1"))
+
+    try:
+        await run_in_threadpool(check_database)
         diagnostics["database"] = "connected"
     except Exception as e:
         diagnostics["database"] = f"error: {str(e)}"
