@@ -17,9 +17,57 @@ class SocialHarvester:
     and transforming it into actionable Dashboard metrics.
     """
 
+    # --- Constants for Dependency Scanning ---
+    SCAN_DEPS_FILES = {
+        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas", "torch", "scikit-learn", "requests"],
+        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript", "angular", "tailwindcss"],
+        "go.mod": ["gin", "gorm", "fiber", "echo"],
+        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket", "diesel"],
+        "pom.xml": ["spring", "hibernate", "jakarta", "junit"],
+        "build.gradle": ["spring", "hibernate", "kotlin"],
+        "Gemfile": ["rails", "sinatra", "rspec", "jekyll"]
+    }
+
+    HARVEST_RAW_FILES = {
+        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas"],
+        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript"],
+        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket"]
+    }
+
     def __init__(self):
         # System's "High Demand" List
         self.market_high_demand_skills = ["Rust", "Go", "Python", "AI/ML", "React", "System Design", "Cloud Architecture", "TypeScript", "Kubernetes"]
+
+        # Pre-compute Bytes for optimized scanning
+        # Mapping: filename -> { keyword_bytes: original_keyword_string }
+        # This allows us to search bytes but return the original string casing if needed
+        self.scan_deps_map_bytes = self._prepare_bytes_map(self.SCAN_DEPS_FILES)
+        self.harvest_raw_map_bytes = self._prepare_bytes_map(self.HARVEST_RAW_FILES)
+
+    def _prepare_bytes_map(self, file_map: Dict[str, List[str]]) -> Dict[str, Dict[bytes, str]]:
+        """
+        Converts a file->keywords map into a file->{bytes: string} map.
+        Used for fast byte-level searching.
+        """
+        result = {}
+        for filename, keywords in file_map.items():
+            # key is bytes, value is original string (for reconstructing result)
+            result[filename] = {k.encode("utf-8"): k for k in keywords}
+        return result
+
+    def _check_keywords_in_content(self, content: bytes, keyword_map: Dict[bytes, str]) -> List[str]:
+        """
+        Optimized helper to check for keywords in byte content.
+        Performance optimization: Avoids UTF-8 decoding and uses fast byte comparison.
+        """
+        found = []
+        # Normalize content to lowercase bytes once
+        content_lower = content.lower()
+
+        for kw_bytes, original_kw in keyword_map.items():
+            if kw_bytes in content_lower:
+                found.append(original_kw)
+        return found
 
     # --- Sync Helpers for DB Operations (to be run in thread) ---
 
@@ -182,15 +230,6 @@ class SocialHarvester:
             async def check_repo(repo):
                 async with sem:
                     repo_name = repo.get("name")
-                    files_to_check = {
-                        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas", "torch", "scikit-learn", "requests"],
-                        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript", "angular", "tailwindcss"],
-                        "go.mod": ["gin", "gorm", "fiber", "echo"],
-                        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket", "diesel"],
-                        "pom.xml": ["spring", "hibernate", "jakarta", "junit"],
-                        "build.gradle": ["spring", "hibernate", "kotlin"],
-                        "Gemfile": ["rails", "sinatra", "rspec", "jekyll"]
-                    }
 
                     # Scan contents (List root files first to avoid 404 spam)
                     # Note: contents_url usually ends with /{+path}
@@ -200,27 +239,29 @@ class SocialHarvester:
                     if c_resp.status_code == 200:
                         root_files = {f["name"]: f for f in c_resp.json()}
 
-                        for filename, keywords in files_to_check.items():
+                        # Using Pre-computed Bytes Map
+                        for filename, keyword_map in self.scan_deps_map_bytes.items():
                             if filename in root_files:
                                 # Fetch Content
                                 file_url = root_files[filename].get("download_url")
                                 if file_url:
                                     f_resp = await client.get(file_url)
                                     if f_resp.status_code == 200:
-                                        content = f_resp.text.lower()
-                                        for kw in keywords:
-                                            if kw in content:
-                                                # Use title case for consistency
-                                                skill_name = kw.title()
-                                                if skill_name == "Next": skill_name = "Next.js"
-                                                if skill_name == "Vue": skill_name = "Vue.js"
+                                        # Optimization: Use raw bytes (.content) instead of decoding (.text)
+                                        # Use helper for byte-level search
+                                        found_keywords = self._check_keywords_in_content(f_resp.content, keyword_map)
 
-                                                # Atomic update (since we are in async gather, dict set is not thread safe if not careful,
-                                                # but we are in single threaded event loop so it is fine actually)
-                                                if skill_name not in skill_evidence_map:
-                                                    skill_evidence_map[skill_name] = []
-                                                if repo_name not in skill_evidence_map[skill_name]:
-                                                    skill_evidence_map[skill_name].append(repo_name)
+                                        for kw in found_keywords:
+                                            # Use title case for consistency (logic preserved)
+                                            skill_name = kw.title()
+                                            if skill_name == "Next": skill_name = "Next.js"
+                                            if skill_name == "Vue": skill_name = "Vue.js"
+
+                                            # Atomic update
+                                            if skill_name not in skill_evidence_map:
+                                                skill_evidence_map[skill_name] = []
+                                            if repo_name not in skill_evidence_map[skill_name]:
+                                                skill_evidence_map[skill_name].append(repo_name)
 
             tasks = [check_repo(repo) for repo in repos]
             await asyncio.gather(*tasks)
@@ -359,13 +400,7 @@ class SocialHarvester:
                             lang_data = r.json()
 
                     # B. Deep File Scan (Dependency Check)
-                    # We check root files for specific patterns
                     found_frameworks = []
-                    files_to_check = {
-                        "requirements.txt": ["fastapi", "django", "flask", "numpy", "pandas"],
-                        "package.json": ["react", "next", "vue", "express", "nestjs", "typescript"],
-                        "Cargo.toml": ["tokio", "serde", "actix", "axum", "rocket"]
-                    }
 
                     # Scan contents (List root files first to avoid 404 spam)
                     contents_url = repo.get("contents_url", "").replace("{+path}", "")
@@ -373,17 +408,17 @@ class SocialHarvester:
                     if c_resp.status_code == 200:
                         files = {f["name"]: f for f in c_resp.json()}
 
-                        for filename, keywords in files_to_check.items():
+                        # Use Pre-computed Bytes Map
+                        for filename, keyword_map in self.harvest_raw_map_bytes.items():
                             if filename in files:
                                 # Fetch Content
                                 file_url = files[filename].get("download_url")
                                 if file_url:
                                     f_resp = await client.get(file_url)
                                     if f_resp.status_code == 200:
-                                        content = f_resp.text.lower()
-                                        for kw in keywords:
-                                            if kw in content:
-                                                found_frameworks.append(kw)
+                                        # Optimization: Use raw bytes (.content)
+                                        found = self._check_keywords_in_content(f_resp.content, keyword_map)
+                                        found_frameworks.extend(found)
 
                     return lang_data, repo_name, found_frameworks
 
