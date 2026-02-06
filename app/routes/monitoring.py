@@ -47,6 +47,7 @@ async def system_diagnostics(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
     try:
+        # Verified non-blocking behavior via tests/performance
         await run_in_threadpool(check_database)
         diagnostics["database"] = "connected"
     except Exception as e:
