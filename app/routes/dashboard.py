@@ -96,6 +96,19 @@ def _update_streak_sync(user_id: int):
             u.streak_count = (u.streak_count or 0) + 1
             db.commit()
 
+
+def _update_last_weekly_check_sync(user_id: int):
+    """
+    Helper to update last_weekly_check in a thread-safe dedicated session.
+    """
+    with SessionLocal() as db:
+        u = db.query(User).filter(User.id == user_id).first()
+        if u:
+            u.last_weekly_check = datetime.utcnow()
+            db.commit()
+            return u.last_weekly_check
+    return None
+
 # -------------------------------------------------
 # API REAL: VERIFICAÇÃO DE CÓDIGO
 # -------------------------------------------------
@@ -140,8 +153,10 @@ async def perform_weekly_check(
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    # Atualiza a data para AGORA
-    user.last_weekly_check = datetime.utcnow()
-    db.commit()
+    # Offload Blocking DB Commit
+    timestamp = await asyncio.to_thread(_update_last_weekly_check_sync, user.id)
     
-    return {"status": "success", "timestamp": user.last_weekly_check.isoformat()}
+    if not timestamp:
+         raise HTTPException(status_code=404, detail="User not found")
+
+    return {"status": "success", "timestamp": timestamp.isoformat()}
