@@ -167,6 +167,15 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # MENTOR INTEGRATION
+        # -------------------------------
+        mentor_engine.proactive_from_counterfactual(
+            db,
+            user,
+            counterfactual
+        )
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {

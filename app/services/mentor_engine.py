@@ -110,6 +110,27 @@ class MentorEngine:
         return insights
 
     # -------------------------------------------------
+    # COUNTERFACTUAL PROACTIVE INSIGHTS
+    # -------------------------------------------------
+    def proactive_from_counterfactual(self, db: Session, user: User, counterfactual: dict):
+        # Safety checks
+        if not counterfactual or not counterfactual.get("actions"):
+            return
+
+        # Extract top action safely
+        top_action = counterfactual["actions"][0]
+        action_name = top_action.get("action", "Unknown Action")
+        impact_score = top_action.get("impact", "N/A")
+
+        message = (
+            f"🚀 Quick Win Detected: Focus on '{action_name}'. "
+            f"Our simulation shows this could immediately lower your career risk factor "
+            f"by {impact_score} points."
+        )
+
+        self.store(db, user, "PROACTIVE", message)
+
+    # -------------------------------------------------
     # DAILY ADVICE (LLM PLACEHOLDER)
     # -------------------------------------------------
     def get_daily_advice(
