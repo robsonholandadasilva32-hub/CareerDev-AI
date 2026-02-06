@@ -36,4 +36,4 @@ async def counterfactual(
     # Nota: Certifique-se de que o método 'get_counterfactual' 
     # foi implementado ou exposto no CareerEngine.
     # Caso contrário, você pode reutilizar a lógica interna do método 'analyze'.
-    return career_engine.get_counterfactual(db, user)
+    return await career_engine.get_counterfactual(db, user)

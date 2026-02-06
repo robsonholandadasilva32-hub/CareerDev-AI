@@ -140,6 +140,46 @@ class SocialHarvester:
 
     # --- Async Main Methods ---
 
+    async def get_metrics(self, user: User) -> Dict:
+        """
+        Retrieves metrics for analysis, preferring live data if token exists,
+        falling back to cached profile data otherwise.
+
+        Guarantees normalized keys for downstream consumers (e.g. compute_features):
+        - languages (Dict[str, int])
+        - commits_last_30_days (int)
+        """
+        metrics = {}
+
+        # 1. Try fetching live data if token exists
+        if user.github_token:
+            try:
+                raw_langs, commit_metrics = await self._harvest_github_raw(user.github_token)
+                metrics = commit_metrics.copy()
+                metrics["languages"] = raw_langs
+                return metrics
+            except Exception as e:
+                logger.warning(f"Failed to fetch live metrics for user {user.id}, falling back to cache: {e}")
+
+        # 2. Fallback to cache
+        profile = user.career_profile
+        cached_metrics = profile.github_activity_metrics if profile else {}
+        if not isinstance(cached_metrics, dict):
+            cached_metrics = {}
+
+        metrics = cached_metrics.copy()
+
+        # 3. Normalize keys
+        # Ensure 'languages' key exists (map from 'raw_languages' if needed)
+        if "languages" not in metrics and "raw_languages" in metrics:
+            metrics["languages"] = metrics["raw_languages"]
+
+        # Ensure 'commits_last_30_days' defaults to 0
+        if "commits_last_30_days" not in metrics:
+            metrics["commits_last_30_days"] = 0
+
+        return metrics
+
     async def harvest_linkedin_data(self, user_id: int, token: str):
         """
         Background Task: Fetches LinkedIn data using non-blocking DB operations.
