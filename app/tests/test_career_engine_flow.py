@@ -76,3 +76,78 @@ async def test_get_counterfactual_flow():
 
         actions = result["actions"]
         assert any("market gap" in a.lower() for a in actions)
+
+# =========================================================
+# REFACTORED LOGIC TESTS
+# =========================================================
+
+def create_mock_user(commits=0, market_score=0, skills_snapshot=None, languages=None):
+    user = MagicMock(spec=User)
+    profile = MagicMock(spec=CareerProfile)
+
+    metrics = {}
+    if commits is not None:
+        metrics["commits_last_30_days"] = commits
+    if languages is not None:
+        metrics["languages"] = languages
+
+    profile.github_activity_metrics = metrics
+    profile.market_relevance_score = market_score
+    profile.skills_snapshot = skills_snapshot or {}
+
+    user.career_profile = profile
+    return user
+
+def test_explain_risk_priority_1_stagnation():
+    # Commits < 5
+    user = create_mock_user(commits=4, market_score=80)
+    result = career_engine.explain_risk(user)
+    assert result["summary"] == "High risk driven by low coding activity (stagnation)."
+
+def test_explain_risk_priority_2_market_relevance():
+    # Commits >= 5, Market < 50
+    user = create_mock_user(commits=10, market_score=40)
+    result = career_engine.explain_risk(user)
+    assert result["summary"] == "Risk driven by low alignment with current market trends."
+
+def test_explain_risk_priority_3_skill_gap():
+    # Commits >= 5, Market >= 50
+    user = create_mock_user(commits=10, market_score=60)
+    result = career_engine.explain_risk(user)
+    assert result["summary"] == "Moderate risk due to specific skill gaps in your target role."
+
+def test_generate_weekly_routine_focus_selection():
+    # Select highest byte count
+    stats = {"languages": {"Python": 100, "Rust": 5000, "Go": 200}}
+    routine = career_engine._generate_weekly_routine(stats, user_streak=5)
+    assert routine["focus"] == "Rust"
+    assert "Rust" in routine["tasks"][0]["task"]
+
+def test_generate_weekly_routine_fallback():
+    # No languages -> Python
+    stats = {"languages": {}}
+    routine = career_engine._generate_weekly_routine(stats, user_streak=5)
+    assert routine["focus"] == "Python"
+    assert "Python" in routine["tasks"][0]["task"]
+
+def test_simulate_skill_path_with_existing_confidence():
+    user = create_mock_user(skills_snapshot={"Rust": 50})
+    result = career_engine.simulate_skill_path(user, "Rust", months=1)
+    # base 50, months 1 * 7 = 57. min(90, 57) = 57.
+    assert result["expected_confidence"] == 57
+
+def test_simulate_skill_path_default_confidence():
+    user = create_mock_user(skills_snapshot={})
+    result = career_engine.simulate_skill_path(user, "Rust", months=1)
+    # base 0, months 1 * 7 = 7.
+    assert result["expected_confidence"] == 7
+
+def test_simulate_skill_path_market_alignment():
+    # Rust is in market_high_demand_skills
+    user = create_mock_user()
+    result = career_engine.simulate_skill_path(user, "Rust")
+    assert result["market_alignment"] == "High"
+
+    # Cobol is likely not
+    result_cobol = career_engine.simulate_skill_path(user, "Cobol")
+    assert result_cobol["market_alignment"] == "Medium"
