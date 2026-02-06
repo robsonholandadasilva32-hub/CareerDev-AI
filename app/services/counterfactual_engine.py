@@ -23,8 +23,12 @@ class CounterfactualEngine:
             # Multiplier 2.4 calibrated empirically based on risk model weights
             risk_delta = int(increase * 2.4)  
             
-            # Formatamos como string para compatibilidade direta com o template HTML
-            actions.append(f"Increase activity by +{increase} commits/month (-{risk_delta}% risk)")
+            # Formato estruturado conforme nova especificação
+            actions.append({
+                "action": f"Increase activity by +{increase} commits/month",
+                "impact": f"-{risk_delta}% risk",
+                "type": "behavior"
+            })
             deltas.append(risk_delta)
 
         # --- 2. Skill Growth Slope Analysis ---
@@ -32,7 +36,11 @@ class CounterfactualEngine:
         skill_slope = features.get("skill_slope", 0)
         if skill_slope <= 0:
             risk_delta = 10
-            actions.append(f"Complete 1 verified weekly routine (-{risk_delta}% risk)")
+            actions.append({
+                "action": "Complete 1 verified weekly routine",
+                "impact": f"-{risk_delta}% risk",
+                "type": "behavior"
+            })
             deltas.append(risk_delta)
 
         # --- 3. Market Gap Analysis ---
@@ -42,7 +50,11 @@ class CounterfactualEngine:
             # Suggest the first missing skill
             top_gap = market_gap[0]
             risk_delta = 15
-            actions.append(f"Practice {top_gap} for 4 weeks (-{risk_delta}% risk)")
+            actions.append({
+                "action": f"Practice {top_gap} for 4 weeks",
+                "impact": f"-{risk_delta}% risk",
+                "type": "skill"
+            })
             deltas.append(risk_delta)
 
         # Calculate total projected risk (clamped at 0)
@@ -51,7 +63,7 @@ class CounterfactualEngine:
         return {
             "current_risk": current_risk,
             "projected_risk": projected_risk,
-            "actions": actions, # Retorna lista de strings formatadas
+            "actions": actions, # Retorna lista de dicionários
             "summary": (
                 f"Executing the actions above could reduce your risk "
                 f"from {current_risk}% to approximately {projected_risk}%."

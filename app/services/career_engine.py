@@ -175,6 +175,13 @@ class CareerEngine:
             counterfactual
         )
 
+        # Generate the weekly plan from SHAP counterfactuals
+        auto_weekly_plan = mentor_engine.generate_weekly_plan_from_shap(
+            db,
+            user,
+            counterfactual
+        )
+
         # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
@@ -182,6 +189,7 @@ class CareerEngine:
             "zone_a_holistic": {},
             "zone_b_matrix": skill_audit,
             "weekly_plan": weekly_plan,
+            "auto_weekly_plan": auto_weekly_plan, # AI-generated plan
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
             "hidden_gems": hidden_gems,

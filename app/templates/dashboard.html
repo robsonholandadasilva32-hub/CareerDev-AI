@@ -201,6 +201,27 @@
         </div>
 
         <div id="view-plan" style="display:none;padding:20px;">
+            {% if career_data.auto_weekly_plan %}
+            <div class="panel" style="margin-bottom: 20px; border-color: var(--neon-purple);">
+              <div class="panel-head" style="background: rgba(139, 92, 246, 0.1);">
+                  <i class="fas fa-calendar-alt"></i> AI GENERATED WEEKLY PLAN
+              </div>
+              <div class="panel-body">
+                  <ul class="plan-list" style="list-style: none; padding: 0;">
+                    {% for item in career_data.auto_weekly_plan %}
+                      <li style="margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 8px;">
+                        <strong style="color:var(--text-muted); margin-right: 10px;">{{ item.day }}:</strong>
+                        {{ item.task }}
+                        <span style="float:right; color:var(--neon-green); font-size: 0.9em;">
+                          {{ item.expected_impact }}
+                        </span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+              </div>
+            </div>
+            {% endif %}
+
             <div class="kanban-header">
                 CURRENT FOCUS:
                 <span style="color: #fcee0a;">{{ career_data.weekly_plan.focus | upper }}</span>
