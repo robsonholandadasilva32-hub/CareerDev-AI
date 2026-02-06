@@ -134,13 +134,7 @@ class CareerEngine:
         # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
         # -------------------------------
         # Recupera snapshots recentes para compor o histórico de features
-        recent_snapshots = (
-            db.query(RiskSnapshot)
-            .filter(RiskSnapshot.user_id == user.id)
-            .order_by(RiskSnapshot.recorded_at.desc())
-            .limit(5)
-            .all()
-        )
+        recent_snapshots = self._get_recent_snapshots(db, user.id, limit=5)
         
         # Computa features normalizadas para o modelo ML
         features = compute_features(metrics, recent_snapshots)
@@ -197,13 +191,7 @@ class CareerEngine:
         current_risk = career_forecast["risk_score"]
 
         # 4. Recupera Snapshots
-        recent_snapshots = (
-            db.query(RiskSnapshot)
-            .filter(RiskSnapshot.user_id == user.id)
-            .order_by(RiskSnapshot.recorded_at.desc())
-            .limit(5)
-            .all()
-        )
+        recent_snapshots = self._get_recent_snapshots(db, user.id, limit=5)
 
         # 5. Computa Features e Gera Counterfactual
         features = compute_features(metrics, recent_snapshots)
@@ -213,6 +201,23 @@ class CareerEngine:
         )
         
         return counterfactual
+
+    # =========================================================
+    # HELPER: GET RECENT SNAPSHOTS
+    # =========================================================
+    def _get_recent_snapshots(
+        self,
+        db: Session,
+        user_id: int,
+        limit: int = 5
+    ) -> List[RiskSnapshot]:
+        return (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user_id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .limit(limit)
+            .all()
+        )
 
     # =========================================================
     # HELPER: CALCULATE SKILL CONFIDENCE
