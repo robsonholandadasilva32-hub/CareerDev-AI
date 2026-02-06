@@ -160,6 +160,10 @@ class CareerEngine:
         # Computa features normalizadas para o modelo ML
         features = compute_features(metrics, recent_snapshots)
 
+        # Adiciona avg_confidence explicitamente para SHAP analysis
+        avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+        features["avg_confidence"] = avg_confidence
+
         # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
@@ -229,6 +233,11 @@ class CareerEngine:
 
         # 5. Computa Features e Gera Counterfactual
         features = compute_features(metrics, recent_snapshots)
+
+        # Adiciona avg_confidence explicitamente para SHAP analysis
+        avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
+        features["avg_confidence"] = avg_confidence
+
         counterfactual = counterfactual_engine.generate(
             features=features,
             current_risk=current_risk

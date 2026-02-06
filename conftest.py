@@ -19,20 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 # We mock these to avoid installing them and to speed up tests.
 # These are primarily used in ML services which are not the focus of this performance test.
 module_names = [
-    "tensorflow",
-    "tensorflow.keras",
-    "tensorflow.keras.models",
-    "tensorflow.keras.layers",
-    "tensorflow.keras.callbacks",
-    "sklearn",
-    "sklearn.linear_model",
-    "pandas",
-    "numpy",
-    "joblib",
-    "mlflow",
-    "github",
-    "cv2",
-    "openai"
+    "cv2"
 ]
 
 for module_name in module_names:
