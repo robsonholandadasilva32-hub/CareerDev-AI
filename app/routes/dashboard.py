@@ -105,8 +105,7 @@ async def verify_repo(
     verified = github_verifier.verify(commits, language)
 
     if verified:
-        user.streak_count = (user.streak_count or 0) + 1
-        db.commit()
+        await asyncio.to_thread(_update_streak_sync, db, user)
 
     return {"verified": verified}
     
@@ -121,8 +120,21 @@ async def perform_weekly_check(
     if not user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    # Atualiza a data para AGORA
-    user.last_weekly_check = datetime.utcnow()
-    db.commit()
+    # Atualiza a data para AGORA (Executado em thread separada para não bloquear o loop)
+    timestamp = await asyncio.to_thread(_update_weekly_check_sync, db, user)
     
-    return {"status": "success", "timestamp": user.last_weekly_check.isoformat()}
+    return {"status": "success", "timestamp": timestamp.isoformat()}
+
+# --- Helper Functions for Async Database Operations ---
+
+def _update_streak_sync(db: Session, user: User):
+    """Sync helper to update user streak and commit."""
+    user.streak_count = (user.streak_count or 0) + 1
+    db.commit()
+
+def _update_weekly_check_sync(db: Session, user: User) -> datetime:
+    """Sync helper to update weekly check timestamp and commit."""
+    now = datetime.utcnow()
+    user.last_weekly_check = now
+    db.commit()
+    return now
