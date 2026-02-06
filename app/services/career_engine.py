@@ -11,6 +11,7 @@ from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
 from app.services.benchmark_engine import benchmark_engine
 from app.services.counterfactual_engine import counterfactual_engine
+from app.services.social_harvester import social_harvester
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
@@ -171,18 +172,16 @@ class CareerEngine:
     # =========================================================
     # INDEPENDENT COUNTERFACTUAL ANALYSIS
     # =========================================================
-    def get_counterfactual(self, db: Session, user: User) -> Dict:
+    async def get_counterfactual(self, db: Session, user: User) -> Dict:
         """
         Gera uma análise contrafactual sob demanda (API isolada).
         Populates necessary data from user profile to run the model.
         """
-        # 1. Recupera dados do perfil (Fallbacks se vazio)
-        profile = user.career_profile
-        metrics = profile.github_activity_metrics if profile else {}
-        if not isinstance(metrics, dict):
-            metrics = {}
+        # 1. Recupera dados do perfil (Prefer live metrics, fallback to cached)
+        metrics = await social_harvester.get_metrics(user)
 
-        raw_languages = metrics.get("raw_languages", {})
+        profile = user.career_profile
+        raw_languages = metrics.get("languages", {}) # Use normalized key from get_metrics
         linkedin_input = profile.linkedin_alignment_data if profile else {}
         if not isinstance(linkedin_input, dict):
             linkedin_input = {}

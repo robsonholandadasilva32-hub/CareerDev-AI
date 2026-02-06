@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from app.services.career_engine import career_engine
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
@@ -10,7 +10,8 @@ class MockRiskSnapshot:
         self.risk_score = risk_score
         self.recorded_at = recorded_at
 
-def test_get_counterfactual_flow():
+@pytest.mark.asyncio
+async def test_get_counterfactual_flow():
     # Mock dependencies
     db = MagicMock()
     user = MagicMock(spec=User)
@@ -43,15 +44,23 @@ def test_get_counterfactual_flow():
     limit_mock.all.return_value = mock_snapshots
 
     # Need to handle alert_engine which might be called inside forecast_career_risk
+    # And specifically mock social_harvester.get_metrics which is now awaited
     with patch("app.services.career_engine.alert_engine") as mock_alert, \
          patch("app.services.career_engine.ml_forecaster") as mock_ml, \
-         patch("app.services.career_engine.lstm_model") as mock_lstm:
+         patch("app.services.career_engine.lstm_model") as mock_lstm, \
+         patch("app.services.career_engine.social_harvester.get_metrics", new_callable=AsyncMock) as mock_get_metrics:
 
         mock_ml.predict.return_value = {"ml_risk": 25, "model_version": "v1"}
         mock_lstm.predict.return_value = 25
 
-        # Run
-        result = career_engine.get_counterfactual(db, user)
+        # Mock what get_metrics returns
+        mock_get_metrics.return_value = {
+            "commits_last_30_days": 20,
+            "languages": {"Python": 50000}
+        }
+
+        # Run (await the async method)
+        result = await career_engine.get_counterfactual(db, user)
 
         # Verify structure
         assert "current_risk" in result
