@@ -1,12 +1,12 @@
 import asyncio
 import random
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 
 from app.db.models.user import User
 from app.db.models.career import CareerProfile, LearningPlan
 from app.db.models.ml_risk_log import MLRiskLog
-from app.db.models.analytics import RiskSnapshot 
+from app.db.models.analytics import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
 from app.services.benchmark_engine import benchmark_engine
