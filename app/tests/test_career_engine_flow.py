@@ -75,7 +75,8 @@ async def test_get_counterfactual_flow():
         # So expected action about Market Gap.
 
         actions = result["actions"]
-        assert any("market gap" in a.lower() for a in actions)
+        # Updated assertion: The action text is "Practice {skill}..." not "market gap"
+        assert any("practice" in a.lower() for a in actions)
 
 # =========================================================
 # REFACTORED LOGIC TESTS

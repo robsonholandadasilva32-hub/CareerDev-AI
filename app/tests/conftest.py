@@ -13,19 +13,6 @@ os.environ["GITHUB_CLIENT_SECRET"] = "test-github-secret"
 
 # List of modules to mock
 MOCK_MODULES = [
-    "tensorflow",
-    "tensorflow.keras",
-    "tensorflow.keras.models",
-    "tensorflow.keras.layers",
-    "tensorflow.keras.callbacks",
-    "pandas",
-    "sklearn",
-    "sklearn.linear_model",
-    "joblib",
-    "openai",
-    "numpy",
-    "mlflow",
-    "github",
 ]
 
 # Apply mocks to sys.modules
