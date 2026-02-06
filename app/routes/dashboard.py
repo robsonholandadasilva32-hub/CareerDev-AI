@@ -15,7 +15,7 @@ from app.db.session import get_db, SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.core.dependencies import get_user_with_profile
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ def _update_last_weekly_check_sync(user_id: int):
     with SessionLocal() as db:
         u = db.query(User).filter(User.id == user_id).first()
         if u:
-            u.last_weekly_check = datetime.utcnow()
+            u.last_weekly_check = datetime.now(timezone.utc)
             db.commit()
             return u.last_weekly_check
     return None

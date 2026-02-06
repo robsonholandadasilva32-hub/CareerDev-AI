@@ -2,7 +2,7 @@
 import pytest
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -49,7 +49,7 @@ async def test_weekly_check_blocking_baseline(client, mock_db_session):
 
         def blocking_helper(user_id):
             time.sleep(BLOCK_TIME)
-            return datetime.utcnow()
+            return datetime.now(timezone.utc)
 
         # Patch the helper function used in dashboard.py
         with patch('app.routes.dashboard._update_last_weekly_check_sync', side_effect=blocking_helper):
