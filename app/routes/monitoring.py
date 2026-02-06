@@ -47,7 +47,9 @@ async def system_diagnostics(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
     try:
+        # Otimização: Uso nativo do asyncio para não bloquear o loop
         await asyncio.to_thread(check_database)
+
         diagnostics["database"] = "connected"
     except Exception as e:
         diagnostics["database"] = f"error: {str(e)}"
