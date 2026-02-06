@@ -2,7 +2,7 @@ import httpx
 import logging
 import asyncio
 import random
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, AsyncIterator
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from github import Github  # PyGithub
@@ -75,6 +75,39 @@ class SocialHarvester:
             if kw_bytes in content_lower:
                 found.append(original_kw)
         return found
+
+    async def _check_keywords_in_stream(self, stream: AsyncIterator[bytes], keyword_map: Dict[bytes, str]) -> List[str]:
+        """
+        Streaming version of keyword checker.
+        Maintains a small memory footprint by processing chunks and handling overlaps.
+        """
+        found = set()
+
+        if not keyword_map:
+            return []
+
+        # Determine max keyword length for overlap buffer
+        max_len = max(len(k) for k in keyword_map.keys())
+        overlap_size = max_len - 1
+
+        buffer = b""
+
+        async for chunk in stream:
+            # Combine overlap buffer with new chunk
+            data = buffer + chunk
+
+            # Check keywords in the current window
+            # We use the existing helper which does the lowering
+            chunk_found = self._check_keywords_in_content(data, keyword_map)
+            found.update(chunk_found)
+
+            # Update buffer: Keep last overlap_size bytes for next iteration
+            if len(data) > overlap_size:
+                buffer = data[-overlap_size:]
+            else:
+                buffer = data
+
+        return list(found)
 
     def get_recent_commits(self, username: str, token: Optional[str] = None) -> List[Dict]:
         """
@@ -334,23 +367,22 @@ class SocialHarvester:
                                 # Fetch Content
                                 file_url = root_files[filename].get("download_url")
                                 if file_url:
-                                    f_resp = await client.get(file_url)
-                                    if f_resp.status_code == 200:
-                                        # Optimization: Use raw bytes (.content) instead of decoding (.text)
-                                        # Use helper for byte-level search
-                                        found_keywords = self._check_keywords_in_content(f_resp.content, keyword_map)
+                                    async with client.stream("GET", file_url) as f_resp:
+                                        if f_resp.status_code == 200:
+                                            # Optimization: Use streaming instead of full load
+                                            found_keywords = await self._check_keywords_in_stream(f_resp.aiter_bytes(), keyword_map)
 
-                                        for kw in found_keywords:
-                                            # Use title case for consistency (logic preserved)
-                                            skill_name = kw.title()
-                                            if skill_name == "Next": skill_name = "Next.js"
-                                            if skill_name == "Vue": skill_name = "Vue.js"
+                                            for kw in found_keywords:
+                                                # Use title case for consistency (logic preserved)
+                                                skill_name = kw.title()
+                                                if skill_name == "Next": skill_name = "Next.js"
+                                                if skill_name == "Vue": skill_name = "Vue.js"
 
-                                            # Atomic update
-                                            if skill_name not in skill_evidence_map:
-                                                skill_evidence_map[skill_name] = []
-                                            if repo_name not in skill_evidence_map[skill_name]:
-                                                skill_evidence_map[skill_name].append(repo_name)
+                                                # Atomic update
+                                                if skill_name not in skill_evidence_map:
+                                                    skill_evidence_map[skill_name] = []
+                                                if repo_name not in skill_evidence_map[skill_name]:
+                                                    skill_evidence_map[skill_name].append(repo_name)
 
             tasks = [check_repo(repo) for repo in repos]
             await asyncio.gather(*tasks)
@@ -503,11 +535,11 @@ class SocialHarvester:
                                 # Fetch Content
                                 file_url = files[filename].get("download_url")
                                 if file_url:
-                                    f_resp = await client.get(file_url)
-                                    if f_resp.status_code == 200:
-                                        # Optimization: Use raw bytes (.content)
-                                        found = self._check_keywords_in_content(f_resp.content, keyword_map)
-                                        found_frameworks.extend(found)
+                                    async with client.stream("GET", file_url) as f_resp:
+                                        if f_resp.status_code == 200:
+                                            # Optimization: Use streaming
+                                            found = await self._check_keywords_in_stream(f_resp.aiter_bytes(), keyword_map)
+                                            found_frameworks.extend(found)
 
                     return lang_data, repo_name, found_frameworks
 
