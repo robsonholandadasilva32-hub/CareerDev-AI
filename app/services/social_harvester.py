@@ -59,14 +59,46 @@ class SocialHarvester:
         """
         Optimized helper to check for keywords in byte content.
         Performance optimization: Avoids UTF-8 decoding and uses fast byte comparison.
+        Uses chunked processing to avoid large memory allocations from content.lower().
         """
         found = []
-        # Normalize content to lowercase bytes once
-        content_lower = content.lower()
+        if not keyword_map:
+            return found
 
-        for kw_bytes, original_kw in keyword_map.items():
-            if kw_bytes in content_lower:
-                found.append(original_kw)
+        # Use a copy of keys to safely remove found ones during iteration
+        remaining_map = keyword_map.copy()
+
+        # Calculate max keyword length for safe overlap
+        max_kw_len = max(len(k) for k in remaining_map)
+        overlap = max(0, max_kw_len - 1)
+
+        # Chunk size: 64KB is a good balance for L1/L2 cache
+        chunk_size = 65536
+        step = chunk_size - overlap
+
+        # If keywords are huge (unlikely), ensure step is positive
+        if step <= 0:
+            chunk_size = max_kw_len * 2
+            step = chunk_size - overlap
+
+        content_len = len(content)
+
+        for i in range(0, content_len, step):
+            # Process chunk
+            chunk = content[i : min(i + chunk_size, content_len)]
+            chunk_lower = chunk.lower()
+
+            # Check remaining keywords
+            # Iterate over keys list since we modify the dict
+            for kw_bytes in list(remaining_map.keys()):
+                if kw_bytes in chunk_lower:
+                    found.append(remaining_map[kw_bytes])
+                    del remaining_map[kw_bytes]
+
+            # Early exit if all found
+            if not remaining_map:
+                break
+
         return found
 
     # --- Sync Helpers for DB Operations (to be run in thread) ---
