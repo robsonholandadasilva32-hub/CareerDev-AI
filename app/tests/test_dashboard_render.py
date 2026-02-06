@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from datetime import datetime
+from types import SimpleNamespace
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.dependencies import get_user_with_profile
@@ -59,7 +60,9 @@ def test_dashboard_render_user_context(mock_career_engine):
         "career_risks": [],
         "career_forecast": {"risk_level": "LOW"},
         "zone_a_radar": {},
-        "missing_skills": []
+        "missing_skills": [],
+        "risk_timeline": SimpleNamespace(labels=["Jan", "Feb"], values=[10, 20]),
+        "benchmark": {"message": "Contextual Benchmark Test Message"}
     }
     mock_career_engine.get_weekly_history = AsyncMock(return_value=[])
 
@@ -73,6 +76,8 @@ def test_dashboard_render_user_context(mock_career_engine):
         assert "Test User" in response.text
         # Verify dynamic model name from config
         assert "GPT-5-Mini" in response.text
+        # Verify benchmark
+        assert "Contextual Benchmark Test Message" in response.text
     except Exception as e:
         # If we catch the specific Jinja error, we know we reproduced it.
         # Failing the test with the error message is what we want for "reproduction".
