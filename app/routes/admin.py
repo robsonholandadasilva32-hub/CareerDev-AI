@@ -10,6 +10,7 @@ from app.db.models.career import CareerProfile
 import logging
 import csv
 import io
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +114,24 @@ def admin_dashboard(
     # Fetch recent watchdog logs
     logs = db.query(AuditLog)\
         .filter(AuditLog.action == "WARNING")\
-        .order_by(AuditLog.created_at.desc())\
+        .order_by(AuditLog.login_timestamp.desc())\
         .limit(50)\
         .all()
+
+    # High Priority Users Logic
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
+    flagged_users = db.query(User).filter(
+        or_(
+            User.is_banned == True,
+            User.id.in_(
+                db.query(AuditLog.user_id).filter(
+                    AuditLog.action.in_(["WARNING", "ERROR"]),
+                    AuditLog.login_timestamp >= thirty_days_ago
+                )
+            )
+        )
+    ).all()
 
     return templates.TemplateResponse(
         "admin/dashboard.html",
@@ -123,6 +139,7 @@ def admin_dashboard(
             "request": request,
             "user": admin,
             "users": users,
+            "flagged_users": flagged_users,
             "logs": logs,
             "pagination": {
                 "page": page,

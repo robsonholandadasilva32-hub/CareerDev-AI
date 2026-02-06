@@ -31,7 +31,13 @@ def revoke_session(db: Session, session_id: str):
     session = db.query(UserSession).filter(UserSession.id == session_id).first()
     if session:
         session.is_active = False
-        db.commit()
+
+    # Also revoke from AuditLog (Source of Truth for UI)
+    audit = db.query(AuditLog).filter(AuditLog.session_id == session_id).first()
+    if audit:
+        audit.is_active_session = False
+
+    db.commit()
 
 def log_audit(
     db: Session,
