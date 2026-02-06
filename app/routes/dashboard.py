@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import logging
 import asyncio
+from datetime import datetime, timezone
 
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
@@ -15,7 +16,6 @@ from app.db.session import get_db, SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.core.dependencies import get_user_with_profile
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,9 @@ async def dashboard(
     if not career_data.get("zone_a_holistic"):
         career_data["zone_a_holistic"] = {"score": profile.market_relevance_score if profile else 0}
 
-    # >>> ADIÇÃO AQUI <<<
+    # Recupera histórico semanal (Assíncrono se o método suportar, ou via thread se for pesado)
+    # Assumindo que get_weekly_history já é async ou leve o suficiente. 
+    # Se for síncrono e pesado, envolva em asyncio.to_thread.
     weekly_history = await career_engine.get_weekly_history(db, user)
 
     market_score = career_data.get("zone_a_holistic", {}).get("score", 0)
@@ -80,7 +82,7 @@ async def dashboard(
             "market_score": market_score,
             "user_streak": user_streak,
             "career_data": career_data,
-            "weekly_history": weekly_history,  # ✅ NOVO
+            "weekly_history": weekly_history,
             "greeting_message": greeting_message,
         }
     )
@@ -105,10 +107,12 @@ def _update_last_weekly_check_sync(user_id: int):
     with SessionLocal() as db:
         u = db.query(User).filter(User.id == user_id).first()
         if u:
+            # Use timezone-aware datetime (Fix deprecation warning)
             u.last_weekly_check = datetime.now(timezone.utc)
             db.commit()
             return u.last_weekly_check
     return None
+
 
 # -------------------------------------------------
 # API REAL: VERIFICAÇÃO DE CÓDIGO
@@ -142,9 +146,10 @@ async def verify_repo(
         await asyncio.to_thread(_update_streak_sync, user.id)
 
     return {"verified": verified}
-    
-    # -------------------------------------------------
-# ROTA PARA WEEKLY CHECK-IN (Adicione isso!)
+
+
+# -------------------------------------------------
+# ROTA PARA WEEKLY CHECK-IN
 # -------------------------------------------------
 @router.post("/api/dashboard/weekly-check")
 async def perform_weekly_check(
