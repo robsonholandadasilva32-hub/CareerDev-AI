@@ -30,6 +30,19 @@ class CareerEngine:
     forecasts and mentor-driven insights.
     """
 
+    def __init__(self):
+        self.market_high_demand_skills = [
+            "Rust",
+            "Go",
+            "Python",
+            "AI/ML",
+            "React",
+            "System Design",
+            "Cloud Architecture",
+            "TypeScript",
+            "Kubernetes"
+        ]
+
     # =========================================================
     # MAIN ANALYSIS PIPELINE
     # =========================================================
@@ -241,10 +254,12 @@ class CareerEngine:
         user_streak: int
     ) -> Dict:
         raw_langs = github_stats.get("languages", {})
-        python_score = raw_langs.get("Python", 0)
-        rust_score = raw_langs.get("Rust", 0)
 
-        focus = "Rust" if python_score > 100_000 and rust_score < 5_000 else "Python"
+        # Select focus based on highest byte count, default to Python
+        if raw_langs:
+            focus = max(raw_langs, key=raw_langs.get)
+        else:
+            focus = "Python"
 
         return {
             "mode": "GROWTH",
@@ -253,12 +268,12 @@ class CareerEngine:
             "tasks": [
                 {
                     "day": "Mon",
-                    "task": f"Learn: {focus} fundamentals",
-                    "type": "Learn"
+                    "task": f"Refactor legacy code in {focus} to improve readability.",
+                    "type": "Code"
                 },
                 {
                     "day": "Wed",
-                    "task": f"Build a CLI tool in {focus}",
+                    "task": f"Implement a new unit test suite for your {focus} projects.",
                     "type": "Code",
                     "action": "VERIFY_REPO",
                     "verify_keyword": focus.lower()
@@ -427,11 +442,26 @@ class CareerEngine:
         """
         Provides a human-readable explanation of risk factors.
         """
+        profile = user.career_profile
+        metrics = profile.github_activity_metrics if profile else {}
+        commits_30d = metrics.get("commits_last_30_days", 0)
+        market_score = profile.market_relevance_score if profile else 0
+
+        # Priority 1: Stagnation
+        if commits_30d < 5:
+            summary = "High risk driven by low coding activity (stagnation)."
+        # Priority 2: Market Relevance
+        elif market_score < 50:
+            summary = "Risk driven by low alignment with current market trends."
+        # Priority 3: Default/Skill Gap
+        else:
+            summary = "Moderate risk due to specific skill gaps in your target role."
+
         return {
-            "summary": "Your risk is driven by low Rust exposure and declining commit velocity.",
+            "summary": summary,
             "factors": [
-                {"factor": "Skill Gap", "impact": "High"},
-                {"factor": "Commit Velocity", "impact": "Medium"},
+                {"factor": "Skill Gap", "impact": "High" if market_score < 50 else "Medium"},
+                {"factor": "Commit Velocity", "impact": "High" if commits_30d < 5 else "Low"},
                 {"factor": "Market Demand", "impact": "High"}
             ]
         }
@@ -460,10 +490,17 @@ class CareerEngine:
         """
         Simulates expected skill growth over time.
         """
-        base_confidence = 40
+        profile = user.career_profile
+        skills_snapshot = profile.skills_snapshot if profile and isinstance(profile.skills_snapshot, dict) else {}
+
+        # Calculate base confidence bounded 0-100
+        raw_confidence = skills_snapshot.get(skill, 0)
+        base_confidence = int(raw_confidence)
+        base_confidence = max(0, min(base_confidence, 100))
+
         growth = min(90, base_confidence + months * 7)
 
-        market_trends = getattr(self, "market_trends", [])
+        market_trends = self.market_high_demand_skills
 
         return {
             "skill": skill,
