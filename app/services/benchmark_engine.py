@@ -3,72 +3,84 @@ from app.db.models.analytics import RiskSnapshot
 from app.db.models.career import CareerProfile
 
 class BenchmarkEngine:
-
     def compute(self, db: Session, user):
-        # 1. Recupera o perfil para segmentação
         profile = user.career_profile
         if not profile:
             return None
 
-        # 2. Recupera o snapshot mais recente do usuário
         latest = (
             db.query(RiskSnapshot)
             .filter(RiskSnapshot.user_id == user.id)
-            .order_by(RiskSnapshot.recorded_at.desc())
+            .order_by(RiskSnapshot.created_at.desc())
             .first()
         )
         if not latest:
             return None
 
-        # 3. Busca pares (Segmentação: Mesma Senioridade e Stack)
-        # Nota: Limitamos a 1000 para performance
-        peers = (
+        query = (
             db.query(RiskSnapshot.risk_score)
             .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
-            .filter(CareerProfile.seniority == profile.seniority)
-            .filter(CareerProfile.primary_stack == profile.primary_stack)
-            .order_by(RiskSnapshot.recorded_at.desc())
-            .limit(1000)
-            .all()
         )
 
-        context_label = f"{profile.seniority} {profile.primary_stack} Developers"
+        context = []
+        if profile.company:
+            query = query.filter(CareerProfile.company == profile.company)
+            context.append(profile.company)
+        if profile.region:
+            query = query.filter(CareerProfile.region == profile.region)
+            context.append(profile.region)
 
-        # 4. Fallback: Se não houver dados de pares suficientes (< 5), usa Global
-        if not peers or len(peers) < 5:
-            peers = (
-                db.query(RiskSnapshot.risk_score)
-                .order_by(RiskSnapshot.recorded_at.desc())
-                .limit(1000)
-                .all()
-            )
-            context_label = "Global Developer Market"
-
+        peers = query.all()
         if not peers:
             return None
 
-        # 5. Cálculo do Percentil
-        # peers é uma lista de tuplas (score,), por isso usamos p[0]
         scores = sorted([p[0] for p in peers])
         
-        # Percentil: Quantos % são 'piores' (risco maior) ou iguais ao meu?
-        # Aqui invertemos a lógica típica de 'safer':
-        # Se meu risco é baixo (ex: 20), e a maioria é 80, estou 'safer than' muitos.
-        # Risco menor = Melhor.
-        
-        # Quantas pessoas têm risco MAIOR ou IGUAL ao meu? (Estou melhor que elas)
-        better_than_count = sum(1 for s in scores if s >= latest.risk_score)
-        percentile = int((better_than_count / len(scores)) * 100)
+        # Percentile: percent of peers with risk_score <= my score
+        # Note: logic provided was: sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100
+        # If risk_score 0 is "good" and 100 is "bad", then being <= my score means "safer or same safety"?
+        # Wait. "you are safer than {percentile}% of them."
+        # If my risk is 20 (Low). Peer is 80 (High). 20 <= 20. 80 is not <= 20.
+        # So sum(s <= 20) would be small if everyone else is high risk.
+        # Then percentile is small. "You are safer than 10% of them".
+        # This seems inverted if "safer" means "better".
+        # Usually "safer than X%" means I am in the top X% of safety.
+        # If I have low risk, I am safer than people with high risk.
+        # So I should be counting people with risk >= my risk?
+        # But I must follow the provided logic:
+        # "percentile = int(sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100)"
+        # "you are safer than {percentile}% of them."
 
+        # Let's re-read the provided snippet carefully.
+        # "scores = sorted([p[0] for p in peers])"
+        # "percentile = int(sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100)"
+
+        # If risk score: 0 (safe) -> 100 (risky).
+        # Me: 10. Peer1: 5, Peer2: 90.
+        # Scores: [5, 10, 90].
+        # s <= 10: 5, 10. Count = 2.
+        # Percentile = 2/3 = 66%.
+        # "You are safer than 66% of them."
+        # Who am I safer than? I am safer than the guy with 90.
+        # But I am NOT safer than the guy with 5.
+        # So I am safer than 1 person (the 90 guy).
+        # But the calculation counts 2 people (me and the 5 guy).
+        # This implies "safer or as safe as"?
+        # If I strictly follow the code provided, I implement the code provided.
+        # The prompt said: "Implement this specific comparison logic: ... Execute the implementation exactly based on the specifications below."
+        # So I will copy the logic exactly, even if I have doubts about the phrasing "safer than".
+
+        percentile = int(
+            sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100
+        )
+        
         return {
-            "user_risk": latest.risk_score,
-            "context": context_label,
+            "context": " / ".join(context),
             "percentile": percentile,
             "message": (
-                f"Compared to {context_label}, you are safer than "
-                f"{percentile}% of them."
+                f"Compared to developers in {', '.join(context)}, "
+                f"you are safer than {percentile}% of them."
             )
         }
-
 
 benchmark_engine = BenchmarkEngine()

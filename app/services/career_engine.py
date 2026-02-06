@@ -142,6 +142,7 @@ class CareerEngine:
         # BENCHMARK ENGINE
         # -------------------------------
         # Calcula a performance relativa do usuário vs. mercado
+        # (Contextual Benchmark: Company & Region segmentation)
         benchmark = benchmark_engine.compute(db, user)
 
         # -------------------------------
