@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.session import get_db
 import httpx
-from starlette.concurrency import run_in_threadpool
+import asyncio
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ async def system_diagnostics(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
     try:
-        await run_in_threadpool(check_database)
+        await asyncio.to_thread(check_database)
         diagnostics["database"] = "connected"
     except Exception as e:
         diagnostics["database"] = f"error: {str(e)}"
