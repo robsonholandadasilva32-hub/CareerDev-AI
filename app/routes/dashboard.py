@@ -46,6 +46,7 @@ async def dashboard(
     metrics = profile.github_activity_metrics or {} if profile else {}
     skill_audit = profile.skills_graph_data or {} if profile else {}
 
+    # Optimization Verified: Wrapped in asyncio.to_thread to prevent event loop blocking
     career_data = await asyncio.to_thread(
         career_engine.analyze,
         db=db,
