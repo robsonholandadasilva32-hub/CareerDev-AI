@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+import asyncio
+from fastapi import APIRouter, Depends, asyncio
 from sqlalchemy.orm import Session
 
 # Dependências de autenticação e banco de dados
@@ -33,4 +34,6 @@ async def counterfactual(
     Gera cenários alternativos: 'O que aconteceria com meu risco se...'
     Retorna sugestões acionáveis para reduzir o score de risco.
     """
-    return career_engine.get_counterfactual(db, user)
+    # Otimização: Rodar a lógica de risco (que é pesada/síncrona) em uma thread separada
+    # para não bloquear o Event Loop do FastAPI.
+    return await asyncio.to_thread(career_engine.get_counterfactual, db, user)
