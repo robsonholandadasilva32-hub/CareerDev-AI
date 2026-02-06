@@ -33,9 +33,7 @@ def revoke_session(db: Session, session_id: str):
         session.is_active = False
 
     # Also revoke from AuditLog (Source of Truth for UI)
-    audit = db.query(AuditLog).filter(AuditLog.session_id == session_id).first()
-    if audit:
-        audit.is_active_session = False
+    db.query(AuditLog).filter(AuditLog.session_id == session_id).update({AuditLog.is_active_session: False})
 
     db.commit()
 
@@ -48,7 +46,8 @@ def log_audit(
     device_type: str = None,
     browser: str = None,
     os: str = None,
-    user_agent_raw: str = None
+    user_agent_raw: str = None,
+    session_id: str = None
 ):
     """Logs a critical action."""
     try:
@@ -63,7 +62,8 @@ def log_audit(
             device_type=device_type,
             browser=browser,
             os=os,
-            user_agent_raw=user_agent_raw
+            user_agent_raw=user_agent_raw,
+            session_id=session_id
         )
         db.add(audit)
         db.commit()
