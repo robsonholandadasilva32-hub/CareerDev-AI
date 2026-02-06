@@ -97,7 +97,8 @@ async def generate_linkedin_post(request: Request, user: User = Depends(get_user
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     # 2. Get Top Skill
-    profile = user.career_profile
+    # Wrap attribute access in to_thread to prevent blocking I/O if lazy loading occurs
+    profile = await asyncio.to_thread(lambda: user.career_profile)
     top_skill = "Software Engineering"
 
     if profile and profile.skills_snapshot:
