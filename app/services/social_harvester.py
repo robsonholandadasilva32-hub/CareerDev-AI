@@ -5,6 +5,7 @@ import random
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from github import Github  # PyGithub
 from app.db.models.user import User
 from app.db.models.career import CareerProfile
 from app.db.session import SessionLocal
@@ -68,6 +69,48 @@ class SocialHarvester:
             if kw_bytes in content_lower:
                 found.append(original_kw)
         return found
+
+    def get_recent_commits(self, username: str, token: Optional[str] = None) -> List[Dict]:
+        """
+        Fetches recent commits for a user using PyGithub (Synchronous/Blocking).
+        """
+        commits_data = []
+        try:
+            g = Github(token) if token else Github()
+            user = g.get_user(username)
+
+            # Fetch events to find PushEvents
+            events = user.get_events()
+
+            # Limit to recent 5 push events to avoid excessive pagination
+            count = 0
+            for event in events:
+                if count >= 5:
+                    break
+
+                if event.type == "PushEvent":
+                    payload = event.payload
+                    # Iterate over commits in the push
+                    for commit in payload.commits:
+                        files = []
+                        # Aggregate modified/added files
+                        # PyGithub 'PushEventPayload' -> 'commits' is list of objects with these attrs
+                        if hasattr(commit, 'added') and commit.added:
+                            files.extend(commit.added)
+                        if hasattr(commit, 'modified') and commit.modified:
+                            files.extend(commit.modified)
+
+                        commits_data.append({
+                            "message": commit.message,
+                            "date": event.created_at.isoformat(),
+                            "files": files
+                        })
+                    count += 1
+
+        except Exception as e:
+            logger.error(f"Error fetching GitHub commits for {username}: {e}")
+
+        return commits_data
 
     # --- Sync Helpers for DB Operations (to be run in thread) ---
 

@@ -11,7 +11,7 @@ from app.services.social_harvester import social_harvester
 from app.services.github_verifier import github_verifier
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, revoke_session, log_audit
-from app.db.session import get_db
+from app.db.session import get_db, SessionLocal
 from app.db.models.user import User
 from app.db.models.security import UserSession
 from app.core.dependencies import get_user_with_profile
@@ -85,6 +85,17 @@ async def dashboard(
     )
 
 
+def _update_streak_sync(user_id: int):
+    """
+    Helper to update user streak in a thread-safe dedicated session.
+    """
+    with SessionLocal() as db:
+        # Re-fetch user to avoid attaching detached objects to new session
+        u = db.query(User).filter(User.id == user_id).first()
+        if u:
+            u.streak_count = (u.streak_count or 0) + 1
+            db.commit()
+
 # -------------------------------------------------
 # API REAL: VERIFICAÇÃO DE CÓDIGO
 # -------------------------------------------------
@@ -101,12 +112,20 @@ async def verify_repo(
     if not language:
         raise HTTPException(status_code=400, detail="Language not provided")
 
-    commits = social_harvester.get_recent_commits(user.github_username)
+    # 1. Offload Blocking Network Call (PyGithub is synchronous)
+    # We pass the user's token (if available) to increase API limits
+    commits = await asyncio.to_thread(
+        social_harvester.get_recent_commits,
+        user.github_username,
+        user.github_token
+    )
+
     verified = github_verifier.verify(commits, language)
 
     if verified:
-        user.streak_count = (user.streak_count or 0) + 1
-        db.commit()
+        # 2. Offload Blocking DB Commit
+        # We use a dedicated sync helper with its own session to ensure thread safety
+        await asyncio.to_thread(_update_streak_sync, user.id)
 
     return {"verified": verified}
     
