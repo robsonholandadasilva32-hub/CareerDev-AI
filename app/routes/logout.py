@@ -22,7 +22,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 
             try:
                 uid = int(user_id) if user_id else None
-                log_audit(db, uid, "LOGOUT", request.client.host, f"Session {sid} revoked")
+                log_audit(db, uid, "LOGOUT", request.client.host, f"Session {sid} revoked", session_id=sid)
             except:
                 pass
 

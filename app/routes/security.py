@@ -69,7 +69,10 @@ def security_panel(request: Request, db: Session = Depends(get_db)):
     current_ip = get_client_ip(request)
 
     # --- CORREÇÃO AQUI: Consultando AuditLog para o histórico ---
-    history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
+    history = db.query(AuditLog).filter(
+        AuditLog.user_id == user.id,
+        AuditLog.action == "LOGIN"
+    ).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
     # Processar Sessões para Exibição
     processed_sessions = []
@@ -149,7 +152,10 @@ def get_login_history(request: Request, db: Session = Depends(get_db)):
     current_sid = payload.get("sid")
 
     # --- CORREÇÃO AQUI: Consultando AuditLog ---
-    history = db.query(AuditLog).filter(AuditLog.user_id == user.id).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
+    history = db.query(AuditLog).filter(
+        AuditLog.user_id == user.id,
+        AuditLog.action == "LOGIN"
+    ).order_by(desc(AuditLog.login_timestamp)).limit(20).all()
 
     response_data = []
     for h in history:
@@ -197,7 +203,7 @@ def revoke_all_sessions(request: Request, db: Session = Depends(get_db)):
     db.commit()
     
     # Log da ação
-    log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions")
+    log_audit(db, user.id, "REVOKE_ALL_SESSIONS", get_client_ip(request), "Revoked all other sessions", session_id=current_sid)
 
     return RedirectResponse("/security", status_code=303)
 
@@ -218,6 +224,6 @@ def revoke_user_session_route(session_id: str, request: Request, db: Session = D
         db.query(AuditLog).filter(AuditLog.session_id == session_id).update({AuditLog.is_active_session: False})
         db.commit()
         
-        log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}")
+        log_audit(db, user.id, "REVOKE_SESSION", get_client_ip(request), f"Revoked session {session_id}", session_id=session_id)
 
     return RedirectResponse("/security", status_code=303)
