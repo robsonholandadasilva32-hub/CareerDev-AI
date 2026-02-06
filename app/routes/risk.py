@@ -33,7 +33,4 @@ async def counterfactual(
     Gera cenários alternativos: 'O que aconteceria com meu risco se...'
     Retorna sugestões acionáveis para reduzir o score de risco.
     """
-    # Nota: Certifique-se de que o método 'get_counterfactual' 
-    # foi implementado ou exposto no CareerEngine.
-    # Caso contrário, você pode reutilizar a lógica interna do método 'analyze'.
     return career_engine.get_counterfactual(db, user)
