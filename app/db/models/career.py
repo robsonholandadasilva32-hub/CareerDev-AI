@@ -13,6 +13,8 @@ class CareerProfile(Base):
     bio = Column(Text, nullable=True)
     location = Column(String, nullable=True)
     company = Column(String(100), nullable=True)
+    organization = Column(String(100), nullable=True) # e.g. "Engineering", "Sales"
+    team = Column(String(100), nullable=True)         # e.g. "Backend-Core", "Frontend-Infra"
     region = Column(String(50), nullable=True)  # ex: LATAM, EU, US
     target_role = Column(String, default="Senior Developer") # e.g., "Rust Engineer"
     

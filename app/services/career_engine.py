@@ -191,6 +191,13 @@ class CareerEngine:
             counterfactual
         )
 
+        # Generate 4-Week Horizon
+        multi_week_plan = mentor_engine.generate_multi_week_plan(
+            db,
+            user,
+            counterfactual
+        )
+
         # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
@@ -204,7 +211,9 @@ class CareerEngine:
             "career_forecast": career_forecast,
             "benchmark": benchmark,
             "risk_timeline": risk_timeline,
+            "team_health": benchmark_engine.compute_team_health(db, user),
             "counterfactual": counterfactual,
+            "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
             "zone_a_radar": {},
             "missing_skills": []
