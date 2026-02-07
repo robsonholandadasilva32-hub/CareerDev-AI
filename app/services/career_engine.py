@@ -15,6 +15,7 @@ from app.services.social_harvester import social_harvester
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
+from app.ml.shap_explainer import shap_explainer
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -164,6 +165,12 @@ class CareerEngine:
         avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
         features["avg_confidence"] = avg_confidence
 
+        # Visual SHAP Explanation
+        shap_visual_data = shap_explainer.explain_visual(
+            avg_confidence=features["avg_confidence"],
+            commit_velocity=features.get("commit_velocity", 0)
+        )
+
         # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
@@ -192,6 +199,7 @@ class CareerEngine:
             "career_forecast": career_forecast,
             "benchmark": benchmark,
             "counterfactual": counterfactual,
+            "shap_visual": shap_visual_data,
             "zone_a_radar": {},
             "missing_skills": []
         }

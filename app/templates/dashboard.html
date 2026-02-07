@@ -169,6 +169,13 @@
                         </div>
                     </div>
 
+                    <div class="chart-container" style="position: relative; height:200px; width:100%; margin-top: 20px;">
+                        <h4 style="color:var(--text-muted); font-size: 0.9em; margin-bottom: 10px;">
+                            <i class="fas fa-balance-scale"></i> RISK DRIVERS (AI EXPLANATION)
+                        </h4>
+                        <canvas id="shapChart"></canvas>
+                    </div>
+
                     {% if career_data.benchmark %}
                     <div class="panel">
                       <div class="panel-head">CONTEXTUAL BENCHMARK</div>
@@ -317,6 +324,44 @@ new Chart(document.getElementById("riskCompareChart"), {
     plugins: { legend: { display: false } }
   }
 });
+
+/* ---------------- SHAP VISUALIZATION ---------------- */
+const shapData = {{ career_data.shap_visual | tojson }};
+if (shapData && shapData.values) {
+    const shapColors = shapData.values.map(v => v > 0 ? '#ef4444' : '#10b981');
+
+    new Chart(document.getElementById('shapChart'), {
+        type: 'bar',
+        data: {
+            labels: shapData.labels,
+            datasets: [{
+                label: 'Risk Contribution',
+                data: shapData.values,
+                backgroundColor: shapColors,
+                borderWidth: 0,
+                barThickness: 30
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#fff' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { color: '#fff', font: { family: 'JetBrains Mono' } }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
 
 /* ---------------- RISK TIMELINE CHART ---------------- */
 new Chart(document.getElementById("riskTimeline"), {
