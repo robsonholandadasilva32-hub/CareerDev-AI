@@ -4,6 +4,9 @@ from app.db.models.career import CareerProfile
 
 class BenchmarkEngine:
     def compute(self, db: Session, user):
+        """
+        Computes the Contextual Benchmark (Company & Region).
+        """
         profile = user.career_profile
         if not profile:
             return None
@@ -37,6 +40,7 @@ class BenchmarkEngine:
         scores = sorted([p[0] for p in peers])
         
         # Percentile calculation
+        # Logic: Percent of peers with risk_score <= my score
         percentile = int(
             sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100
         )
@@ -137,9 +141,10 @@ class BenchmarkEngine:
         history = sorted(recent_history, key=lambda h: h.created_at)
 
         # Return separate arrays for Chart.js
+        # FIXED: Using 'data_points' instead of 'values' to avoid Jinja2 serialization issues
         return {
             "labels": [h.created_at.strftime("%d/%m") for h in history],
-            "values": [h.risk_score for h in history]
+            "data_points": [h.risk_score for h in history] 
         }
 
     def compute_team_health(self, db, user):
