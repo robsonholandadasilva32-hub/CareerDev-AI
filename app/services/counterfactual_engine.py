@@ -66,10 +66,8 @@ class CounterfactualEngine:
                 impact_str = a["impact"].replace("% risk", "").replace("-", "")
                 reduction = int(impact_str)
                 total_reduction += reduction
-                # Format as string to match original return signature which expected list of strings
-                # Wait, the original returned list of strings in "actions" key.
-                # "Increase activity by +{increase} commits/month (-{risk_delta}% risk)"
-                formatted_actions.append(f"{a['action']} ({a['impact']})")
+                # Return structured dict as expected by UI and Mentor Engine
+                formatted_actions.append(a)
             except ValueError:
                 continue
 

@@ -180,6 +180,17 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # RISK TIMELINE (Fix for Dashboard)
+        # -------------------------------
+        timeline_labels = [s.recorded_at.strftime("%Y-%m-%d") for s in recent_snapshots][::-1]
+        timeline_values = [s.risk_score for s in recent_snapshots][::-1]
+
+        if not timeline_labels:
+             from datetime import datetime
+             timeline_labels = [datetime.utcnow().strftime("%Y-%m-%d")]
+             timeline_values = [career_forecast.get("risk_score", 0)]
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -192,6 +203,10 @@ class CareerEngine:
             "career_forecast": career_forecast,
             "benchmark": benchmark,
             "counterfactual": counterfactual,
+            "risk_timeline": {
+                "labels": timeline_labels,
+                "data_points": timeline_values
+            },
             "zone_a_radar": {},
             "missing_skills": []
         }

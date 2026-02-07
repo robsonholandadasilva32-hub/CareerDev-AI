@@ -325,7 +325,7 @@ new Chart(document.getElementById("riskTimeline"), {
     labels: {{ career_data.risk_timeline.labels | tojson }},
     datasets: [{
       label: "Projected Risk",
-      data: {{ career_data.risk_timeline.values | tojson }},
+      data: {{ career_data.risk_timeline.data_points | tojson }},
       borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", 
       backgroundColor: "rgba(0,0,0,0)",
       tension: 0.4,
