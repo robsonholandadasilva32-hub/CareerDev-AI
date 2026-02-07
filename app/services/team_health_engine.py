@@ -114,5 +114,52 @@ class TeamHealthEngine:
             "anchor_score": int(anchor_score)
         }
 
+    def internal_health_ranking(self, db: Session, user) -> List[Dict]:
+        """
+        Ranks team members by risk score and calculates their contribution to the team average.
+        """
+        profile = user.career_profile
+        if not profile or not profile.team:
+            return []
+
+        # 1. Fetch raw data
+        raw_data = (
+            db.query(RiskSnapshot.user_id, RiskSnapshot.risk_score)
+            .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
+            .filter(CareerProfile.team == profile.team)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .all()
+        )
+
+        if not raw_data:
+            return []
+
+        # 2. Deduplicate
+        team_scores = {}
+        for uid, score in raw_data:
+            if uid not in team_scores:
+                team_scores[uid] = score
+
+        scores = list(team_scores.values())
+        if not scores:
+            return []
+
+        team_avg = mean(scores)
+
+        ranking = []
+        for uid, score in team_scores.items():
+            contribution = score - team_avg
+            ranking.append({
+                "user_id": uid,
+                "is_current_user": (uid == user.id),
+                "risk": score,
+                "contribution": round(contribution, 1)
+            })
+
+        # Sort by risk ascending (lowest risk = rank 1)
+        ranking.sort(key=lambda x: x["risk"])
+
+        return ranking
+
 # Singleton Instance
 team_health_engine = TeamHealthEngine()
