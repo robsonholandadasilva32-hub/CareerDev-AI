@@ -131,6 +131,40 @@ class MentorEngine:
         self.store(db, user, "PROACTIVE", message)
 
     # -------------------------------------------------
+    # MULTI-WEEK PLANNING
+    # -------------------------------------------------
+    def generate_multi_week_plan(self, db: Session, user: User, counterfactual: dict):
+        # Validation
+        if not counterfactual or not counterfactual.get("actions"):
+            return None
+        weeks = []
+        # Generate a 4-week progression
+        for i in range(4):
+            week_label = f"Week {i+1}"
+
+            # In a future iteration, we can vary intensity per week.
+            # For now, we emphasize consistency on the key actions.
+            week_plan = {
+                "week": week_label,
+                "tasks": []
+            }
+            for action in counterfactual["actions"]:
+                week_plan["tasks"].append({
+                    "task": action["action"],
+                    "expected_impact": action["impact"],
+                    "status": "Pending" # Default state for UI
+                })
+            weeks.append(week_plan)
+        # Log the generation event
+        self.store(
+            db,
+            user,
+            "MULTI_WEEK_PLAN",
+            "Adaptive 4-week improvement roadmap generated."
+        )
+        return weeks
+
+    # -------------------------------------------------
     # DAILY ADVICE (LLM PLACEHOLDER)
     # -------------------------------------------------
     def get_daily_advice(
