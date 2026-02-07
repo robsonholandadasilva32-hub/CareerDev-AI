@@ -198,9 +198,15 @@
 
                 <div>
                     <h4 style="margin-bottom: 15px; opacity: 0.8;">RISK FORECAST HISTORY</h4>
-                    <div style="height: 200px;">
+                {% if career_data.risk_timeline %}
+                    <div class="chart-container" style="position: relative; height:200px; width:100%; margin-top:15px;">
                         <canvas id="riskTimeline"></canvas>
                     </div>
+                {% else %}
+                <div style="height: 200px; display: flex; align-items: center; justify-content: center; opacity: 0.5; font-size: 0.8rem;">
+                    DATA LOADING OR INSUFFICIENT HISTORY
+                </div>
+                {% endif %}
                     <span class="action-link" onclick="openCounterfactualModal()">What lowers my risk? &rarr;</span>
                 </div>
 
@@ -364,6 +370,7 @@ if (shapData && shapData.values) {
 }
 
 /* ---------------- RISK TIMELINE CHART ---------------- */
+{% if career_data.risk_timeline %}
 new Chart(document.getElementById("riskTimeline"), {
   type: "line",
   data: {
@@ -387,6 +394,7 @@ new Chart(document.getElementById("riskTimeline"), {
     plugins: { legend: { display: false } }
   }
 });
+{% endif %}
 
 /* ---------------- SKILL TIMELINE ---------------- */
 async function loadSkillTimeline(){

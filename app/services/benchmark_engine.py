@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import types
 from app.db.models.analytics import RiskSnapshot
 from app.db.models.career import CareerProfile
 
@@ -82,5 +83,29 @@ class BenchmarkEngine:
                 f"you are safer than {percentile}% of them."
             )
         }
+
+    def get_user_history(self, db: Session, user):
+        """
+        Fetches the user's risk history for the longitudinal graph.
+        Returns the last 12 snapshots in chronological order.
+        """
+        history = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.created_at.desc())  # Newest first
+            .limit(12)
+            .all()
+        )
+
+        if not history:
+            return None
+
+        # Reverse to chronological order (Oldest -> Newest) for display
+        history = history[::-1]
+
+        return types.SimpleNamespace(
+            labels=[h.created_at.strftime("%d/%m") for h in history],
+            values=[h.risk_score for h in history]
+        )
 
 benchmark_engine = BenchmarkEngine()

@@ -147,6 +147,11 @@ class CareerEngine:
         benchmark = benchmark_engine.compute(db, user)
 
         # -------------------------------
+        # RISK TIMELINE (LONGITUDINAL GRAPH)
+        # -------------------------------
+        risk_timeline = benchmark_engine.get_user_history(db, user)
+
+        # -------------------------------
         # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
         # -------------------------------
         # Recupera snapshots recentes para compor o histórico de features
@@ -198,6 +203,7 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
+            "risk_timeline": risk_timeline,
             "counterfactual": counterfactual,
             "shap_visual": shap_visual_data,
             "zone_a_radar": {},
