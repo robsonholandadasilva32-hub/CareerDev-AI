@@ -205,6 +205,7 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
+            "risk_timeline": benchmark_engine.get_user_history(db, user),
             "team_health": benchmark_engine.compute_team_health(db, user),
             "counterfactual": counterfactual,
             "multi_week_plan": multi_week_plan,
