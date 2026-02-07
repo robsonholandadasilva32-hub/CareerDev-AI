@@ -111,7 +111,6 @@ class CareerEngine:
         ):
             weekly_plan["mode"] = "ACCELERATOR"
             # Update DB/Profile to reflect accelerator override if needed
-            # For now, just overriding the display mode in the return dict
 
         # -------------------------------
         # CAREER RISK FORECAST (HYBRID + LSTM + A/B TEST)
@@ -133,11 +132,16 @@ class CareerEngine:
         )
 
         # -------------------------------
-        # BENCHMARK ENGINE
+        # BENCHMARK ENGINE (FULL SUITE)
         # -------------------------------
-        # Calcula a performance relativa do usuário vs. mercado
-        # (Contextual Benchmark: Company & Region segmentation)
+        # 1. Contextual Benchmark (Region/Company)
         benchmark = benchmark_engine.compute(db, user)
+        
+        # 2. Team Benchmark (Granular Percentile)
+        team_benchmark = benchmark_engine.compute_team_org(db, user)
+        
+        # 3. Team Health (Aggregate Score)
+        team_health = benchmark_engine.compute_team_health(db, user)
 
         # -------------------------------
         # COUNTERFACTUAL ANALYSIS (WHAT-IF SCENARIOS)
@@ -164,7 +168,7 @@ class CareerEngine:
             commit_velocity=features.get("commit_velocity", 0)
         )
 
-        # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
+        # Gera cenário contrafactual
         counterfactual = counterfactual_engine.generate(
             features=features,
             current_risk=career_forecast["risk_score"]
@@ -198,9 +202,8 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
-            # Merged Fields:
-            "team_benchmark": benchmark_engine.compute_team_org(db, user),
-            "team_health": benchmark_engine.compute_team_health(db, user),
+            "team_benchmark": team_benchmark, # Now included
+            "team_health": team_health,       # Now included
             "risk_timeline": benchmark_engine.get_user_history(db, user),
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
@@ -221,18 +224,13 @@ class CareerEngine:
         linkedin_skills = linkedin_profile.get('skills', {})
 
         # Logic 1: The Imposter Detector
-        # Iterate over claimed skills to find discrepancies
         for skill, level in linkedin_skills.items():
-            # Check if claimed skill exists in GitHub stats (case-insensitive check)
-            # Find matching key in raw_langs
             found_bytes = 0
             for k, v in raw_langs.items():
                 if k.lower() == skill.lower():
                     found_bytes = v
                     break
 
-            # If High Claim on LinkedIn but < 5000 bytes code on GitHub
-            # Note: Using 5000 as per user clarification for 'Imposter Syndrome Cards'
             if level == 'Expert' and found_bytes < 5000:
                 insights.append({
                     "type": "CRITICAL",
@@ -242,9 +240,7 @@ class CareerEngine:
                 })
 
         # Logic 2: The Hidden Gem Detector
-        # Iterate over GitHub stats to find unclaimed skills
         for skill, bytes_count in raw_langs.items():
-            # Check if skill is NOT in LinkedIn profile (case-insensitive)
             is_claimed = any(k.lower() == skill.lower() for k in linkedin_skills.keys())
 
             if not is_claimed and bytes_count > 50000:
@@ -263,27 +259,22 @@ class CareerEngine:
     async def get_counterfactual(self, db: Session, user: User) -> Dict:
         """
         Gera uma análise contrafactual sob demanda (API isolada).
-        Populates necessary data from user profile to run the model.
         """
-        # 1. Recupera dados do perfil (Prefer live metrics, fallback to cached)
         metrics = await social_harvester.get_metrics(user)
 
         profile = user.career_profile
-        raw_languages = metrics.get("languages", {}) # Use normalized key from get_metrics
+        raw_languages = metrics.get("languages", {})
         linkedin_input = profile.linkedin_alignment_data if profile else {}
         if not isinstance(linkedin_input, dict):
             linkedin_input = {}
 
-        # 2. Calcula Skill Confidence
         skill_confidence = self._calculate_skill_confidence(raw_languages, linkedin_input)
 
-        # 3. Calcula Risco Atual (Forecast)
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
         )
         current_risk = career_forecast["risk_score"]
 
-        # 4. Recupera Snapshots
         recent_snapshots = (
             db.query(RiskSnapshot)
             .filter(RiskSnapshot.user_id == user.id)
@@ -292,10 +283,7 @@ class CareerEngine:
             .all()
         )
 
-        # 5. Computa Features e Gera Counterfactual
         features = compute_features(metrics, recent_snapshots)
-
-        # Adiciona avg_confidence explicitamente para SHAP analysis
         avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
         features["avg_confidence"] = avg_confidence
 
@@ -335,7 +323,6 @@ class CareerEngine:
     ) -> Dict:
         raw_langs = github_stats.get("languages", {})
 
-        # Select focus based on highest byte count, default to Python
         if raw_langs:
             focus = max(raw_langs, key=raw_langs.get)
         else:
@@ -392,13 +379,6 @@ class CareerEngine:
     # RISK CLASSIFICATION HELPER
     # =========================================================
     def classify_risk_level(self, risk_score: int) -> str:
-        """
-        Maps a numeric risk score to a categorical level.
-        Thresholds:
-        - < 25: LOW
-        - 25 to 59: MEDIUM
-        - >= 60: HIGH
-        """
         if risk_score < 25:
             return "LOW"
         if risk_score < 60:
@@ -434,7 +414,6 @@ class CareerEngine:
             risk_score += 20
             reasons.append("Development velocity decreasing.")
         
-        # Armazena o risco base (rule-based)
         rule_risk = risk_score
 
         # --- Ajuste via ML, LSTM e A/B Testing ---
@@ -443,14 +422,13 @@ class CareerEngine:
             ml_result = ml_forecaster.predict(avg_conf, commits_30d)
             ml_risk = ml_result["ml_risk"]
             
-            # Adiciona explicação do ML estático
             ml_explanation = self.explain_ml_forecast(
                 ml_risk, 
                 {"commits": commits_30d, "confidence": avg_conf}
             )
             reasons.append(ml_explanation)
 
-            # 2. Lógica A/B Testing (Regras vs Híbrido Estático)
+            # 2. Lógica A/B Testing
             experiment_group = "A" if random.random() < 0.5 else "B"
 
             if experiment_group == "A":
@@ -458,7 +436,7 @@ class CareerEngine:
             else:
                 final_risk = int((rule_risk + ml_risk) / 2)
 
-            # 3. Refinamento Temporal via LSTM (Se houver histórico)
+            # 3. Refinamento Temporal via LSTM
             try:
                 recent_risks = [r.risk_score for r in db.query(RiskSnapshot)
                                 .filter(RiskSnapshot.user_id == user.id)
@@ -468,13 +446,12 @@ class CareerEngine:
 
                 if len(recent_risks) == 10:
                     lstm_risk = lstm_model.predict(recent_risks)
-                    # Média ponderada com o LSTM para suavizar a tendência
                     final_risk = int((final_risk + lstm_risk) / 2)
                     reasons.append(f"LSTM Temporal Analysis added context (Trend: {lstm_risk}%)")
             except Exception as lstm_err:
                 pass
 
-            # Persistência do Log Completo
+            # Persistência do Log
             new_log = MLRiskLog(
                 user_id=user.id,
                 ml_risk=ml_risk,
@@ -486,7 +463,6 @@ class CareerEngine:
             db.add(new_log)
             db.commit()
 
-            # Atualiza o score final retornado
             risk_score = final_risk
             
         except Exception as e:
@@ -496,8 +472,7 @@ class CareerEngine:
         # --- Classificação Final ---
         level = self.classify_risk_level(risk_score)
         
-        # --- Detecção de Mudança de Estado (Alert Engine) ---
-        # Dispara alertas se o risco mudar significativamente (ex: LOW -> HIGH)
+        # --- Detecção de Mudança de Estado ---
         alert_engine.detect_state_change(db, user, level)
 
         summary = "Career trajectory stable."
@@ -527,13 +502,10 @@ class CareerEngine:
         commits_30d = metrics.get("commits_last_30_days", 0)
         market_score = profile.market_relevance_score if profile else 0
 
-        # Priority 1: Stagnation
         if commits_30d < 5:
             summary = "High risk driven by low coding activity (stagnation)."
-        # Priority 2: Market Relevance
         elif market_score < 50:
             summary = "Risk driven by low alignment with current market trends."
-        # Priority 3: Default/Skill Gap
         else:
             summary = "Moderate risk due to specific skill gaps in your target role."
 
@@ -546,13 +518,7 @@ class CareerEngine:
             ]
         }
 
-    # =========================================================
-    # RISK EXPLAINABILITY (XAI) - DYNAMIC ML
-    # =========================================================
     def explain_ml_forecast(self, ml_risk, features):
-        """
-        Generates a dynamic explanation for the specific ML forecast.
-        """
         return (
             f"The ML model predicts risk based on declining commit velocity "
             f"and skill confidence trends. Estimated risk: {ml_risk}%."
@@ -573,7 +539,6 @@ class CareerEngine:
         profile = user.career_profile
         skills_snapshot = profile.skills_snapshot if profile and isinstance(profile.skills_snapshot, dict) else {}
 
-        # Calculate base confidence bounded 0-100
         raw_confidence = skills_snapshot.get(skill, 0)
         base_confidence = int(raw_confidence)
         base_confidence = max(0, min(base_confidence, 100))
@@ -625,10 +590,6 @@ class CareerEngine:
         db: Session,
         user: User
     ) -> List[Dict]:
-        """
-        Asynchronously retrieves weekly learning history.
-        Offloads the synchronous DB query to a thread to prevent blocking the event loop.
-        """
         return await asyncio.to_thread(self._get_weekly_history_sync, db, user.id)
 
 
