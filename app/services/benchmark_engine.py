@@ -83,4 +83,60 @@ class BenchmarkEngine:
             )
         }
 
+    def get_user_history(self, db: Session, user):
+        # Fetch user's personal history (last 12 snapshots)
+        # We fetch in descending order to get the most recent ones, then sort back to ascending for the chart
+        recent_history = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.created_at.desc())
+            .limit(12)
+            .all()
+        )
+
+        if not recent_history:
+            return None
+
+        # Restore chronological order for the chart
+        history = sorted(recent_history, key=lambda h: h.created_at)
+
+        # Return separate arrays for Chart.js
+        return {
+            "labels": [h.created_at.strftime("%d/%m") for h in history],
+            "values": [h.risk_score for h in history]
+        }
+
+    def compute_team_health(self, db, user):
+        profile = user.career_profile
+        if not profile or not profile.team:
+            return None
+        # 1. Fetch all snapshots for team members, ordered by newest first
+        # We join CareerProfile to filter by team
+        raw_data = (
+            db.query(RiskSnapshot.user_id, RiskSnapshot.risk_score)
+            .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
+            .filter(CareerProfile.team == profile.team)
+            .order_by(RiskSnapshot.created_at.desc())
+            .all()
+        )
+        if not raw_data:
+            return None
+        # 2. Deduplicate: Keep only the latest score per user
+        latest_scores = {}
+        for user_id, score in raw_data:
+            if user_id not in latest_scores:
+                latest_scores[user_id] = score
+        if not latest_scores:
+            return None
+        # 3. Calculate Average Risk of the Team
+        avg_risk = sum(latest_scores.values()) / len(latest_scores)
+
+        # 4. Invert to get "Health" (High Health = Low Risk)
+        health_score = 100 - avg_risk
+        return {
+            "health_score": int(health_score),
+            "label": "Strong" if health_score > 75 else "Stable" if health_score > 50 else "Critical",
+            "member_count": len(latest_scores)
+        }
+
 benchmark_engine = BenchmarkEngine()

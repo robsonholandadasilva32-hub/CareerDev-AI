@@ -1,9 +1,9 @@
 # CareerDev AI
 ![License](https://img.shields.io/badge/License-Apache_2.0-green?style=flat)
 
-**Uma plataforma de aceleração de carreira impulsionada por IA.**
+**The AI-powered career prosperity platform.**
 
-Une a precisão da máquina com a intuição humana para otimizar currículos e estratégias profissionais.
+It combines machine precision with human intuition to optimize resumes and career strategies.
 
 **Stack:** Python/FastAPI, Stripe, OAuth.
 

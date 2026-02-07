@@ -15,6 +15,7 @@ from app.services.social_harvester import social_harvester
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
+from app.ml.shap_explainer import shap_explainer
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -164,6 +165,12 @@ class CareerEngine:
         avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
         features["avg_confidence"] = avg_confidence
 
+        # Visual SHAP Explanation
+        shap_visual_data = shap_explainer.explain_visual(
+            avg_confidence=features["avg_confidence"],
+            commit_velocity=features.get("commit_velocity", 0)
+        )
+
         # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
@@ -174,6 +181,13 @@ class CareerEngine:
         # MENTOR INTEGRATION
         # -------------------------------
         mentor_engine.proactive_from_counterfactual(
+            db,
+            user,
+            counterfactual
+        )
+
+        # Generate 4-Week Horizon
+        multi_week_plan = mentor_engine.generate_multi_week_plan(
             db,
             user,
             counterfactual
@@ -202,11 +216,14 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
+            "team_health": benchmark_engine.compute_team_health(db, user),
             "counterfactual": counterfactual,
             "risk_timeline": {
                 "labels": timeline_labels,
                 "data_points": timeline_values
             },
+            "multi_week_plan": multi_week_plan,
+            "shap_visual": shap_visual_data,
             "zone_a_radar": {},
             "missing_skills": []
         }
