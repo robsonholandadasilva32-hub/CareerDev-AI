@@ -65,4 +65,26 @@ class ShapRiskExplainer:
                 }
             }
 
+    def explain_visual(self, avg_confidence: float, commit_velocity: float):
+        """
+        Returns data formatted specifically for Chart.js visualization.
+        """
+        # Ensure resources are loaded (Lazy Loading)
+        try:
+            self._load_resources()
+            X = np.array([[avg_confidence, commit_velocity]])
+            shap_values = self.explainer(X)
+            contributions = shap_values.values[0]
+
+            return {
+                "labels": ["Verified Skill Confidence", "Commit Velocity"],
+                "values": [float(contributions[0]), float(contributions[1])]
+            }
+        except (FileNotFoundError, AttributeError, OSError, Exception):
+            # Fallback if model is missing
+            return {
+                "labels": ["Skill Confidence", "Commit Velocity"],
+                "values": [0, 0]
+            }
+
 shap_explainer = ShapRiskExplainer()

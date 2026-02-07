@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 import asyncio
 from sqlalchemy.orm import Session
 from app.db.models.user import User
@@ -80,23 +80,24 @@ class GrowthEngine:
              plan_type = "HARDCORE"
 
         # 4. Generate Routine
-        week_id = datetime.datetime.now().strftime("%Y-W%U")
+        week_id = datetime.now(timezone.utc).strftime("%Y-W%U")
 
+        # Set first task as 'in_progress' initially for Kanban flow
         if plan_type == "Micro-Learning":
             routine = [
-                {"id": 1, "day": "Mon", "type": "Learn", "task": f"15 min: {focus_skill} Syntax", "status": "pending"},
+                {"id": 1, "day": "Mon", "type": "Learn", "task": f"15 min: {focus_skill} Syntax", "status": "in_progress"},
                 {"id": 2, "day": "Wed", "type": "Code", "task": f"Snippet: Hello World in {focus_skill}", "verify_key": focus_skill.lower(), "status": "pending"},
                 {"id": 3, "day": "Fri", "type": "Review", "task": "Quick Quiz", "status": "pending"}
             ]
         elif plan_type == "HARDCORE":
              routine = [
-                {"id": 1, "day": "Mon", "type": "Design", "task": "System Design: Distributed Rate Limiter", "status": "pending"},
+                {"id": 1, "day": "Mon", "type": "Design", "task": "System Design: Distributed Rate Limiter", "status": "in_progress"},
                 {"id": 2, "day": "Wed", "type": "Code", "task": "Implement Token Bucket Algo", "verify_key": focus_skill.lower(), "status": "pending"},
                 {"id": 3, "day": "Fri", "type": "Code", "task": "Load Test & Benchmark", "verify_key": focus_skill.lower(), "status": "pending"}
              ]
         else:
              routine = [
-                {"id": 1, "day": "Mon", "type": "Learn", "task": f"Deep Dive: {focus_skill} Core Concepts", "status": "pending"},
+                {"id": 1, "day": "Mon", "type": "Learn", "task": f"Deep Dive: {focus_skill} Core Concepts", "status": "in_progress"},
                 {"id": 2, "day": "Wed", "type": "Code", "task": f"CLI Tool: Parse JSON in {focus_skill}", "verify_key": focus_skill.lower(), "status": "pending"},
                 {"id": 3, "day": "Fri", "type": "Code", "task": f"Refactor: Optimize {focus_skill} Code", "verify_key": focus_skill.lower(), "status": "pending"}
             ]
@@ -172,7 +173,7 @@ class GrowthEngine:
             if verified:
                  task["status"] = "completed"
 
-                 now = datetime.datetime.utcnow()
+                 now = datetime.now(timezone.utc)
 
                  # Streak Logic using last_weekly_check
                  last_check = user.last_weekly_check
@@ -192,9 +193,17 @@ class GrowthEngine:
                  if wr:
                      # Update the specific task in JSON
                      current_tasks = list(wr.tasks)
+
+                     # 1. Mark current task as completed
                      for t in current_tasks:
                          if t["id"] == task_id:
                              t["status"] = "completed"
+
+                     # 2. Advance next pending task to 'in_progress'
+                     next_task = next((t for t in current_tasks if t["status"] == "pending"), None)
+                     if next_task:
+                         next_task["status"] = "in_progress"
+
                      wr.tasks = current_tasks # Trigger update
 
                      if all(t.get("status") == "completed" for t in current_tasks):
@@ -202,6 +211,11 @@ class GrowthEngine:
                          wr.completed_at = now
 
                  profile.active_weekly_plan = dict(plan)
+
+                 # Also update the plan in profile to reflect the status changes (next task in progress)
+                 if wr:
+                    profile.active_weekly_plan["routine"] = wr.tasks
+
                  db.commit()
 
                  return {"success": True, "message": "Task Verified! Streak Updated.", "task": task}

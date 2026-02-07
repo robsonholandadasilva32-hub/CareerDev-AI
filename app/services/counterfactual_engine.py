@@ -35,12 +35,14 @@ class CounterfactualEngine:
                 if feature == "commit_velocity":
                     actions.append({
                         "action": "Increase commit velocity",
-                        "impact": f"-{impact_val}% risk"
+                        "impact": f"-{impact_val}% risk",
+                        "type": "behavior"
                     })
                 elif feature == "avg_confidence":
                     actions.append({
                         "action": "Improve verified skill confidence",
-                        "impact": f"-{impact_val}% risk"
+                        "impact": f"-{impact_val}% risk",
+                        "type": "skill"
                     })
 
         # Also keep Market Gap Analysis from legacy logic as it's not in the SHAP model yet
@@ -53,20 +55,22 @@ class CounterfactualEngine:
             gap_impact = 15
             actions.append({
                 "action": f"Practice {top_gap} for 4 weeks",
-                "impact": f"-{gap_impact}% risk"
+                "impact": f"-{gap_impact}% risk",
+                "type": "skill"
             })
 
         # 3. Calculate projection
         # Parse numeric impact from string (e.g., "-15% risk" -> 15)
         total_reduction = 0
-        valid_actions = []
+        final_actions = []
 
         for a in actions:
             try:
                 impact_str = a["impact"].replace("% risk", "").replace("-", "")
                 reduction = int(impact_str)
                 total_reduction += reduction
-                valid_actions.append(a)
+                # Return structured object instead of formatted string
+                final_actions.append(a)
             except ValueError:
                 continue
 
@@ -75,7 +79,7 @@ class CounterfactualEngine:
         return {
             "current_risk": current_risk,
             "projected_risk": projected_risk,
-            "actions": valid_actions,
+            "actions": final_actions,
             "summary": (
                 f"Executing the actions above could reduce your risk "
                 f"from {current_risk}% to approximately {projected_risk}%."
