@@ -177,6 +177,25 @@
                       </div>
                     </div>
                     {% endif %}
+
+                    {% if career_data.team_benchmark %}
+                    <div class="panel" style="border-left: 4px solid var(--neon-blue); margin-bottom: 20px;">
+                      <div class="panel-head">
+                        <i class="fas fa-users"></i> TEAM BENCHMARK
+                      </div>
+                      <div style="padding:15px;">
+                        <div style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 5px;">
+                          {{ career_data.team_benchmark.context }}
+                        </div>
+                        <div style="font-size: 1.8rem; font-weight: 700; color: #fff;">
+                          Top {{ 100 - career_data.team_benchmark.percentile }}%
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
+                          {{ career_data.team_benchmark.message }}
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -325,7 +344,7 @@ new Chart(document.getElementById("riskTimeline"), {
     labels: {{ career_data.risk_timeline.labels | tojson }},
     datasets: [{
       label: "Projected Risk",
-      data: {{ career_data.risk_timeline.values | tojson }},
+      data: {{ career_data.risk_timeline.data_points | tojson }},
       borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", 
       backgroundColor: "rgba(0,0,0,0)",
       tension: 0.4,

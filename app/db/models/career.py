@@ -22,6 +22,8 @@ class CareerProfile(Base):
     # New Specific Fields (Added)
     seniority = Column(String(20))      # Junior | Mid | Senior | Staff
     primary_stack = Column(String(50))  # Python, JS, Rust, etc.
+    team = Column(String(100), nullable=True)
+    organization = Column(String(100), nullable=True)
 
     # --- Skills Analysis (JSON: {"Rust": 80, "Python": 90}) ---
     skills_snapshot = Column(JSON, default={})

@@ -59,17 +59,14 @@ class CounterfactualEngine:
         # 3. Calculate projection
         # Parse numeric impact from string (e.g., "-15% risk" -> 15)
         total_reduction = 0
-        formatted_actions = []
+        valid_actions = []
 
         for a in actions:
             try:
                 impact_str = a["impact"].replace("% risk", "").replace("-", "")
                 reduction = int(impact_str)
                 total_reduction += reduction
-                # Format as string to match original return signature which expected list of strings
-                # Wait, the original returned list of strings in "actions" key.
-                # "Increase activity by +{increase} commits/month (-{risk_delta}% risk)"
-                formatted_actions.append(f"{a['action']} ({a['impact']})")
+                valid_actions.append(a)
             except ValueError:
                 continue
 
@@ -78,7 +75,7 @@ class CounterfactualEngine:
         return {
             "current_risk": current_risk,
             "projected_risk": projected_risk,
-            "actions": formatted_actions,
+            "actions": valid_actions,
             "summary": (
                 f"Executing the actions above could reduce your risk "
                 f"from {current_risk}% to approximately {projected_risk}%."

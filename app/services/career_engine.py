@@ -191,7 +191,9 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
+            "team_benchmark": benchmark_engine.compute_team_org(db, user),
             "counterfactual": counterfactual,
+            "risk_timeline": {"labels": [], "data_points": []},
             "zone_a_radar": {},
             "missing_skills": []
         }

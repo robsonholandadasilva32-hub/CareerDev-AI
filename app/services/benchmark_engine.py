@@ -83,4 +83,57 @@ class BenchmarkEngine:
             )
         }
 
+    def compute_team_org(self, db: Session, user):
+        profile = user.career_profile
+        if not profile:
+            return None
+        # 1. Get user's latest snapshot
+        latest = (
+            db.query(RiskSnapshot) # <--- Using existing model
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.created_at.desc())
+            .first()
+        )
+        if not latest:
+            return None
+        # 2. Base Query for Peers
+        query = (
+            db.query(RiskSnapshot.risk_score)
+            .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
+        )
+        context = []
+        has_filter = False
+        # 3. Apply Hierarchical Filters
+        if profile.organization:
+            query = query.filter(CareerProfile.organization == profile.organization)
+            context.append(profile.organization)
+            has_filter = True
+        if profile.team:
+            query = query.filter(CareerProfile.team == profile.team)
+            context.append(profile.team)
+            has_filter = True
+        # Optimization: Don't run query if user belongs to no team/org
+        if not has_filter:
+            return None
+        peers = query.all()
+        if not peers:
+            return None
+        # 4. Calculate Percentile
+        scores = sorted([p[0] for p in peers])
+        # Handle edge case: single user (100th percentile)
+        if len(scores) == 1:
+             percentile = 100
+        else:
+             percentile = int(
+                 sum(1 for s in scores if s <= latest.risk_score) / len(scores) * 100
+             )
+        return {
+            "context": " / ".join(context),
+            "percentile": percentile,
+            "message": (
+                f"Within {', '.join(context)}, "
+                f"you are safer than {percentile}% of your peers."
+            )
+        }
+
 benchmark_engine = BenchmarkEngine()
