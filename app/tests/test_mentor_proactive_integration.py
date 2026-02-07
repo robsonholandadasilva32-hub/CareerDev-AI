@@ -45,6 +45,36 @@ def test_proactive_from_counterfactual_empty():
     # Verify no calls
     mentor.store.assert_not_called()
 
+def test_generate_multi_week_plan_logic():
+    """Test the logic of the generate_multi_week_plan method"""
+    # Setup
+    mentor = MentorEngine()
+    mentor.store = MagicMock()
+    db = MagicMock()
+    user = MagicMock(spec=User)
+
+    # Case 1: Valid counterfactual
+    counterfactual = {
+        "actions": [
+            {"action": "Action 1", "impact": "High"},
+            {"action": "Action 2", "impact": "Low"}
+        ]
+    }
+
+    result = mentor.generate_multi_week_plan(db, user, counterfactual)
+
+    # Verify
+    assert len(result) == 4
+    assert result[0]["week"] == "Week 1"
+    assert len(result[0]["tasks"]) == 2
+    assert result[0]["tasks"][0]["task"] == "Action 1"
+    assert result[0]["tasks"][0]["status"] == "Pending"
+
+    # Verify storage
+    mentor.store.assert_called_once()
+    args, _ = mentor.store.call_args
+    assert args[2] == "MULTI_WEEK_PLAN"
+
 def test_career_engine_integration():
     """Test that CareerEngine.analyze calls mentor_engine.proactive_from_counterfactual"""
     # Mock dependencies
@@ -91,3 +121,6 @@ def test_career_engine_integration():
 
         # Verify mentor was called with the CF data
         mock_mentor.proactive_from_counterfactual.assert_called_once_with(db, user, mock_cf_data)
+
+        # Verify multi-week plan generation
+        mock_mentor.generate_multi_week_plan.assert_called_once_with(db, user, mock_cf_data)
