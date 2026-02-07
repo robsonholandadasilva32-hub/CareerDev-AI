@@ -519,8 +519,11 @@ def _process_linkedin_login_sync(user_info: dict, token_data: dict, ip: str, use
 
             # Determine Redirect
             redirect_url = "/dashboard"
-            if not user.github_id:
-                redirect_url = "/onboarding/connect-github"
+
+            # STRICT CHAINING: Ensure GitHub Token is present (Daisy Chain)
+            # If user has ID but no token, OR no ID at all -> Go to GitHub Login
+            if not user.github_id or not user.github_token:
+                redirect_url = "/login/github"
 
             return {
                 "status": "success",
@@ -612,7 +615,38 @@ async def auth_linkedin_callback(request: Request, background_tasks: BackgroundT
             background_tasks.add_task(social_harvester.harvest_linkedin_data, result["user_id"], token_str)
 
         # 5. Create Response
-        response = RedirectResponse(result["redirect_url"], status_code=303)
+        # CHECK FOR DIRECT CHAINING
+        if result["redirect_url"] == "/login/github":
+            # INTERSTITIAL PAGE (Chain Enforcement)
+            # This HTML page bridges the gap between LinkedIn and GitHub auth
+            html_content = """
+            <html>
+                <head>
+                    <title>Connecting GitHub...</title>
+                    <meta http-equiv="refresh" content="1; url=/login/github" />
+                    <style>
+                        body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f8f9fa; }
+                        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                        h2 { color: #2c3e50; }
+                        p { color: #7f8c8d; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>LinkedIn Connected!</h2>
+                        <p>Redirecting to GitHub to analyze your code metrics...</p>
+                        <div class="loader"></div>
+                        <p><small>If not redirected automatically, <a href="/login/github">click here</a>.</small></p>
+                    </div>
+                </body>
+            </html>
+            """
+            response = HTMLResponse(content=html_content, status_code=200)
+        else:
+            response = RedirectResponse(result["redirect_url"], status_code=303)
+
         response.set_cookie(
             key="access_token",
             value=result["token"],
