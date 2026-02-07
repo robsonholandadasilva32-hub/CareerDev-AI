@@ -64,6 +64,13 @@ async def dashboard(
     if not career_data.get("zone_a_holistic"):
         career_data["zone_a_holistic"] = {"score": profile.market_relevance_score if profile else 0}
 
+    # Ensure risk_timeline exists to prevent template error
+    if "risk_timeline" not in career_data:
+        career_data["risk_timeline"] = {
+            "labels": ["W1", "W2", "W3", "W4", "W5"],
+            "values": [30, 28, 32, 25, 20]
+        }
+
     # >>> ADIÇÃO AQUI <<<
     weekly_history = await career_engine.get_weekly_history(db, user)
 

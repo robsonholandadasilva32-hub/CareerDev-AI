@@ -35,12 +35,14 @@ class CounterfactualEngine:
                 if feature == "commit_velocity":
                     actions.append({
                         "action": "Increase commit velocity",
-                        "impact": f"-{impact_val}% risk"
+                        "impact": f"-{impact_val}% risk",
+                        "type": "behavior"
                     })
                 elif feature == "avg_confidence":
                     actions.append({
                         "action": "Improve verified skill confidence",
-                        "impact": f"-{impact_val}% risk"
+                        "impact": f"-{impact_val}% risk",
+                        "type": "skill"
                     })
 
         # Also keep Market Gap Analysis from legacy logic as it's not in the SHAP model yet
@@ -53,23 +55,19 @@ class CounterfactualEngine:
             gap_impact = 15
             actions.append({
                 "action": f"Practice {top_gap} for 4 weeks",
-                "impact": f"-{gap_impact}% risk"
+                "impact": f"-{gap_impact}% risk",
+                "type": "skill"
             })
 
         # 3. Calculate projection
         # Parse numeric impact from string (e.g., "-15% risk" -> 15)
         total_reduction = 0
-        formatted_actions = []
 
         for a in actions:
             try:
                 impact_str = a["impact"].replace("% risk", "").replace("-", "")
                 reduction = int(impact_str)
                 total_reduction += reduction
-                # Format as string to match original return signature which expected list of strings
-                # Wait, the original returned list of strings in "actions" key.
-                # "Increase activity by +{increase} commits/month (-{risk_delta}% risk)"
-                formatted_actions.append(f"{a['action']} ({a['impact']})")
             except ValueError:
                 continue
 
@@ -78,7 +76,7 @@ class CounterfactualEngine:
         return {
             "current_risk": current_risk,
             "projected_risk": projected_risk,
-            "actions": formatted_actions,
+            "actions": actions,
             "summary": (
                 f"Executing the actions above could reduce your risk "
                 f"from {current_risk}% to approximately {projected_risk}%."

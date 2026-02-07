@@ -36,12 +36,12 @@ class TestCounterfactualEngineShap(unittest.TestCase):
         self.assertEqual(len(actions), 2)
 
         # Verify Action 1: Confidence
-        self.assertIn("Improve verified skill confidence", actions[0])
-        self.assertIn("-25% risk", actions[0])
+        self.assertEqual(actions[0]["action"], "Improve verified skill confidence")
+        self.assertEqual(actions[0]["impact"], "-25% risk")
 
         # Verify Action 2: Market Gap (Hybrid)
-        self.assertIn("Practice Rust for 4 weeks", actions[1])
-        self.assertIn("-15% risk", actions[1])
+        self.assertEqual(actions[1]["action"], "Practice Rust for 4 weeks")
+        self.assertEqual(actions[1]["impact"], "-15% risk")
 
         # Verify Projected Risk
         # Total reduction = 25 + 15 = 40
@@ -68,8 +68,8 @@ class TestCounterfactualEngineShap(unittest.TestCase):
 
         actions = result["actions"]
         self.assertEqual(len(actions), 1)
-        self.assertIn("Increase commit velocity", actions[0])
-        self.assertIn("-12% risk", actions[0]) # 1.2 * 10 = 12
+        self.assertEqual(actions[0]["action"], "Increase commit velocity")
+        self.assertEqual(actions[0]["impact"], "-12% risk") # 1.2 * 10 = 12
 
         self.assertEqual(result["projected_risk"], 60 - 12)
 
