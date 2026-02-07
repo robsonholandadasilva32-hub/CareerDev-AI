@@ -283,6 +283,57 @@
                       </div>
                     </div>
                     {% endif %}
+
+                    {% if career_data.team_burnout %}
+                    <div class="panel" style="text-align: center; border-top: 4px solid {% if career_data.team_burnout.level == 'HIGH' %}#ef4444{% elif career_data.team_burnout.level == 'MEDIUM' %}#facc15{% else %}#10b981{% endif %}; margin-bottom: 20px;">
+                      <div class="panel-head">
+                          <i class="fas fa-fire"></i> TEAM BURNOUT RISK
+                      </div>
+                      <div style="font-size: 2.5rem; font-weight: 700; margin: 10px 0; color: #fff;">
+                        {{ career_data.team_burnout.burnout_score }}%
+                      </div>
+                      <div style="margin-top: 5px; font-family: 'JetBrains Mono', monospace;">
+                      LEVEL:
+                      <span style="color: {% if career_data.team_burnout.level == 'HIGH' %}#ef4444{% elif career_data.team_burnout.level == 'MEDIUM' %}#facc15{% else %}#10b981{% endif %}; font-weight: bold;">
+                        {{ career_data.team_burnout.level }}
+                      </span>
+                      </div>
+                      <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        AVG: {{ career_data.team_burnout.avg_risk }} VAR: {{ career_data.team_burnout.variance }}
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    {% if career_data.exit_simulation %}
+                    <div class="panel" style="border-left: 4px solid var(--neon-purple);">
+                      <div class="panel-head">
+                        <i class="fas fa-user-minus"></i> ANCHOR EXIT SIMULATION
+                      </div>
+                      <div style="padding: 15px;">
+                        <div style="font-size: 0.8rem; color: #ccc; margin-bottom: 10px;">
+                          If your most stable dev leaves:
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 0.7rem; color: #888;">CURRENT RISK</div>
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">{{ career_data.exit_simulation.current_avg }}%</div>
+                            </div>
+                            <div style="font-size: 1.5rem; color: #666;">&rarr;</div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 0.7rem; color: #888;">SIMULATED</div>
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">{{ career_data.exit_simulation.new_avg_if_exit }}%</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; text-align: center; border: 1px dashed var(--neon-purple);">
+                            <span style="font-size: 0.8rem; color: var(--text-dim);">TEAM RISK SPIKE:</span>
+                            <span style="font-size: 1rem; font-weight: 800; color: {% if career_data.exit_simulation.impact > 5 %}#ef4444{% else %}#eab308{% endif %}; margin-left: 5px;">
+                                +{{ career_data.exit_simulation.impact }}%
+                            </span>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
