@@ -249,6 +249,18 @@
                     </div>
                     {% endif %}
 
+                    {% if career_data.team_benchmark %}
+                    <div class="panel">
+                        <div class="panel-head">TEAM BENCHMARK</div>
+                        <div style="padding:12px; font-size: 0.8rem;">
+                            {{ career_data.team_benchmark.message }}
+                            <div style="margin-top: 5px; font-size: 0.7rem; color: var(--text-muted);">
+                                Scope: {{ career_data.team_benchmark.context }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if career_data.team_health %}
                     <div class="panel" style="text-align: center; border-top: 4px solid {% if career_data.team_health.health_score > 75 %}var(--neon-green){% elif career_data.team_health.health_score > 50 %}#facc15{% else %}#ef4444{% endif %};">
                       <div class="panel-head">
