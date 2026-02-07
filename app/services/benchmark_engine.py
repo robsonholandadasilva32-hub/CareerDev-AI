@@ -83,6 +83,29 @@ class BenchmarkEngine:
             )
         }
 
+    def get_user_history(self, db: Session, user):
+        # Fetch user's personal history (last 12 snapshots)
+        # We fetch in descending order to get the most recent ones, then sort back to ascending for the chart
+        recent_history = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.created_at.desc())
+            .limit(12)
+            .all()
+        )
+
+        if not recent_history:
+            return None
+
+        # Restore chronological order for the chart
+        history = sorted(recent_history, key=lambda h: h.created_at)
+
+        # Return separate arrays for Chart.js
+        return {
+            "labels": [h.created_at.strftime("%d/%m") for h in history],
+            "values": [h.risk_score for h in history]
+        }
+
     def compute_team_health(self, db, user):
         profile = user.career_profile
         if not profile or not profile.team:
