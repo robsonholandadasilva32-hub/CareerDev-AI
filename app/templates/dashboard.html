@@ -184,6 +184,23 @@
                       </div>
                     </div>
                     {% endif %}
+
+                    {% if career_data.team_health %}
+                    <div class="panel" style="text-align: center; border-top: 4px solid {% if career_data.team_health.health_score > 75 %}var(--neon-green){% elif career_data.team_health.health_score > 50 %}#facc15{% else %}#ef4444{% endif %};">
+                      <div class="panel-head">
+                        <i class="fas fa-heartbeat"></i> TEAM HEALTH
+                      </div>
+                      <div style="font-size: 2.5rem; font-weight: 700; margin: 10px 0; color: #fff;">
+                        {{ career_data.team_health.health_score }}%
+                      </div>
+                      <div style="font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                        {{ career_data.team_health.label }}
+                      </div>
+                      <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        Based on {{ career_data.team_health.member_count }} members
+                      </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
