@@ -5,6 +5,12 @@ from app.db.models.analytics import RiskSnapshot
 from app.db.models.career import CareerProfile
 
 class TeamHealthEngine:
+    """
+    Calculates Burnout Risk based on:
+    1. High Average Risk (Systemic Stress)
+    2. High Variance (Inequality/Isolation)
+    And simulates the impact of key member exits.
+    """
 
     def team_burnout_risk(self, db: Session, user) -> Optional[Dict]:
         """Calculates Burnout Risk based on Stress + Variance"""
@@ -12,14 +18,14 @@ class TeamHealthEngine:
         if not profile or not profile.team:
             return None
 
-        # Query risk scores for the team
-        # Limit to 50 latest snapshots to get a representative sample
+        # Query recent snapshots for all team members
+        # We join CareerProfile to ensure we only get peers from the same team
         risks = (
             db.query(RiskSnapshot.risk_score)
             .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
             .filter(CareerProfile.team == profile.team)
             .order_by(RiskSnapshot.recorded_at.desc()) # Consistent timestamp
-            .limit(50)
+            .limit(50)  # Limit to recent data sample
             .all()
         )
 
@@ -32,10 +38,13 @@ class TeamHealthEngine:
             return None
 
         avg_risk = mean(scores)
+        # Population standard deviation (requires at least one data point, but meaningful with >1)
         variance = pstdev(scores) if len(scores) > 1 else 0
 
-        # heuristic: 60% average risk + 40% variance
+        # Heuristic Formula: 60% weight on raw risk, 40% on variance (instability)
         burnout_score = int((avg_risk * 0.6) + (variance * 0.4))
+        
+        # Cap at 100
         burnout_score = min(100, burnout_score)
 
         level = "LOW"
@@ -52,7 +61,9 @@ class TeamHealthEngine:
         }
 
     def simulate_member_exit(self, db: Session, user) -> Optional[Dict]:
-        """Simulates impact on Team Average Risk if the lowest-risk member (The Anchor) leaves."""
+        """
+        Simulates the impact on Team Average Risk if the lowest-risk member (The Anchor) leaves.
+        """
         profile = user.career_profile
         if not profile or not profile.team:
             return None
@@ -84,14 +95,15 @@ class TeamHealthEngine:
         current_avg = mean(scores)
 
         # 3. Identify the "Anchor" (Member with LOWEST risk)
+        # Removing them usually causes the average risk to spike up.
         anchor_score = min(scores)
-
+        
         # 4. Simulate the team without the Anchor
-        simulated_scores = [s for s in scores if s != anchor_score]
-
-        # Handle edge case where multiple people have the same low score (remove only one instance)
-        if len(simulated_scores) == len(scores):
-             simulated_scores.remove(anchor_score)
+        # We use remove() on a copy to ensure we only remove one instance, even if multiple
+        # members share the same lowest score (handling the duplicate anchor edge case correctly).
+        scores_copy = list(scores)
+        scores_copy.remove(anchor_score)
+        simulated_scores = scores_copy
 
         new_avg = mean(simulated_scores)
         impact = new_avg - current_avg
@@ -103,4 +115,50 @@ class TeamHealthEngine:
             "anchor_score": int(anchor_score)
         }
 
+    def internal_health_ranking(self, db: Session, user) -> Optional[List[Dict]]:
+        """
+        Ranks team members by contribution to lowering team risk.
+        Positive Contribution = Stabilizer (Good).
+        Negative Contribution = Risk Factor (Needs Support).
+        """
+        profile = user.career_profile
+        if not profile or not profile.team:
+            return None
+
+        # 1. Fetch raw data sorted by time
+        raw_data = (
+            db.query(RiskSnapshot.user_id, RiskSnapshot.risk_score)
+            .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
+            .filter(CareerProfile.team == profile.team)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .all()
+        )
+
+        if not raw_data: return None
+
+        # 2. Deduplicate (Latest snapshot only)
+        latest_scores = {}
+        for uid, score in raw_data:
+            if uid not in latest_scores:
+                latest_scores[uid] = score
+
+        if not latest_scores: return None
+
+        # 3. Calculate Contribution
+        avg_team = mean(latest_scores.values())
+        ranking = []
+
+        for uid, risk in latest_scores.items():
+            contribution = avg_team - risk
+            ranking.append({
+                "user_id": uid,
+                "is_current_user": (uid == user.id),
+                "risk": risk,
+                "contribution": round(contribution, 1)
+            })
+
+        ranking.sort(key=lambda x: x["contribution"], reverse=True)
+        return ranking
+
+# Singleton Instance
 team_health_engine = TeamHealthEngine()
