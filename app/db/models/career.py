@@ -12,27 +12,29 @@ class CareerProfile(Base):
     # --- Professional Identity ---
     bio = Column(Text, nullable=True)
     location = Column(String, nullable=True)
+    
+    # Organization Context (Fixed duplicates)
     company = Column(String(100), nullable=True)
     organization = Column(String(100), nullable=True) # e.g. "Engineering", "Sales"
     team = Column(String(100), nullable=True)         # e.g. "Backend-Core", "Frontend-Infra"
+    
     region = Column(String(50), nullable=True)  # ex: LATAM, EU, US
     target_role = Column(String, default="Senior Developer") # e.g., "Rust Engineer"
     
-    # Existing field (Legacy/Generic)
-    experience_level = Column(String, default="Mid-Level")   
+    # --- Seniority & Stack ---
+    # Existing field (Legacy compatibility)
+    experience_level = Column(String, default="Mid-Level")    
     
-    # New Specific Fields (Added)
+    # New Specific Fields
     seniority = Column(String(20))      # Junior | Mid | Senior | Staff
     primary_stack = Column(String(50))  # Python, JS, Rust, etc.
-    team = Column(String(100), nullable=True)
-    organization = Column(String(100), nullable=True)
 
     # --- Skills Analysis (JSON: {"Rust": 80, "Python": 90}) ---
     skills_snapshot = Column(JSON, default={})
 
     # --- External Data ---
-    github_stats = Column(JSON, default={}) # Legacy? Keeping for safety if used elsewhere
-    linkedin_stats = Column(JSON, default={}) # Legacy?
+    github_stats = Column(JSON, default={}) # Raw data dump
+    linkedin_stats = Column(JSON, default={}) # Raw data dump
 
     # --- THE HUD DATA STORE ---
     # Stores: { "labels": ["Python", "Rust"], "datasets": [{ "data": [80, 20] }] }
@@ -50,7 +52,7 @@ class CareerProfile(Base):
     # Active Challenge State (Stores {skill: "Docker", question: "...", timestamp: ...})
     active_challenge = Column(JSON, nullable=True)
 
-    # Weekly Growth Plan (JSON: {week_id, focus, routine: []})
+    # Weekly Growth Plan (JSON: {week_id, focus, routine: []}) - CURRENT ACTIVE PLAN
     active_weekly_plan = Column(JSON, nullable=True)
 
     # 0-100 Score calculated by intersecting Skills vs. Market Trends
@@ -65,17 +67,27 @@ class CareerProfile(Base):
 
 
 class LearningPlan(Base):
+    """
+    Stores historical weekly plans to generate the 'Streak Bar'.
+    Each row represents one finalized week.
+    """
     __tablename__ = "learning_plans"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    title = Column(String, nullable=False) # e.g. "Week 1: Rust Basics"
+    # Metadata
+    week_id = Column(String, nullable=False) # e.g. "2023-W42"
+    title = Column(String, nullable=False)   # e.g. "Week 1: Rust Basics"
     description = Column(Text, nullable=True)
-    technology = Column(String, nullable=True) # "Rust", "Go"
-
-    # Status: pending, in_progress, completed
-    status = Column(String, default="pending")
+    
+    # Focus & Strategy
+    focus = Column(String, nullable=True)    # e.g. "Rust"
+    mode = Column(String, default="GROWTH")  # "GROWTH" or "ACCELERATOR"
+    
+    # Metrics for Streak Bar
+    completion_rate = Column(Integer, default=0) # 0-100% based on tasks completed
+    status = Column(String, default="pending")   # pending, in_progress, completed
 
     # Resources (JSON list of URLs/Tutorials)
     resources = Column(JSON, default=[])
