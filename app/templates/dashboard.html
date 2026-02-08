@@ -334,6 +334,37 @@
                       </div>
                     </div>
                     {% endif %}
+
+                    {% if career_data.hire_simulation %}
+                    <div class="panel" style="border-left: 4px solid var(--neon-green); margin-top: 20px;">
+                      <div class="panel-head">
+                        <i class="fas fa-user-plus"></i> HIRE SIMULATION
+                      </div>
+                      <div style="padding: 15px;">
+                        <div style="font-size: 0.8rem; color: #ccc; margin-bottom: 10px;">
+                           Simulation Base: Senior Dev (Risk Score: {{ career_data.hire_simulation.hypothetical_risk }})
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 0.7rem; color: #888;">CURRENT RISK</div>
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">{{ career_data.hire_simulation.current_avg }}%</div>
+                            </div>
+                            <div style="font-size: 1.5rem; color: #666;">&rarr;</div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 0.7rem; color: #888;">SIMULATED</div>
+                                <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">{{ career_data.hire_simulation.new_avg_with_hire }}%</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; text-align: center; border: 1px dashed var(--neon-green);">
+                            <span style="font-size: 0.8rem; color: var(--text-dim);">IMPACT:</span>
+                            <span style="font-size: 1rem; font-weight: 800; color: var(--neon-green); margin-left: 5px;">
+                                {{ career_data.hire_simulation.impact }}%
+                            </span>
+                        </div>
+                      </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

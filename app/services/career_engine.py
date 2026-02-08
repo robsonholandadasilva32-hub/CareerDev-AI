@@ -204,6 +204,7 @@ class CareerEngine:
             "team_health": benchmark_engine.compute_team_health(db, user),
             "team_burnout": team_health_engine.team_burnout_risk(db, user),
             "exit_simulation": team_health_engine.simulate_member_exit(db, user),
+            "hire_simulation": team_health_engine.simulate_new_hire(db, user),
             "counterfactual": counterfactual,
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
