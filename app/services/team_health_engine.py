@@ -161,5 +161,44 @@ class TeamHealthEngine:
 
         return ranking
 
+    def simulate_new_hire(self, db: Session, user, hypothetical_risk: int = 20) -> Optional[Dict]:
+        """
+        Simulates the impact on Team Average Risk if a new Low-Risk Developer joins.
+        Hypothetical Risk defaults to 20 (a stable senior dev).
+        """
+        profile = user.career_profile
+        if not profile or not profile.team:
+            return None
+        # 1. Fetch raw data
+        raw_data = (
+            db.query(RiskSnapshot.user_id, RiskSnapshot.risk_score)
+            .join(CareerProfile, CareerProfile.user_id == RiskSnapshot.user_id)
+            .filter(CareerProfile.team == profile.team)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .all()
+        )
+        if not raw_data: return None
+        # 2. Deduplicate
+        team_scores = {}
+        for uid, score in raw_data:
+            if uid not in team_scores:
+                team_scores[uid] = score
+        scores = list(team_scores.values())
+        current_avg = mean(scores)
+        # 3. Simulate Hire
+        # Add the hypothetical new hire to the list
+        scores.append(hypothetical_risk)
+        new_avg = mean(scores)
+
+        # Impact is usually negative (Risk decreases), so we invert for clarity if needed
+        # Here: Negative impact means Risk went DOWN (Good)
+        impact = new_avg - current_avg
+        return {
+            "current_avg": int(current_avg),
+            "new_avg_with_hire": int(new_avg),
+            "impact": int(impact),
+            "hypothetical_risk": hypothetical_risk
+        }
+
 # Singleton Instance
 team_health_engine = TeamHealthEngine()
