@@ -18,6 +18,9 @@ from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
 from app.ml.shap_explainer import shap_explainer
+from app.services.audit_service import audit_service
+from app.services.model_monitor import model_monitor
+from app.services.trust_engine import trust_engine
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -134,6 +137,13 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # TRUST & GOVERNANCE ENGINE
+        # -------------------------------
+        audit_integrity = audit_service.check_system_integrity(db)
+        model_health = model_monitor.check_health(db)
+        trust_metrics = trust_engine.calculate_trust(audit_integrity, model_health)
+
+        # -------------------------------
         # BENCHMARK ENGINE
         # -------------------------------
         # Calcula a performance relativa do usuário vs. mercado
@@ -207,6 +217,7 @@ class CareerEngine:
             "counterfactual": counterfactual,
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
+            "trust_metrics": trust_metrics,
             "zone_a_radar": {},
             "missing_skills": []
         }

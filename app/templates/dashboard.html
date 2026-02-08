@@ -191,6 +191,15 @@
                     🔥 STREAK: {{ user_streak }} WEEKS
                 </div>
 
+                {% set trust = career_data.trust_metrics %}
+                {% if trust %}
+                <div class="streak-badge"
+                     title="System Trust Score: {{ trust.trust_score }}%&#013;{% for p in trust.penalties %}- {{ p }}&#013;{% endfor %}"
+                     style="border-color: {% if trust.level == 'HIGH' %}#10b981{% elif trust.level == 'MEDIUM' %}#eab308{% else %}#ef4444{% endif %}; color: {% if trust.level == 'HIGH' %}#10b981{% elif trust.level == 'MEDIUM' %}#eab308{% else %}#ef4444{% endif %}; cursor: help; box-shadow: 0 0 10px {% if trust.level == 'HIGH' %}rgba(16, 185, 129, 0.2){% elif trust.level == 'MEDIUM' %}rgba(234, 179, 8, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %};">
+                    🛡️ TRUST: {{ trust.trust_score }}%
+                </div>
+                {% endif %}
+
                 {% if career_data.career_forecast.risk_level == 'HIGH' %}
                     <div class="streak-badge risk-high" onclick="openRiskModal()">⚠ HIGH RISK</div>
                 {% elif career_data.career_forecast.risk_level == 'MEDIUM' %}
