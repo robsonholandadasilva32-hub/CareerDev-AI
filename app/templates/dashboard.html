@@ -408,6 +408,27 @@
         </div>
 
         <div id="view-plan" style="display:none;padding:20px;">
+            {% if career_data.auto_weekly_plan %}
+            <div class="panel" style="margin-bottom: 20px; border: 1px solid var(--neon-purple);">
+                <div class="panel-head" style="color: var(--neon-purple);">
+                    AI GENERATED WEEKLY PLAN
+                </div>
+                <div style="padding: 15px;">
+                    {% for item in career_data.auto_weekly_plan %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
+                        <div>
+                            <strong style="color: #fff; margin-right: 10px;">{{ item.day }}:</strong>
+                            {{ item.task }}
+                        </div>
+                        <div style="color: var(--neon-green); font-size: 0.8rem;">
+                            {{ item.expected_impact }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             {% if career_data.multi_week_plan %}
             <div class="panel" style="margin-top: 20px;">
               <div class="panel-head">
@@ -438,7 +459,7 @@
             </div>
             {% endif %}
 
-            <div class="kanban-header">
+            <div class="kanban-header" style="margin-top: 30px;">
                 CURRENT FOCUS:
                 <span style="color: #fcee0a;">{{ career_data.weekly_plan.focus | upper }}</span>
             </div>
@@ -624,7 +645,7 @@ new Chart(document.getElementById("riskTimeline"), {
     labels: {{ career_data.risk_timeline['labels'] | tojson }},
     datasets: [{
       label: "Projected Risk",
-      data: {{ career_data.risk_timeline.data_points | tojson }},
+      data: {{ career_data.risk_timeline['values'] | tojson }},
       borderColor: "{{ career_data.career_forecast.color | default('#ef4444') }}", 
       backgroundColor: "rgba(0,0,0,0)",
       tension: 0.4,
