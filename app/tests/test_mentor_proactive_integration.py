@@ -75,8 +75,48 @@ def test_generate_multi_week_plan_logic():
     args, _ = mentor.store.call_args
     assert args[2] == "MULTI_WEEK_PLAN"
 
+def test_generate_weekly_plan_from_shap_logic():
+    """Test the logic of the generate_weekly_plan_from_shap method"""
+    # Setup
+    mentor = MentorEngine()
+    mentor.store = MagicMock()
+    db = MagicMock()
+    user = MagicMock(spec=User)
+
+    # Case 1: Valid counterfactual
+    counterfactual = {
+        "actions": [
+            {"action": "Action 1", "impact": "High"},
+            {"action": "Action 2", "impact": "Low"},
+            {"action": "Action 3", "impact": "Medium"},
+            {"action": "Action 4", "impact": "High"}
+        ]
+    }
+
+    result = mentor.generate_weekly_plan_from_shap(db, user, counterfactual)
+
+    # Verify
+    assert len(result) == 4
+    # Check distribution logic: Mon, Wed, Fri, Mon
+    assert result[0]["day"] == "Mon"
+    assert result[0]["task"] == "Action 1"
+
+    assert result[1]["day"] == "Wed"
+    assert result[1]["task"] == "Action 2"
+
+    assert result[2]["day"] == "Fri"
+    assert result[2]["task"] == "Action 3"
+
+    assert result[3]["day"] == "Mon"
+    assert result[3]["task"] == "Action 4"
+
+    # Verify storage
+    mentor.store.assert_called_once()
+    args, _ = mentor.store.call_args
+    assert args[2] == "WEEKLY_PLAN"
+
 def test_career_engine_integration():
-    """Test that CareerEngine.analyze calls mentor_engine.proactive_from_counterfactual"""
+    """Test that CareerEngine.analyze calls mentor_engine.proactive_from_counterfactual and generate_weekly_plan_from_shap"""
     # Mock dependencies
     with patch("app.services.career_engine.mentor_engine") as mock_mentor, \
          patch("app.services.career_engine.counterfactual_engine") as mock_cf_engine, \
@@ -102,6 +142,14 @@ def test_career_engine_integration():
         user.streak_count = 0
         user.id = 1
 
+        # Configure career_profile and metrics to avoid MagicMock comparison errors
+        user.career_profile = MagicMock()
+        # Ensure dictionary access works for these attributes
+        user.career_profile.github_activity_metrics = {"commits_last_30_days": 10, "raw_languages": {}}
+        user.career_profile.linkedin_alignment_data = {}
+        user.career_profile.market_relevance_score = 80
+        user.career_profile.skills_snapshot = {}
+
         # We need to ensure db.query works if it's called
         # The analyze method queries RiskSnapshot
         mock_query = db.query.return_value
@@ -110,7 +158,7 @@ def test_career_engine_integration():
         mock_limit = mock_order.limit.return_value
         mock_limit.all.return_value = [] # No snapshots for this test
 
-        career.analyze(
+        result_dict = career.analyze(
             db=db,
             raw_languages={},
             linkedin_input={},
@@ -124,3 +172,9 @@ def test_career_engine_integration():
 
         # Verify multi-week plan generation
         mock_mentor.generate_multi_week_plan.assert_called_once_with(db, user, mock_cf_data)
+
+        # Verify SHAP-based weekly plan generation
+        mock_mentor.generate_weekly_plan_from_shap.assert_called_once_with(db, user, mock_cf_data)
+
+        # Verify result contains the new key
+        assert "auto_weekly_plan" in result_dict
