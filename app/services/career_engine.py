@@ -10,11 +10,14 @@ from app.db.models.analytics import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
 from app.services.benchmark_engine import benchmark_engine
+from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
 from app.services.social_harvester import social_harvester
+from app.services.growth_engine import growth_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
+from app.ml.shap_explainer import shap_explainer
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -59,44 +62,36 @@ class CareerEngine:
         # SKILL CONFIDENCE SCORE
         # -------------------------------
         skill_confidence = self._calculate_skill_confidence(raw_languages, linkedin_input)
-        linkedin_skills = list(linkedin_input.get("skills", {}).keys())
 
         # -------------------------------
-        # CAREER RISK ALERTS (CURRENT)
+        # REAL LOGIC: IMPOSTER & HIDDEN GEM DETECTION
         # -------------------------------
+        # Using the new analyze_skill_alignment logic
+        alignment_insights = self.analyze_skill_alignment(
+            {"languages": raw_languages},
+            linkedin_input
+        )
+
         career_risks: List[Dict] = []
         hidden_gems: List[Dict] = []
 
-        # 1. Low Confidence Alert
-        for skill, confidence in skill_confidence.items():
-            if confidence < 40:
+        for insight in alignment_insights:
+            if insight["type"] == "CRITICAL":
                 career_risks.append({
-                    "level": "HIGH",
-                    "skill": skill,
-                    "message": f"Low confidence score in {skill}. Risk of interview rejection."
+                    "level": "CRITICAL",  # Map type to level for compatibility
+                    "skill": insight["skill"],
+                    "message": insight["message"],
+                    "action": insight.get("action")
                 })
-
-        # 2. Imposter Syndrome Detector (LinkedIn Expert vs GitHub Empty)
-        for skill in linkedin_skills:
-            # Check if skill exists in raw_languages with sufficient bytes
-            # Heuristic: < 10k bytes = "No Evidence"
-            bytes_count = raw_languages.get(skill, raw_languages.get(skill.title(), 0))
-            if bytes_count < 10_000:
-                career_risks.append({
-                    "level": "CRITICAL",
-                    "skill": skill,
-                    "message": f"IMPOSTER ALERT: You claim '{skill}' on LinkedIn but have <10k bytes of code."
-                })
-
-        # 3. Hidden Gem Detector (GitHub High vs LinkedIn Empty)
-        for skill, bytes_count in raw_languages.items():
-            if bytes_count > 50_000 and skill not in linkedin_skills:
+            elif insight["type"] == "OPPORTUNITY":
                 hidden_gems.append({
                     "type": "HIDDEN_GEM",
-                    "skill": skill,
-                    "message": f"You have {int(bytes_count/1000)}k bytes of {skill} code not listed on LinkedIn!"
+                    "skill": insight["skill"],
+                    "message": insight["message"],
+                    "action": insight.get("action")
                 })
 
+        # Keep existing "Low Coding Activity" check as a fallback risk
         if metrics.get("commits_last_30_days", 0) < 5:
             career_risks.append({
                 "level": "MEDIUM",
@@ -106,10 +101,8 @@ class CareerEngine:
         # -------------------------------
         # WEEKLY GROWTH PLAN
         # -------------------------------
-        weekly_plan = self._generate_weekly_routine(
-            github_stats=metrics,
-            user_streak=user.streak_count or 0
-        )
+        # Delegate to GrowthEngine for Kanban-Lite & Gap Analysis
+        weekly_plan = growth_engine.generate_weekly_plan(db, user)
 
         # -------------------------------
         # ACCELERATOR MODE DECISION
@@ -118,6 +111,8 @@ class CareerEngine:
             skill_confidence, career_risks, user.streak_count or 0
         ):
             weekly_plan["mode"] = "ACCELERATOR"
+            # Update DB/Profile to reflect accelerator override if needed
+            # For now, just overriding the display mode in the return dict
 
         # -------------------------------
         # CAREER RISK FORECAST (HYBRID + LSTM + A/B TEST)
@@ -164,6 +159,12 @@ class CareerEngine:
         avg_confidence = sum(skill_confidence.values()) / max(len(skill_confidence), 1)
         features["avg_confidence"] = avg_confidence
 
+        # Visual SHAP Explanation
+        shap_visual_data = shap_explainer.explain_visual(
+            avg_confidence=features["avg_confidence"],
+            commit_velocity=features.get("commit_velocity", 0)
+        )
+
         # Gera cenário contrafactual (ex: "Se você aumentar commits em 20%, o risco cai para X")
         counterfactual = counterfactual_engine.generate(
             features=features,
@@ -179,8 +180,17 @@ class CareerEngine:
             counterfactual
         )
 
-        # 1. Generate the plan
+        # RESOLVED CONFLICT: Both strategies are kept as they populate different keys in the return dict
+        
+        # 1. Generate the SHAP-based auto plan (from feat-auto-scheduler-v2)
         weekly_plan_auto = mentor_engine.generate_weekly_plan_from_shap(
+            db,
+            user,
+            counterfactual
+        )
+
+        # 2. Generate 4-Week Horizon (from main)
+        multi_week_plan = mentor_engine.generate_multi_week_plan(
             db,
             user,
             counterfactual
@@ -199,10 +209,65 @@ class CareerEngine:
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
             "benchmark": benchmark,
+            "team_benchmark": benchmark_engine.compute_team_org(db, user),
+            "risk_timeline": benchmark_engine.get_user_history(db, user),
+            "team_health": benchmark_engine.compute_team_health(db, user),
+            "team_burnout": team_health_engine.team_burnout_risk(db, user),
+            "exit_simulation": team_health_engine.simulate_member_exit(db, user),
             "counterfactual": counterfactual,
+            "multi_week_plan": multi_week_plan,
+            "shap_visual": shap_visual_data,
             "zone_a_radar": {},
             "missing_skills": []
         }
+
+    # =========================================================
+    # REAL LOGIC ALGORITHM: SKILL ALIGNMENT
+    # =========================================================
+    def analyze_skill_alignment(self, github_stats: Dict, linkedin_profile: Dict) -> List[Dict]:
+        """
+        Real Logic: Compares Code Volume (Reality) vs Profile Claims (Perception)
+        """
+        insights = []
+        raw_langs = github_stats.get('languages', {})
+        linkedin_skills = linkedin_profile.get('skills', {})
+
+        # Logic 1: The Imposter Detector
+        # Iterate over claimed skills to find discrepancies
+        for skill, level in linkedin_skills.items():
+            # Check if claimed skill exists in GitHub stats (case-insensitive check)
+            # Find matching key in raw_langs
+            found_bytes = 0
+            for k, v in raw_langs.items():
+                if k.lower() == skill.lower():
+                    found_bytes = v
+                    break
+
+            # If High Claim on LinkedIn but < 5000 bytes code on GitHub
+            # Note: Using 5000 as per user clarification for 'Imposter Syndrome Cards'
+            if level == 'Expert' and found_bytes < 5000:
+                insights.append({
+                    "type": "CRITICAL",
+                    "skill": skill,
+                    "message": f"Discrepancy: You claim Expert in {skill} but show low code volume (<5k bytes).",
+                    "action": "GENERATE_MICRO_PROJECT"
+                })
+
+        # Logic 2: The Hidden Gem Detector
+        # Iterate over GitHub stats to find unclaimed skills
+        for skill, bytes_count in raw_langs.items():
+            # Check if skill is NOT in LinkedIn profile (case-insensitive)
+            is_claimed = any(k.lower() == skill.lower() for k in linkedin_skills.keys())
+
+            if not is_claimed and bytes_count > 50000:
+                insights.append({
+                    "type": "OPPORTUNITY",
+                    "skill": skill,
+                    "message": f"You have high volume in {skill} (>50k bytes) but it's missing from LinkedIn.",
+                    "action": "UPDATE_PROFILE"
+                })
+
+        return insights
 
     # =========================================================
     # INDEPENDENT COUNTERFACTUAL ANALYSIS

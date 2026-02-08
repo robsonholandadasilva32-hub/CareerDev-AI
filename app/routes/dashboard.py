@@ -8,6 +8,7 @@ import asyncio
 from app.core.jwt import decode_token
 from app.services.career_engine import career_engine
 from app.services.social_harvester import social_harvester
+from app.services.growth_engine import growth_engine
 from app.services.github_verifier import github_verifier
 from app.services.onboarding import validate_onboarding_access
 from app.services.security_service import get_active_sessions, revoke_session, log_audit
@@ -169,3 +170,21 @@ async def perform_weekly_check(
          raise HTTPException(status_code=404, detail="User not found")
 
     return {"status": "success", "timestamp": timestamp.isoformat()}
+
+# -------------------------------------------------
+# KANBAN TASK VERIFICATION API
+# -------------------------------------------------
+@router.post("/api/verify/task/{task_id}")
+async def verify_task_endpoint(
+    task_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_user_with_profile)
+):
+    """
+    Verifies a specific task from the Weekly Plan (Kanban).
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    result = await growth_engine.verify_task(db, user, task_id)
+    return result

@@ -94,10 +94,20 @@ async def test_linkedin_callback_success(client, db_session):
     # Patch fetch_access_token (Bypassing authorize_access_token wrapper)
     # AND userinfo
     # AND hash_password to avoid bcrypt issues
+    # AND social_harvester to avoid DB access in background task
+    # AND settings to ensure DOMAIN matches test expectation
     with patch('app.routes.social.oauth.linkedin.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
          patch('app.routes.social.oauth.linkedin.userinfo', new_callable=AsyncMock) as mock_userinfo, \
          patch('app.routes.social.hash_password', return_value="mock_hashed_pwd") as mock_hash, \
-         patch('app.routes.social.SessionLocal', mock_session_cls):
+         patch('app.routes.social.SessionLocal', mock_session_cls), \
+         patch('app.routes.social.social_harvester') as mock_harvester, \
+         patch('app.routes.social.settings') as mock_settings:
+
+        # Configure Mock Settings
+        mock_settings.DOMAIN = "http://test"
+        mock_settings.LINKEDIN_CLIENT_ID = "mock_id"
+        mock_settings.ENVIRONMENT = "test"
+        mock_settings.LINKEDIN_REDIRECT_URI = None
 
         mock_fetch.return_value = mock_token
         mock_userinfo.return_value = mock_user_info
@@ -106,9 +116,10 @@ async def test_linkedin_callback_success(client, db_session):
         response = await client.get("/auth/linkedin/callback?code=123&state=abc", follow_redirects=False)
 
         # Assert
-        assert response.status_code == 303
-        # Strict onboarding: New user needs GitHub -> Redirect to /onboarding/connect-github
-        assert response.headers["location"] == "/onboarding/connect-github"
+        # Strict Chaining now returns Interstitial Page (200 OK) instead of Redirect
+        assert response.status_code == 200
+        assert "LinkedIn Connected!" in response.text
+        assert 'content="1; url=/login/github"' in response.text
 
         # Verify fetch_access_token was called correctly
         mock_fetch.assert_called_once()
@@ -222,9 +233,11 @@ async def test_github_connect_existing_user(client, db_session):
     session_proxy = MagicMock(wraps=db_session)
     session_proxy.close = MagicMock()
 
+    # Need to patch social_harvester to avoid DB issues in background task
     with patch('app.routes.social.oauth.github.fetch_access_token', new_callable=AsyncMock) as mock_fetch, \
          patch('app.routes.social.oauth.github.get', new_callable=AsyncMock) as mock_get, \
-         patch("app.middleware.auth.SessionLocal", return_value=session_proxy):
+         patch("app.middleware.auth.SessionLocal", return_value=session_proxy), \
+         patch('app.routes.social.social_harvester') as mock_harvester:
 
         mock_fetch.return_value = mock_token
 
@@ -237,8 +250,8 @@ async def test_github_connect_existing_user(client, db_session):
 
         # 6. Assert
         assert response.status_code == 303
-        # Since profile is not completed, it should go to complete profile
-        assert response.headers["location"] == "/onboarding/complete-profile"
+        # Since logic sets is_profile_completed=True, it should go to Dashboard
+        assert response.headers["location"] == "/dashboard"
 
         # Verify DB update
         # Since session_proxy prevents close, db_session is still valid?

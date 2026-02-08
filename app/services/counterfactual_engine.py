@@ -62,12 +62,17 @@ class CounterfactualEngine:
         # 3. Calculate projection
         # Parse numeric impact from string (e.g., "-15% risk" -> 15)
         total_reduction = 0
+        final_actions = []
 
         for a in actions:
             try:
+                # Extract numeric value for calculation
                 impact_str = a["impact"].replace("% risk", "").replace("-", "")
                 reduction = int(impact_str)
                 total_reduction += reduction
+                
+                # Append to final list if valid
+                final_actions.append(a)
             except ValueError:
                 continue
 
@@ -76,7 +81,7 @@ class CounterfactualEngine:
         return {
             "current_risk": current_risk,
             "projected_risk": projected_risk,
-            "actions": actions,
+            "actions": final_actions,
             "summary": (
                 f"Executing the actions above could reduce your risk "
                 f"from {current_risk}% to approximately {projected_risk}%."
