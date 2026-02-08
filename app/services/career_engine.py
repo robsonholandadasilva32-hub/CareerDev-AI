@@ -14,6 +14,8 @@ from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
 from app.services.social_harvester import social_harvester
 from app.services.growth_engine import growth_engine
+from app.services.audit_service import audit_service
+from app.services.model_monitor import model_monitor
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
@@ -188,6 +190,15 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # SYSTEM AUDIT & GOVERNANCE
+        # -------------------------------
+        model_health = model_monitor.check_health(db)
+        system_audit_data = {
+             **audit_service.get_compliance_summary(db, user.id),
+             "model_health": model_health
+        }
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -208,7 +219,8 @@ class CareerEngine:
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
             "zone_a_radar": {},
-            "missing_skills": []
+            "missing_skills": [],
+            "system_audit": system_audit_data
         }
 
     # =========================================================
