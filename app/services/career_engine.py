@@ -180,6 +180,13 @@ class CareerEngine:
             counterfactual
         )
 
+        # Generate SHAP-based Weekly Plan
+        auto_weekly_plan = mentor_engine.generate_weekly_plan_from_shap(
+            db,
+            user,
+            counterfactual
+        )
+
         # Generate 4-Week Horizon
         multi_week_plan = mentor_engine.generate_multi_week_plan(
             db,
@@ -194,6 +201,7 @@ class CareerEngine:
             "zone_a_holistic": {},
             "zone_b_matrix": skill_audit,
             "weekly_plan": weekly_plan,
+            "auto_weekly_plan": auto_weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
             "hidden_gems": hidden_gems,

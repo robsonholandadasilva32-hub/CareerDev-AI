@@ -131,6 +131,39 @@ class MentorEngine:
         self.store(db, user, "PROACTIVE", message)
 
     # -------------------------------------------------
+    # SHAP-BASED WEEKLY PLAN
+    # -------------------------------------------------
+    def generate_weekly_plan_from_shap(self, db: Session, user: User, counterfactual: dict):
+        # Safety check
+        if not counterfactual or not counterfactual.get("actions"):
+            return None
+
+        weekly_plan = []
+
+        # Simple distribution logic to avoid overwhelming the user on Monday
+        available_days = ["Mon", "Wed", "Fri"]
+
+        for i, action in enumerate(counterfactual["actions"]):
+            # Cycle through available days
+            assigned_day = available_days[i % len(available_days)]
+
+            weekly_plan.append({
+                "day": assigned_day,
+                "task": action.get("action", "General Improvement"),
+                "expected_impact": action.get("impact", "High")
+            })
+
+        # Notify the user that a plan was created
+        self.store(
+            db,
+            user,
+            "WEEKLY_PLAN",
+            "Your AI-generated weekly plan is ready based on the latest SHAP analysis."
+        )
+
+        return weekly_plan
+
+    # -------------------------------------------------
     # MULTI-WEEK PLANNING
     # -------------------------------------------------
     def generate_multi_week_plan(self, db: Session, user: User, counterfactual: dict):
