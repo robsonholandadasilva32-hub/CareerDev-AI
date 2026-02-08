@@ -18,6 +18,7 @@ from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
 from app.ml.shap_explainer import shap_explainer
+from app.services.audit_service import audit_service
 
 # ---------------------------------------------------------
 # ML FORECASTERS (SINGLETONS)
@@ -188,6 +189,28 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # SYSTEM GOVERNANCE & RISK SPIKE DETECTION
+        # -------------------------------
+        # Detect significant risk increases (> 15 points)
+        current_risk = career_forecast["risk_score"]
+        if recent_snapshots:
+            last_risk = recent_snapshots[0].risk_score
+            risk_delta = current_risk - last_risk
+
+            if risk_delta > 15:
+                audit_service.log_event(
+                    db,
+                    event_type="RISK_SPIKE",
+                    severity="WARNING",
+                    details=f"User risk spiked by {risk_delta} points (Previous: {last_risk}, Current: {current_risk})",
+                    user_id=user.id
+                )
+
+        audit_summary = audit_service.get_compliance_summary(db, user.id)
+        integrity = audit_service.check_system_integrity(db)
+        system_audit_data = {**audit_summary, **integrity}
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -208,6 +231,7 @@ class CareerEngine:
             "counterfactual": counterfactual,
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
+            "system_audit": system_audit_data,
             "zone_a_radar": {},
             "missing_skills": []
         }

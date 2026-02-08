@@ -16,3 +16,4 @@ from app.db.models.mentor import MentorMemory
 
 # --- ADICIONE ESTA LINHA ---
 from app.db.models.analytics import RiskSnapshot
+from app.db.models.governance import GovernanceLog
