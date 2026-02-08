@@ -232,6 +232,27 @@
                         </div>
                     </div>
 
+                    <!-- SYSTEM AUDIT PANEL -->
+                    <div class="panel" style="margin-top: 20px; border-left: 4px solid {% if career_data.system_audit.status == 'HEALTHY' %}var(--neon-green){% else %}var(--alert){% endif %};">
+                        <div class="panel-head">
+                            <i class="fas fa-shield-alt"></i> SYSTEM AUDIT & GOVERNANCE
+                        </div>
+                        <div style="padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="color: var(--text-dim); font-size: 0.8rem;">INTEGRITY STATUS:</span>
+                                <span style="font-weight: bold; color: {% if career_data.system_audit.status == 'HEALTHY' %}var(--neon-green){% else %}var(--alert){% endif %};">
+                                    {{ career_data.system_audit.status }}
+                                </span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #ccc; margin-bottom: 10px;">
+                                {{ career_data.system_audit.message }}
+                            </div>
+                            <div style="font-size: 0.7rem; color: var(--text-dim); text-align: right;">
+                                LAST ACTIVITY: {{ career_data.system_audit.last_activity }}
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="chart-container" style="position: relative; height:200px; width:100%; margin-top: 20px;">
                         <h4 style="color:var(--text-muted); font-size: 0.9em; margin-bottom: 10px;">
                             <i class="fas fa-balance-scale"></i> RISK DRIVERS (AI EXPLANATION)
