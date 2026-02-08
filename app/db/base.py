@@ -13,6 +13,7 @@ from app.db.models.gamification import Badge, UserBadge
 from app.db.models.audit import AuditLog
 from app.db.models.skill_snapshot import SkillSnapshot
 from app.db.models.mentor import MentorMemory
+from app.db.models.governance import GovernanceLog
 
 # --- ADICIONE ESTA LINHA ---
 from app.db.models.analytics import RiskSnapshot

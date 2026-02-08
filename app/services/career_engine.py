@@ -1,5 +1,6 @@
 import asyncio
 import random
+from datetime import datetime
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,7 @@ from app.db.models.ml_risk_log import MLRiskLog
 from app.db.models.analytics import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
+from app.services.audit_service import audit_service
 from app.services.benchmark_engine import benchmark_engine
 from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
@@ -120,6 +122,39 @@ class CareerEngine:
         career_forecast = self.forecast_career_risk(
             db, user, skill_confidence, metrics
         )
+
+        # --- AUDIT & GOVERNANCE: RISK SPIKE DETECTOR ---
+        # 1. Get previous snapshot
+        previous_snapshot = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .first()
+        )
+
+        current_risk = career_forecast["risk_score"]
+        previous_score = previous_snapshot.risk_score if previous_snapshot else 0
+        delta = abs(current_risk - previous_score)
+
+        # 2. Log if spike (Delta >= 15)
+        if delta >= 15:
+            audit_service.log(
+                db,
+                user.id,
+                "RISK_SPIKE_DETECTED",
+                f"Risk score changed from {previous_score} to {current_risk} (Delta: {delta})",
+                "CRITICAL"
+            )
+
+        # 3. Persist RiskSnapshot (Crucial for next comparison)
+        new_snapshot = RiskSnapshot(
+            user_id=user.id,
+            risk_score=current_risk,
+            risk_level=career_forecast["risk_level"],
+            recorded_at=datetime.utcnow()
+        )
+        db.add(new_snapshot)
+        db.commit()
 
         # -------------------------------
         # MENTOR PROACTIVE INSIGHTS
