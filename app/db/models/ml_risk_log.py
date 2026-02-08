@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, DateTime, String, ForeignKey
 from datetime import datetime
-from app.db.base import Base
+from app.db.base_class import Base
 
 class MLRiskLog(Base):
     __tablename__ = "ml_risk_logs"

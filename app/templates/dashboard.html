@@ -239,6 +239,37 @@
                         <canvas id="shapChart"></canvas>
                     </div>
 
+                    <div class="panel" style="border-top: 4px solid var(--neon-purple); margin-top: 20px;">
+                      <div class="panel-head">
+                        <i class="fas fa-server"></i> SYSTEM AUDIT & GOVERNANCE
+                      </div>
+                      <div style="padding:15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                           <div style="font-size: 0.8rem; color: #888;">MODEL HEALTH</div>
+                           <div style="font-size: 1.2rem; font-weight: bold; color: {% if career_data.system_audit.model_health.status == 'HEALTHY' %}#10b981{% elif career_data.system_audit.model_health.status == 'FROZEN' %}#eab308{% else %}#ef4444{% endif %};">
+                             {{ career_data.system_audit.model_health.status }}
+                           </div>
+                           <div style="font-size: 0.75rem; color: #666;">
+                             Score: {{ career_data.system_audit.model_health.score }}
+                           </div>
+                        </div>
+                        <div style="text-align: right;">
+                           <div style="font-size: 0.8rem; color: #888;">GOVERNANCE EVENTS (24H)</div>
+                           <div style="font-size: 1.2rem; font-weight: bold; color: #fff;">
+                             {{ career_data.system_audit.total_events_logged }}
+                           </div>
+                           <div style="font-size: 0.75rem; color: #666;">
+                             {{ career_data.system_audit.status }}
+                           </div>
+                        </div>
+                        <div style="grid-column: span 2; border-top: 1px dashed #333; padding-top: 8px; margin-top: 5px;">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono';">
+                                {{ career_data.system_audit.model_health.message }}
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {% if career_data.benchmark %}
                     <div class="panel">
                       <div class="panel-head">CONTEXTUAL BENCHMARK</div>
