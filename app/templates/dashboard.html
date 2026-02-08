@@ -170,6 +170,16 @@
     </div>
 
     <main class="panel" style="grid-column: 2/3;">
+        {% if career_data.early_warning %}
+        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fff; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; align-items: center; gap: 15px;">
+            <div style="font-size: 1.5rem;">⚠️</div>
+            <div>
+                <strong style="color: #ef4444; font-size: 1.1rem; display: block; margin-bottom: 5px;">CRITICAL RISK SPIKE DETECTED</strong>
+                <div style="font-size: 0.9rem; opacity: 0.9;">{{ career_data.early_warning.message }}</div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="panel-head tab-header">
             <div>
                 <button class="tab-btn active" onclick="switchTab('audit')">AUDIT VIEW</button>

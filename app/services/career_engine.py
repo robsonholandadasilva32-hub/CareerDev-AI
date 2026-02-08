@@ -9,6 +9,7 @@ from app.db.models.ml_risk_log import MLRiskLog
 from app.db.models.analytics import RiskSnapshot
 from app.services.mentor_engine import mentor_engine
 from app.services.alert_engine import alert_engine
+from app.services.audit_service import audit_service
 from app.services.benchmark_engine import benchmark_engine
 from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
@@ -122,6 +123,11 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # EARLY WARNING SYSTEM (RISK SPIKE DETECTION)
+        # -------------------------------
+        early_warning = self._check_risk_spike(db, user, career_forecast["risk_score"])
+
+        # -------------------------------
         # MENTOR PROACTIVE INSIGHTS
         # -------------------------------
         mentor_engine.proactive_insights(
@@ -198,6 +204,7 @@ class CareerEngine:
             "career_risks": career_risks,
             "hidden_gems": hidden_gems,
             "career_forecast": career_forecast,
+            "early_warning": early_warning,
             "benchmark": benchmark,
             "team_benchmark": benchmark_engine.compute_team_org(db, user),
             "risk_timeline": benchmark_engine.get_user_history(db, user),
@@ -210,6 +217,46 @@ class CareerEngine:
             "zone_a_radar": {},
             "missing_skills": []
         }
+
+    # =========================================================
+    # EARLY WARNING SYSTEM (PRIVATE)
+    # =========================================================
+    def _check_risk_spike(self, db: Session, user: User, current_risk: int) -> Optional[Dict]:
+        """
+        Detects sudden spikes in risk (>15 points) compared to the last snapshot.
+        If critical, logs a governance event.
+        """
+        # Get the strictly previous snapshot (skipping the one we just created/are about to create)
+        last_snapshot = (
+            db.query(RiskSnapshot)
+            .filter(RiskSnapshot.user_id == user.id)
+            .order_by(RiskSnapshot.recorded_at.desc())
+            .first()
+        )
+
+        if not last_snapshot:
+            return None
+
+        delta = current_risk - last_snapshot.risk_score
+
+        if delta >= 15:
+            # GOVERNANCE LAYER: Log Critical Risk Spike
+            audit_service.log_event(
+                db=db,
+                event_type="RISK_SPIKE",
+                severity="CRITICAL",
+                details=f"Risk spiked by +{delta}% (Old: {last_snapshot.risk_score}, New: {current_risk})",
+                user_id=user.id
+            )
+
+            return {
+                "type": "SPIKE",
+                "level": "CRITICAL",
+                "delta": delta,
+                "message": f"⚠️ Sudden Risk Spike: +{delta}% since last check."
+            }
+
+        return None
 
     # =========================================================
     # REAL LOGIC ALGORITHM: SKILL ALIGNMENT
