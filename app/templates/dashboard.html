@@ -177,6 +177,48 @@
             </div>
 
             <div style="display:flex; align-items:center; gap:10px;">
+
+                {% if career_data.trust_metrics %}
+                <div class="trust-shield" title="System Confidence Score" style="margin-right: 15px; position: relative; group;">
+                    <div class="shield-icon" style="
+                        color: {% if career_data.trust_metrics.level == 'HIGH' %}#4ade80
+                               {% elif career_data.trust_metrics.level == 'MEDIUM' %}#facc15
+                               {% else %}#f87171{% endif %};
+                        font-size: 1.5rem;
+                        cursor: help;
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                    " onmouseover="document.getElementById('trust-details-popover').style.display='block'"
+                      onmouseout="document.getElementById('trust-details-popover').style.display='none'">
+                        <i class="fas fa-shield-alt"></i>
+                        <span style="font-weight: bold; font-size: 1rem;">{{ career_data.trust_metrics.trust_score }}%</span>
+                    </div>
+
+                    <div id="trust-details-popover" class="trust-details" style="
+                        display: none;
+                        position: absolute;
+                        top: 100%;
+                        right: 0;
+                        background: #0f111a;
+                        border: 1px solid var(--neon-blue);
+                        padding: 15px;
+                        border-radius: 8px;
+                        width: 250px;
+                        z-index: 100;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+                    ">
+                        <strong style="color: #fff; display: block; margin-bottom: 8px;">Trust Penalties:</strong>
+                        <ul style="padding-left: 20px; margin: 0; color: #ccc; font-size: 0.85rem;">
+                        {% for penalty in career_data.trust_metrics.penalties %}
+                            <li style="margin-bottom: 4px;">{{ penalty }}</li>
+                        {% else %}
+                            <li style="color: var(--neon-green);">System is fully healthy.</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
                 
                 <div class="streak-bar" style="display: flex; gap: 4px; align-items: center; margin-right: 10px;">
                     {% for week in weekly_history | reverse %}

@@ -14,6 +14,8 @@ from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
 from app.services.social_harvester import social_harvester
 from app.services.growth_engine import growth_engine
+from app.services.audit_service import audit_service
+from app.services.trust_engine import trust_engine
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
@@ -172,6 +174,19 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # TRUST ENGINE INTEGRATION
+        # -------------------------------
+        last_snapshot = recent_snapshots[0] if recent_snapshots else None
+        last_snapshot_date = last_snapshot.recorded_at if last_snapshot else None
+
+        audit_status = audit_service.check_system_integrity(db)
+
+        trust_metrics = trust_engine.calculate_trust(
+            last_snapshot_date=last_snapshot_date,
+            audit_status=audit_status
+        )
+
+        # -------------------------------
         # MENTOR INTEGRATION
         # -------------------------------
         mentor_engine.proactive_from_counterfactual(
@@ -193,6 +208,7 @@ class CareerEngine:
         return {
             "zone_a_holistic": {},
             "zone_b_matrix": skill_audit,
+            "trust_metrics": trust_metrics,
             "weekly_plan": weekly_plan,
             "skill_confidence": skill_confidence,
             "career_risks": career_risks,
