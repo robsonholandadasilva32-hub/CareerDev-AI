@@ -14,6 +14,7 @@ from app.services.team_health_engine import team_health_engine
 from app.services.counterfactual_engine import counterfactual_engine
 from app.services.social_harvester import social_harvester
 from app.services.growth_engine import growth_engine
+from app.services.audit_service import audit_service
 from app.ml.risk_forecast_model import RiskForecastModel
 from app.ml.lstm_risk_production import LSTMRiskProductionModel
 from app.ml.feature_store import compute_features
@@ -188,6 +189,21 @@ class CareerEngine:
         )
 
         # -------------------------------
+        # SYSTEM GOVERNANCE & AUDIT LOGGING
+        # -------------------------------
+        # 1. Log the Risk Analysis Event (Heartbeat)
+        audit_service.log_event(
+            db=db,
+            user_id=user.id,
+            event_type="RISK_CHECK",
+            severity="INFO",
+            details=f"Automated risk assessment. Score: {career_forecast.get('risk_score')}"
+        )
+
+        # 2. Fetch Compliance Summary for Dashboard Footer
+        system_audit = audit_service.get_compliance_summary(db, user.id)
+
+        # -------------------------------
         # FINAL RESPONSE
         # -------------------------------
         return {
@@ -209,7 +225,8 @@ class CareerEngine:
             "multi_week_plan": multi_week_plan,
             "shap_visual": shap_visual_data,
             "zone_a_radar": {},
-            "missing_skills": []
+            "missing_skills": [],
+            "system_audit": system_audit
         }
 
     # =========================================================

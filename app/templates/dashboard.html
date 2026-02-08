@@ -436,6 +436,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SYSTEM GOVERNANCE PANEL -->
+            {% if career_data.system_audit %}
+            <div class="panel" style="margin-top: 30px; border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.2);">
+                <div class="panel-head" style="background: transparent; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <i class="fas fa-shield-alt"></i> SYSTEM AUDIT & GOVERNANCE
+                </div>
+                <div style="padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center;">
+
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">TOTAL EVENTS LOGGED</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #fff;">
+                            {{ career_data.system_audit.total_events_logged }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">DATA RETENTION STATUS</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--neon-green);">
+                            {{ career_data.system_audit.retention_policy }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">LAST SYSTEM ACTIVITY</div>
+                        <div style="font-size: 1rem; color: #fff; font-family: 'JetBrains Mono', monospace;">
+                            {% if career_data.system_audit.last_activity %}
+                                {{ career_data.system_audit.last_activity }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div id="view-plan" style="display:none;padding:20px;">
